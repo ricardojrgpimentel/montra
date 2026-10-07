@@ -20,6 +20,11 @@ on:
       - "settings.gradle.kts"
   workflow_dispatch:
 
+concurrency:
+  # Um push atrás do outro não precisa de dois builds de 10 minutos em paralelo.
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
