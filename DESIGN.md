@@ -90,6 +90,18 @@ catálogo. Quando uma app não tem ícone (a Molly, o Cromite, o ReVanced Manage
 Syncthing-Fork, por exemplo, só publicam vetores), desenha-se um **monograma de cor
 plana** derivada do nome do pacote. Sem gradientes.
 
+## Um filtro tem de responder a uma pergunta
+
+Um filtro só existe se alguém o fizer. **Fora da Play Store** responde — é a razão
+de ser desta loja. **Licença restritiva** responde — quem se importa com licenças
+procura-o. **"Só forks"** não responde a nada: ninguém escolhe uma aplicação por ser
+um fork, escolhe-a por substituir outra que já usa.
+
+O parentesco é **contexto da ficha**, não um eixo de navegação: a linha "Baseado em
+X" diz o que a app substitui e, quando o original está no catálogo, leva lá — é
+assim que alguém compara os dois sem sair da loja. E escreve-se apenas quando o
+próprio projeto o declara; parentesco inventado é pior do que parentesco ausente.
+
 ## Restrições não são navegação
 
 Uma licença restritiva é uma **condição**, não um domínio. Por isso não há um

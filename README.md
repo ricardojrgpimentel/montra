@@ -58,8 +58,11 @@ transformaria um aviso em navegação.
 
 Em vez disso:
 
-- um filtro **"Licença restritiva"** nos chips do separador Apps, que só aparece
-  se existirem apps nessa situação;
+- filtros nos chips do separador Apps — **Fora da Play Store** e **Licença
+  restritiva** — cada um só aparece se apanhar alguma coisa;
+- o parentesco declarado pelo projeto aparece na ficha como **"Baseado em X"**, com
+  ligação à ficha do original quando ele também está no catálogo (PipePipe →
+  NewPipe). Não é um filtro de propósito: ninguém escolhe uma app por ser fork;
 - uma opção **"Esconder apps com licença restritiva"** nas definições, por omissão
   desligada — o catálogo decidiu incluí-las, e esconder por omissão seria decidir
   pelo utilizador;
