@@ -30,6 +30,31 @@ Para publicar um release é preciso um keystore: cria `keystore.properties` (ign
 pelo git) com `storeFile`, `storePassword`, `keyAlias`, `keyPassword` e configura
 `signingConfigs.release` em `app/build.gradle.kts`.
 
+## Estrutura da navegação
+
+Quatro destinos, no rodapé, como a Play Store — que é a estrutura que as pessoas já
+têm na cabeça:
+
+| Separador | O que mostra |
+| --- | --- |
+| **Apps** | tudo o que o catálogo tem, em secções: atualizações, instaladas, o resto |
+| **Jogos** | jogos e emuladores (as categorias `games` e `emulators`); vazio, explica que se contribui por pull request |
+| **Procurar** | campo próprio com foco automático e sugestões quando está vazio |
+| **Definições** | origem do catálogo, chave de confiança, estado da verificação, URL configurável |
+
+O rodapé desaparece na página de uma app: essa página tem a sua própria ação
+principal e o seu próprio regresso. A barra de pesquisa dos separadores Apps e
+Jogos navega para o separador Procurar, em vez de haver dois filtros para a mesma
+coisa em sítios diferentes.
+
+## Design
+
+As decisões visuais estão em [DESIGN.md](DESIGN.md): paleta, escala de tipografia,
+escala de espaço, formas, e o que a app nunca faz. O código referencia essas
+constantes (`ui/theme`) em vez de inventar valores por composable. O ficheiro foi
+escrito a seguir a ler as regras do [Impeccable](https://impeccable.style/slop) e
+anota, em cada regra que nos toca, porque é que ela existe.
+
 ## Estrutura
 
 ```

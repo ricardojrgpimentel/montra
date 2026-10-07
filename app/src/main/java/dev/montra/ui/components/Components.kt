@@ -141,6 +141,8 @@ fun Badge(text: String, color: Color = MaterialTheme.colorScheme.primary) {
         text = text,
         style = MaterialTheme.typography.labelMedium,
         color = color,
+        maxLines = 1,
+        softWrap = false,
         modifier = Modifier
             .clip(RoundedCornerShape(Shapes.badge))
             .background(color.copy(alpha = 0.12f))

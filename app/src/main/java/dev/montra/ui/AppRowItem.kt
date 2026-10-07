@@ -82,12 +82,10 @@ fun AppRowItem(
                 Spacer(Modifier.height(Space.sm))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = buildString {
-                            append("v")
-                            append(row.app.release?.versionName ?: "?")
-                            append(" · ")
-                            append(formatBytes(row.size))
-                        },
+                        // A versão como o APK a declara. Prefixar "v" dava "vv2.7" em
+                        // quem já a publica com prefixo, e a loja não deve inventar
+                        // identificadores de versão.
+                        text = "${row.app.release?.versionName ?: "?"} · ${formatBytes(row.size)}",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -119,7 +117,7 @@ private fun statusBadge(row: AppRow): Pair<String, androidx.compose.ui.graphics.
     row.signatureConflict -> "assinatura diferente" to androidx.compose.ui.graphics.Color(0xFFBA1A1A)
     row.updateAvailable -> "atualizar" to androidx.compose.ui.graphics.Color(0xFF3B6470)
     row.isInstalled -> "instalada" to androidx.compose.ui.graphics.Color(0xFF2E6B4F)
-    row.app.playStore?.present == false -> "fora da Play Store" to androidx.compose.ui.graphics.Color(0xFF3B6470)
+    row.app.playStore?.present == false -> "fora da Play" to androidx.compose.ui.graphics.Color(0xFF3B6470)
     else -> null
 }
 

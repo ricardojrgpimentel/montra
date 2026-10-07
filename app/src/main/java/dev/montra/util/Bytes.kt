@@ -46,10 +46,22 @@ fun formatBytes(bytes: Long): String {
 }
 
 /**
- * Deterministic colour for apps that ship no icon, so a monogram still looks
- * like a real avatar and stays stable between launches.
+ * Colour for apps that ship no icon.
+ *
+ * Deterministic from the package name, but picked from a curated set rather than
+ * the whole colour wheel: a hash-derived hue produces the occasional purple avatar
+ * in an otherwise green interface, which reads as accidental. These eight are dark
+ * enough for white text in both themes.
  */
-fun monogramColor(seed: String): Int {
-    val hue = abs(seed.hashCode()) % 360
-    return android.graphics.Color.HSVToColor(floatArrayOf(hue.toFloat(), 0.45f, 0.72f))
-}
+private val MONOGRAM_COLORS = intArrayOf(
+    0xFF2E6B4F.toInt(), // verde Montra
+    0xFF3B6470.toInt(), // azul-petróleo
+    0xFF4E6355.toInt(), // verde-acinzentado
+    0xFF5A6B3B.toInt(), // oliva
+    0xFF6B4F3B.toInt(), // castanho
+    0xFF3F5566.toInt(), // azul-ardósia
+    0xFF6B3B4F.toInt(), // vinho
+    0xFF4A4A6B.toInt(), // índigo acinzentado
+)
+
+fun monogramColor(seed: String): Int = MONOGRAM_COLORS[abs(seed.hashCode()) % MONOGRAM_COLORS.size]
