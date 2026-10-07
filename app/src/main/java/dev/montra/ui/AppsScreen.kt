@@ -42,6 +42,7 @@ import dev.montra.ui.theme.Space
 fun AppsScreen(
     state: UiState,
     onCategory: (String?) -> Unit,
+    onRestrictedOnly: (Boolean) -> Unit,
     onSort: (SortOrder) -> Unit,
     onOpenSearch: () -> Unit,
     onOpen: (IndexApp) -> Unit,
@@ -49,9 +50,13 @@ fun AppsScreen(
     onAuthorize: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val filtered = remember(state.rows, state.category) {
-        state.category?.let { category -> state.rows.filter { it.app.categories.contains(category) } }
-            ?: state.rows
+    val filtered = remember(state.rows, state.category, state.restrictedOnly) {
+        val base = if (state.restrictedOnly) {
+            state.rows.filter { it.app.hasRestrictedLicense() }
+        } else {
+            state.rows
+        }
+        state.category?.let { category -> base.filter { it.app.categories.contains(category) } } ?: base
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -86,6 +91,16 @@ fun AppsScreen(
                     horizontalArrangement = Arrangement.spacedBy(Space.sm),
                 ) {
                     item { SortChip(state.sort, onSort) }
+                    // Só aparece se existirem: um filtro que não filtra nada é ruído.
+                    if (state.restrictedCount > 0 && !state.hideRestricted) {
+                        item {
+                            FilterChip(
+                                selected = state.restrictedOnly,
+                                onClick = { onRestrictedOnly(!state.restrictedOnly) },
+                                label = { Text("Licença restritiva") },
+                            )
+                        }
+                    }
                     item {
                         FilterChip(
                             selected = state.category == null,
@@ -179,6 +194,7 @@ private fun EmptyState(state: UiState) {
         Text(
             text = when {
                 state.index.error != null -> state.index.error
+                state.restrictedOnly -> "Nenhuma app com licença restritiva."
                 state.category != null -> "Nada nesta categoria."
                 else -> "O catálogo está vazio."
             },

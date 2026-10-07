@@ -259,6 +259,7 @@ fun MontraRoot(
                 AppsScreen(
                     state = state,
                     onCategory = viewModel::setCategory,
+                    onRestrictedOnly = viewModel::setRestrictedOnly,
                     onSort = viewModel::setSort,
                     onOpenSearch = { navController.navigate(Tab.SEARCH.route) },
                     onOpen = { app -> navController.navigate("detail/${app.id}") },
@@ -293,6 +294,7 @@ fun MontraRoot(
                     onRefresh = { viewModel.refresh(true) },
                     onSetIndexUrl = viewModel::setIndexUrl,
                     onAuthorize = authorize,
+                    onHideRestricted = viewModel::setHideRestricted,
                 )
             }
             composable("detail/{id}") { entry ->

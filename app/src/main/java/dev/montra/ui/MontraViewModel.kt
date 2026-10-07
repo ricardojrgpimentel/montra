@@ -65,6 +65,10 @@ data class UiState(
     val query: String = "",
     val category: String? = null,
     val sort: SortOrder = SortOrder.NAME,
+    /** Filtro do separador Apps: só as apps com licença restritiva. */
+    val restrictedOnly: Boolean = false,
+    val hideRestricted: Boolean = false,
+    val restrictedCount: Int = 0,
     val categories: List<String> = emptyList(),
     val canInstallPackages: Boolean = true,
     val installedCount: Int = 0,
@@ -83,6 +87,8 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
     private val query = MutableStateFlow("")
     private val category = MutableStateFlow<String?>(null)
     private val sort = MutableStateFlow(SortOrder.NAME)
+    private val restrictedOnly = MutableStateFlow(false)
+    private val hideRestricted = MutableStateFlow(false)
 
     init {
         viewModelScope.launch { container.indexRepository.load() }
@@ -97,6 +103,11 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch { query.collect { rebuild() } }
         viewModelScope.launch { category.collect { rebuild() } }
         viewModelScope.launch { sort.collect { rebuild() } }
+        viewModelScope.launch { restrictedOnly.collect { rebuild() } }
+        viewModelScope.launch {
+            hideRestricted.value = container.settings.currentHideRestricted()
+            rebuild()
+        }
 
         // Depois de o índice carregar, e não antes.
         //
@@ -142,6 +153,15 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
 
     fun setSort(value: SortOrder) {
         sort.value = value
+    }
+
+    fun setRestrictedOnly(value: Boolean) {
+        restrictedOnly.value = value
+    }
+
+    fun setHideRestricted(value: Boolean) {
+        hideRestricted.value = value
+        viewModelScope.launch { container.settings.setHideRestricted(value) }
     }
 
     fun refresh(force: Boolean = true) {
@@ -221,7 +241,12 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
         // `rows` é a lista completa: cada separador aplica o seu próprio filtro
         // (categorias, jogos, ou a pesquisa), em vez de o ViewModel adivinhar qual
         // o ecrã que está à frente.
-        val rows = index.apps
+        val visible = if (hideRestricted.value) {
+            index.apps.filterNot { it.hasRestrictedLicense() }
+        } else {
+            index.apps
+        }
+        val rows = visible
             .asSequence()
             .map { app ->
                 val asset = app.bestAssetFor(deviceAbis)
@@ -271,7 +296,10 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                 query = query.value,
                 category = selectedCategory,
                 sort = sort.value,
-                categories = index.apps.flatMap { app -> app.categories }.groupingBy { it }.eachCount()
+                restrictedOnly = restrictedOnly.value,
+                hideRestricted = hideRestricted.value,
+                restrictedCount = index.apps.count { it.hasRestrictedLicense() },
+                categories = visible.flatMap { app -> app.categories }.groupingBy { it }.eachCount()
                     .entries.sortedByDescending { e -> e.value }.map { e -> e.key },
                 canInstallPackages = container.installManager.canRequestInstall(),
                 installedCount = installedNow.size,

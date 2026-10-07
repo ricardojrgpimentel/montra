@@ -16,6 +16,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.montra.BuildConfig
@@ -39,6 +41,7 @@ fun SettingsScreen(
     onRefresh: () -> Unit,
     onSetIndexUrl: (String) -> Unit,
     onAuthorize: () -> Unit,
+    onHideRestricted: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -117,6 +120,31 @@ fun SettingsScreen(
                 if (!state.canInstallPackages) {
                     Spacer(Modifier.height(8.dp))
                     OutlinedButton(onClick = onAuthorize) { Text("Abrir permissões") }
+                }
+            }
+        }
+
+        SectionTitle("Licenças")
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+            Column(Modifier.padding(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Esconder apps com licença restritiva",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            text = "${state.restrictedCount} no catálogo. Código público, mas com " +
+                                "limitações de uso — nunca são apresentadas como software livre.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = state.hideRestricted, onCheckedChange = onHideRestricted)
                 }
             }
         }
