@@ -138,11 +138,10 @@ fun MontraRoot(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val route = backStackEntry?.destination?.route ?: Tab.APPS.route
     val isDetail = route.startsWith("detail")
-    val detailedApp = if (isDetail) {
-        state.rows.firstOrNull { it.app.id == route.substringAfter("detail/") }
-    } else {
-        null
-    }
+    // O route é o *padrão* ("detail/{id}"), não o caminho resolvido: o id tem de vir
+    // dos argumentos do back stack, senão o título cai sempre no fallback.
+    val detailedAppId = backStackEntry?.arguments?.getString("id")
+    val detailedApp = detailedAppId?.let { id -> state.rows.firstOrNull { it.app.id == id } }
 
     // Deep link from a download notification; waits for the catalogue if it is loading.
     LaunchedEffect(requestedAppId, state.rows.size) {
