@@ -42,7 +42,7 @@ import dev.montra.ui.theme.Space
 fun AppsScreen(
     state: UiState,
     onCategory: (String?) -> Unit,
-    onRestrictedOnly: (Boolean) -> Unit,
+    onFilter: (AppFilter?) -> Unit,
     onSort: (SortOrder) -> Unit,
     onOpenSearch: () -> Unit,
     onOpen: (IndexApp) -> Unit,
@@ -50,11 +50,12 @@ fun AppsScreen(
     onAuthorize: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val filtered = remember(state.rows, state.category, state.restrictedOnly) {
-        val base = if (state.restrictedOnly) {
-            state.rows.filter { it.app.hasRestrictedLicense() }
-        } else {
-            state.rows
+    val filtered = remember(state.rows, state.category, state.filter) {
+        var base = state.rows
+        when (state.filter) {
+            AppFilter.OFF_PLAY -> base = base.filter { it.app.playStore?.present == false }
+            AppFilter.RESTRICTED -> base = base.filter { it.app.hasRestrictedLicense() }
+            null -> Unit
         }
         state.category?.let { category -> base.filter { it.app.categories.contains(category) } } ?: base
     }
@@ -91,16 +92,19 @@ fun AppsScreen(
                     horizontalArrangement = Arrangement.spacedBy(Space.sm),
                 ) {
                     item { SortChip(state.sort, onSort) }
-                    // Só aparece se existirem: um filtro que não filtra nada é ruído.
-                    if (state.restrictedCount > 0 && !state.hideRestricted) {
-                        item {
-                            FilterChip(
-                                selected = state.restrictedOnly,
-                                onClick = { onRestrictedOnly(!state.restrictedOnly) },
-                                label = { Text("Licença restritiva") },
-                            )
+                    // Só aparecem os filtros que apanhariam alguma coisa: um filtro
+                    // que não filtra nada é ruído.
+                    AppFilter.entries
+                        .filter { (state.filterCounts[it] ?: 0) > 0 }
+                        .forEach { entry ->
+                            item {
+                                FilterChip(
+                                    selected = state.filter == entry,
+                                    onClick = { onFilter(entry) },
+                                    label = { Text(entry.label) },
+                                )
+                            }
                         }
-                    }
                     item {
                         FilterChip(
                             selected = state.category == null,
@@ -194,7 +198,7 @@ private fun EmptyState(state: UiState) {
         Text(
             text = when {
                 state.index.error != null -> state.index.error
-                state.restrictedOnly -> "Nenhuma app com licença restritiva."
+                state.filter != null -> "Nada corresponde a este filtro."
                 state.category != null -> "Nada nesta categoria."
                 else -> "O catálogo está vazio."
             },

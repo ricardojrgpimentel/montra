@@ -29,6 +29,8 @@ data class IndexApp(
     val licenseNote: Map<String, String> = emptyMap(),
     val sourceCode: String,
     val author: String? = null,
+    /** Parentesco declarado pelo projeto de origem. Nunca um palpite. */
+    val forkOf: ForkOf? = null,
     val categories: List<String> = emptyList(),
     val tags: List<String> = emptyList(),
     val status: String = "active",
@@ -91,6 +93,17 @@ data class IndexApp(
         }
         return assets.firstOrNull { it.abi == "universal" }
     }
+}
+
+@Serializable
+data class ForkOf(
+    val name: String,
+    val repo: String? = null,
+    /** id no catálogo, quando o original também está indexado: permite abrir a ficha dele. */
+    val appId: String? = null,
+    val note: String? = null,
+) {
+    val url: String? get() = repo?.let { "https://github.com/$it" }
 }
 
 @Serializable

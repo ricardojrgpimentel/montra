@@ -26,6 +26,19 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/**
+ * Filtros do separador Apps.
+ *
+ * O critério para um filtro existir: responde a uma pergunta que alguém faz. "Fora
+ * da Play Store" responde (é a razão de ser desta loja). "Só forks" não responde a
+ * nada — ninguém escolhe uma app por ser fork; escolhe-a por substituir outra, e
+ * isso é o que a linha "Baseado em" mostra na ficha.
+ */
+enum class AppFilter(val label: String) {
+    OFF_PLAY("Fora da Play Store"),
+    RESTRICTED("Licença restritiva"),
+}
+
 enum class SortOrder(val label: String) {
     NAME("Nome"),
     RECENT("Atualizadas"),
@@ -65,8 +78,9 @@ data class UiState(
     val query: String = "",
     val category: String? = null,
     val sort: SortOrder = SortOrder.NAME,
-    /** Filtro do separador Apps: só as apps com licença restritiva. */
-    val restrictedOnly: Boolean = false,
+    val filter: AppFilter? = null,
+    /** Quantas apps cada filtro apanharia: um filtro sem resultados não se mostra. */
+    val filterCounts: Map<AppFilter, Int> = emptyMap(),
     val hideRestricted: Boolean = false,
     val restrictedCount: Int = 0,
     val categories: List<String> = emptyList(),
@@ -87,7 +101,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
     private val query = MutableStateFlow("")
     private val category = MutableStateFlow<String?>(null)
     private val sort = MutableStateFlow(SortOrder.NAME)
-    private val restrictedOnly = MutableStateFlow(false)
+    private val filter = MutableStateFlow<AppFilter?>(null)
     private val hideRestricted = MutableStateFlow(false)
 
     init {
@@ -103,7 +117,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch { query.collect { rebuild() } }
         viewModelScope.launch { category.collect { rebuild() } }
         viewModelScope.launch { sort.collect { rebuild() } }
-        viewModelScope.launch { restrictedOnly.collect { rebuild() } }
+        viewModelScope.launch { filter.collect { rebuild() } }
         viewModelScope.launch {
             hideRestricted.value = container.settings.currentHideRestricted()
             rebuild()
@@ -155,8 +169,8 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
         sort.value = value
     }
 
-    fun setRestrictedOnly(value: Boolean) {
-        restrictedOnly.value = value
+    fun setFilter(value: AppFilter?) {
+        filter.value = if (filter.value == value) null else value
     }
 
     fun setHideRestricted(value: Boolean) {
@@ -296,7 +310,11 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                 query = query.value,
                 category = selectedCategory,
                 sort = sort.value,
-                restrictedOnly = restrictedOnly.value,
+                filter = filter.value,
+                filterCounts = mapOf(
+                    AppFilter.OFF_PLAY to visible.count { it.playStore?.present == false },
+                    AppFilter.RESTRICTED to visible.count { it.hasRestrictedLicense() },
+                ),
                 hideRestricted = hideRestricted.value,
                 restrictedCount = index.apps.count { it.hasRestrictedLicense() },
                 categories = visible.flatMap { app -> app.categories }.groupingBy { it }.eachCount()

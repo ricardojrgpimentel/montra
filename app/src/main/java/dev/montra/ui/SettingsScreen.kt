@@ -138,7 +138,7 @@ fun SettingsScreen(
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         Text(
-                            text = "${state.restrictedCount} no catálogo. Código público, mas com " +
+                            text = "${state.filterCounts[AppFilter.RESTRICTED] ?: 0} no catálogo. Código público, mas com " +
                                 "limitações de uso — nunca são apresentadas como software livre.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,

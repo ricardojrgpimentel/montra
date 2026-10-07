@@ -55,6 +55,7 @@ fun AppDetailScreen(
     onClearError: (String) -> Unit,
     onAuthorize: () -> Unit,
     onOpenSource: (String) -> Unit,
+    onOpenApp: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -100,6 +101,38 @@ fun AppDetailScreen(
                 if (app.status != "active") {
                     Badge(statusLabel(app.status), MaterialTheme.colorScheme.tertiary)
                 }
+            }
+        }
+
+        // Parentesco é contexto para decidir: "isto é o NewPipe com mais coisas" muda
+        // a escolha. Quando o original está no catálogo, a linha leva lá — que é como
+        // alguém compara os dois sem sair da loja.
+        app.forkOf?.let { fork ->
+            Spacer(Modifier.height(Space.md))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Baseado em ${fork.name}",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    fork.note?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                TextButton(
+                    onClick = {
+                        if (fork.appId != null) onOpenApp(fork.appId) else fork.url?.let(onOpenSource)
+                    },
+                    enabled = fork.appId != null || fork.url != null,
+                ) { Text(if (fork.appId != null) "Ver o original" else "Repositório") }
             }
         }
 

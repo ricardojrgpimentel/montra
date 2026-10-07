@@ -259,7 +259,7 @@ fun MontraRoot(
                 AppsScreen(
                     state = state,
                     onCategory = viewModel::setCategory,
-                    onRestrictedOnly = viewModel::setRestrictedOnly,
+                    onFilter = viewModel::setFilter,
                     onSort = viewModel::setSort,
                     onOpenSearch = { navController.navigate(Tab.SEARCH.route) },
                     onOpen = { app -> navController.navigate("detail/${app.id}") },
@@ -313,6 +313,7 @@ fun MontraRoot(
                         onClearError = viewModel::clearInstallError,
                         onAuthorize = authorize,
                         onOpenSource = { url -> openUrl(context, url) },
+                        onOpenApp = { otherId -> navController.navigate("detail/$otherId") },
                     )
                 }
             }
