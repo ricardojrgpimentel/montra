@@ -59,6 +59,13 @@ desenhado sobre `tertiaryContainer` e saía cor de vinho por essa razão exacta.
 verde é a Montra, não o papel de parede de quem instalou. É uma decisão, não um
 esquecimento.
 
+**Claro, escuro ou o que o sistema estiver a usar — à escolha.** Isto não contradiz o
+parágrafo anterior: uma coisa é a *paleta* (que é nossa), outra é a *luz da sala*
+(que é de quem segura no telemóvel). A paleta é a mesma nos dois modos e a escolha
+fica guardada. Consequência prática: como a escolha pode divergir do sistema, os
+ícones da barra de estado não podem continuar a ser decididos pelo sistema — quem
+manda neles é o tema em uso, senão ficam ícones claros sobre um fundo claro.
+
 ## Tipografia
 
 Uma família (a do sistema, Roboto), variando tamanho, peso e espaço. *Evitar: uma

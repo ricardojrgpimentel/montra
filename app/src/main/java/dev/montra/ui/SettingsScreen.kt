@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import dev.montra.BuildConfig
 import dev.montra.data.AutoRefresh
 import dev.montra.data.IndexOrigin
+import dev.montra.data.ThemeMode
 import dev.montra.install.InstallManager
 import dev.montra.ui.components.Block
 import dev.montra.ui.components.KeyValue
@@ -43,11 +44,13 @@ import dev.montra.util.verifiedLabel
 @Composable
 fun SettingsScreen(
     state: UiState,
+    themeMode: ThemeMode,
     onRefresh: () -> Unit,
     onSetIndexUrl: (String) -> Unit,
     onAuthorize: () -> Unit,
     onHideRestricted: (Boolean) -> Unit,
     onAutoRefresh: (AutoRefresh) -> Unit,
+    onThemeMode: (ThemeMode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -60,6 +63,28 @@ fun SettingsScreen(
             .verticalScroll(rememberScrollState()),
     ) {
         Column(modifier = Modifier.padding(horizontal = Space.lg)) {
+            SectionTitle("Aspeto", divider = false)
+            Text(
+                text = "A paleta é sempre a da Montra — o que se escolhe aqui é só se ela " +
+                    "aparece clara ou escura. «Sistema» segue o que o telemóvel estiver a usar.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(Space.sm))
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.sm),
+                verticalArrangement = Arrangement.spacedBy(Space.xs),
+            ) {
+                ThemeMode.entries.forEach { option ->
+                    FilterChip(
+                        selected = themeMode == option,
+                        onClick = { onThemeMode(option) },
+                        label = { Text(option.label) },
+                    )
+                }
+            }
+
             SectionTitle("Catálogo")
             Block {
                 KeyValue("origem", originLabel(state.index.origin))

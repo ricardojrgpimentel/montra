@@ -38,6 +38,32 @@ enum class AutoRefresh(val minutes: Int, val label: String) {
 }
 
 /**
+ * Claro, escuro, ou o que o sistema estiver a usar.
+ *
+ * Isto não é cor dinâmica. A Montra continua a recusar o Material You — a paleta é
+ * dela e não do papel de parede. Claro e escuro são outra coisa: é a luz da sala
+ * onde o telemóvel está, e sobre isso quem manda é quem está a segurar nele.
+ */
+enum class ThemeMode(val label: String) {
+    SYSTEM("Sistema"),
+    LIGHT("Claro"),
+    DARK("Escuro"),
+    ;
+
+    /** Traduz a escolha num "usar o tema escuro?", dado o que o sistema diz. */
+    fun isDark(systemDark: Boolean): Boolean = when (this) {
+        SYSTEM -> systemDark
+        LIGHT -> false
+        DARK -> true
+    }
+
+    companion object {
+        val DEFAULT = SYSTEM
+        fun of(name: String?): ThemeMode = entries.firstOrNull { it.name == name } ?: DEFAULT
+    }
+}
+
+/**
  * Everything the user can change. Note what is *not* here: the trusted public key
  * and the expected key id. Those are baked into the APK and never read from
  * storage, so no app-level setting can be used to bypass index verification.
@@ -48,6 +74,7 @@ class Settings(private val context: Context) {
     private val etagKey = stringPreferencesKey("index_etag")
     private val hideRestrictedKey = booleanPreferencesKey("hide_restricted")
     private val autoRefreshKey = intPreferencesKey("auto_refresh_minutes")
+    private val themeModeKey = stringPreferencesKey("theme_mode")
     private val lastCheckedKey = longPreferencesKey("last_checked_at")
 
     val indexUrl: Flow<String> = context.dataStore.data.map { it[indexUrlKey] ?: BuildConfig.DEFAULT_INDEX_URL }
@@ -81,6 +108,16 @@ class Settings(private val context: Context) {
 
     suspend fun setAutoRefresh(value: AutoRefresh) {
         context.dataStore.edit { prefs -> prefs[autoRefreshKey] = value.minutes }
+    }
+
+    val themeMode: Flow<ThemeMode> = context.dataStore.data.map { prefs ->
+        ThemeMode.of(prefs[themeModeKey])
+    }
+
+    suspend fun currentThemeMode(): ThemeMode = themeMode.first()
+
+    suspend fun setThemeMode(value: ThemeMode) {
+        context.dataStore.edit { prefs -> prefs[themeModeKey] = value.name }
     }
 
     /**

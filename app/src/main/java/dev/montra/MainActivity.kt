@@ -59,6 +59,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.foundation.isSystemInDarkTheme
+import dev.montra.data.ThemeMode
 import dev.montra.data.model.IndexApp
 import dev.montra.install.InstallManager
 import dev.montra.install.InstallRequest
@@ -86,9 +88,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         pendingAppId.value = intent?.getStringExtra(InstallRequest.EXTRA_APP_ID)
         setContent {
-            MontraTheme {
+            val themeMode by viewModel.themeMode.collectAsState()
+            MontraTheme(darkTheme = themeMode.isDark(isSystemInDarkTheme())) {
                 MontraRoot(
                     viewModel = viewModel,
+                    themeMode = themeMode,
                     pendingAppId = pendingAppId,
                     onAppIdConsumed = { pendingAppId.value = null },
                 )
@@ -142,6 +146,7 @@ private enum class Tab(
 @Composable
 fun MontraRoot(
     viewModel: MontraViewModel,
+    themeMode: ThemeMode = ThemeMode.DEFAULT,
     pendingAppId: StateFlow<String?> = MutableStateFlow(null),
     onAppIdConsumed: () -> Unit = {},
 ) {
@@ -318,11 +323,13 @@ fun MontraRoot(
             composable(Tab.SETTINGS.route) {
                 SettingsScreen(
                     state = state,
+                    themeMode = themeMode,
                     onRefresh = { viewModel.refresh(true) },
                     onSetIndexUrl = viewModel::setIndexUrl,
                     onAuthorize = authorize,
                     onHideRestricted = viewModel::setHideRestricted,
                     onAutoRefresh = viewModel::setAutoRefresh,
+                    onThemeMode = viewModel::setThemeMode,
                 )
             }
             composable(

@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import dev.montra.MontraApp
 import dev.montra.data.AutoRefresh
 import dev.montra.data.IndexState
+import dev.montra.data.ThemeMode
 import dev.montra.data.model.Asset
 import dev.montra.data.model.IndexApp
 import dev.montra.data.model.isGamesOrEmulators
@@ -103,6 +104,13 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
     private val _ui = MutableStateFlow(UiState())
     val ui: StateFlow<UiState> = _ui.asStateFlow()
 
+    /**
+     * O tema vive fora do [UiState] porque quem o lê é a raiz da composição, que
+     * envolve tudo o resto — o [UiState] só existe lá dentro.
+     */
+    private val _themeMode = MutableStateFlow(ThemeMode.DEFAULT)
+    val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
+
     private val installed = MutableStateFlow<Map<String, InstalledInfo>>(emptyMap())
     private val query = MutableStateFlow("")
     private val category = MutableStateFlow<String?>(null)
@@ -139,6 +147,10 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
             // arranque seguinte.
             container.settings.autoRefresh.collect { autoRefresh.value = it }
         }
+        viewModelScope.launch {
+            container.settings.themeMode.collect { _themeMode.value = it }
+        }
+
         // Depois de o índice carregar, e não antes.
         //
         // refreshInstalled() precisa da lista de apps para poder perguntar ao
@@ -200,6 +212,12 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
         // Escolher uma cadência e não ver nada acontecer é o mesmo que não a ter:
         // se já passou tempo suficiente para a nova cadência, verifica já.
         maybeAutoRefresh()
+    }
+
+    /** Aplicado no instante: a escolha muda a app inteira, não uma pré-visualização. */
+    fun setThemeMode(value: ThemeMode) {
+        _themeMode.value = value
+        viewModelScope.launch { container.settings.setThemeMode(value) }
     }
 
     /** Puxar para atualizar: ignora o ETag, porque quem puxa quer mesmo perguntar. */

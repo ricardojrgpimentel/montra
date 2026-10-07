@@ -1,5 +1,8 @@
 package dev.montra.ui.theme
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -8,12 +11,15 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
 
 /**
  * One palette, deliberate, documented in DESIGN.md.
@@ -168,9 +174,34 @@ fun MontraTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
+    // A escolha claro/escuro é da app, mas os ícones da barra de estado são do
+    // sistema — e o `enableEdgeToEdge` decide-os pelo modo do sistema. Se alguém
+    // escolher "Claro" com o telemóvel em escuro, ficavam ícones claros sobre um
+    // fundo claro. Aqui o tema manda também nas barras.
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = view.context.findActivity()?.window ?: return@SideEffect
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = !darkTheme
+                isAppearanceLightNavigationBars = !darkTheme
+            }
+        }
+    }
+
     MaterialTheme(
         colorScheme = if (darkTheme) DarkScheme else LightScheme,
         typography = MontraTypography,
         content = content,
     )
+}
+
+/**
+ * O `LocalView` está dentro de um `ContextWrapper` na maior parte dos casos, por isso
+ * a Activity tem de ser desembrulhada em vez de assumida.
+ */
+private fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }
