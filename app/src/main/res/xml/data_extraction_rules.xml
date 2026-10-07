@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Nada é copiado nem transferido entre dispositivos.
+  A Montra não tem conta nem dados do utilizador: tem um catálogo verificado em
+  cache e um APK por instalar. Nenhum dos dois vale uma cópia de segurança, e o
+  allowBackup=false sozinho é ignorado a partir do Android 12.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>

@@ -1,13 +1,17 @@
 package dev.montra.install
 
+import android.Manifest
+import android.app.Notification
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import dev.montra.R
 import dev.montra.util.Log
 import kotlinx.coroutines.CoroutineScope
@@ -104,11 +108,24 @@ class InstallService : Service() {
             is InstallState.Failed -> InstallNotifications.failed(this, request, state.reason)
             InstallState.Idle -> return
         }
-        // A denied POST_NOTIFICATIONS permission must not crash the download: the
-        // app's own screen still shows progress, so this is best-effort.
-        runCatching {
-            NotificationManagerCompat.from(this).notify(InstallNotifications.NOTIFICATION_ID, notification)
+        post(notification)
+    }
+
+    /**
+     * A user who denied notifications must not lose the download: the app's own
+     * screen shows the same progress. So this is a checked, best-effort post — and
+     * it says so in the log rather than failing silently.
+     */
+    private fun post(notification: Notification) {
+        val allowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        val manager = NotificationManagerCompat.from(this)
+        if (!allowed || !manager.areNotificationsEnabled()) {
+            Log.d("notificações não autorizadas: o progresso continua visível no ecrã da app")
+            return
         }
+        runCatching { manager.notify(InstallNotifications.NOTIFICATION_ID, notification) }
     }
 
     private fun finish(request: InstallRequest) {
@@ -130,9 +147,7 @@ class InstallService : Service() {
                 getString(R.string.notification_cancelled),
             )
         }
-        runCatching {
-            NotificationManagerCompat.from(this).notify(InstallNotifications.NOTIFICATION_ID, final)
-        }
+        post(final)
         // Detach: the final notification stays in the shade, the service does not.
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_DETACH)
         current = null
@@ -146,7 +161,7 @@ class InstallService : Service() {
         if (request != null) {
             InstallManager.of(this).setState(request.appId, InstallState.Idle)
             InstallManager.of(this).cancelDownload()
-            NotificationManagerCompat.from(this).cancel(InstallNotifications.NOTIFICATION_ID)
+            runCatching { NotificationManagerCompat.from(this).cancel(InstallNotifications.NOTIFICATION_ID) }
         }
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -163,11 +178,7 @@ class InstallService : Service() {
         /** Starts (or restarts) the pipeline for [request] in the foreground. */
         fun start(context: Context, request: InstallRequest) {
             val intent = request.putInto(Intent(context, InstallService::class.java))
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
-            }
+            context.startForegroundService(intent)
         }
 
         fun cancel(context: Context, appId: String) {
