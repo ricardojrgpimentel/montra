@@ -23,6 +23,11 @@ regras que mais nos dizem respeito estão anotadas abaixo como **evitar**.
 5. **Texto a tamanho de ser lido.** Metadados a 12sp, corpo a 14sp. Nunca abaixo de
    11sp, e nunca texto de controlo abaixo de 12sp. *Evitar: texto de interface
    minúsculo.*
+6. **A identidade vive numa superfície que tem um trabalho.** A Montra tem uma cor e
+   uma faixa próprias, e ambas dizem alguma coisa que ninguém diria por ela: qual é o
+   estado do catálogo. Uma app sem nenhum elemento próprio é uma app que ninguém
+   reconhece; um elemento próprio sem função é decoração, e a decoração é o que este
+   documento existe para recusar.
 
 ## Paleta
 
@@ -35,9 +40,20 @@ bege por omissão.*
 | Primária (ação) | `#2E6B4F` | `#99D5B2` |
 | Sobre primária | `#FFFFFF` | `#003920` |
 | Contentor primário | `#B4F1CE` | `#12512F` |
+| Acento (atenção) | `#8A5A00` | `#E8B06A` |
+| Contentor do acento | `#FFDEA6` | `#4A3208` |
 | Superfície | `#FBFDF8` | `#101410` |
-| Superfície (linha de lista) | `#F1F5EF` | `#1A201A` |
+| Superfície (linha de lista) | `#F4F8F2` | `#181D18` |
 | Erro | `#BA1A1A` | `#FFB4AB` |
+
+Duas cores com significado, e só duas: **verde é ação** (instalar, abrir, o que está
+selecionado) e **âmbar é atenção** (uma licença que limita, uma atualização à espera,
+uma verificação em curso). Nenhuma das duas é decoração, e nenhuma aparece só para
+equilibrar um ecrã.
+
+**Todos os papéis que o Material lê estão escritos.** Omitir um não o deixa neutro:
+cai no padrão do Material, que é rosa-púrpura. O aviso de licença restritiva era
+desenhado sobre `tertiaryContainer` e saía cor de vinho por essa razão exacta.
 
 **Não usamos cor dinâmica do sistema (Material You).** Uma loja tem identidade: o
 verde é a Montra, não o papel de parede de quem instalou. É uma decisão, não um
@@ -57,6 +73,10 @@ caixa acima do título.*
 | Metadados (versão, tamanho) | `labelMedium` | 12sp |
 | Distintivos | `labelMedium` | 12sp |
 | Hash e certificado | `bodySmall` monoespaçado | 12sp |
+
+Um título de secção é cinzento, excepto quando a secção pede uma decisão — **só
+"Atualizações disponíveis" é âmbar**. Se todas as secções fossem coloridas, a cor
+deixava de dizer o que quer que fosse.
 
 Regra de espaço dos títulos: **mais espaço acima do que abaixo**. Um título
 pertence ao que vem a seguir, não ao que veio antes.
@@ -78,6 +98,12 @@ Escala de 4: `4 · 8 · 12 · 16 · 24 · 32`. Não se inventam valores.
 - Ícones de app: `28%` (o mesmo raio relativo em qualquer tamanho).
 - Distintivos: `8dp`.
 - Botões: `pill` (predefinição do Material 3).
+- Folhas de baixo: `24dp` no topo.
+
+Separadores de secção: **uma linha de 1dp** em `outlineVariant`, acima do título. É a
+única linha horizontal do ecrã e existe para duas secções não dependerem só do espaço
+— que é o que acontece quando a lista é longa e o título já saiu do ecrã. A primeira
+secção não leva linha: não há nada acima dela de que se separe.
 
 *Evitar: raios exagerados que espremem o conteúdo, e a combinação de contorno fino
 com sombra larga — escolhe-se a borda **ou** a sombra. Aqui: sem sombra, a
@@ -86,9 +112,96 @@ superfície define a linha.*
 ## Ícones de app
 
 Ícones verdadeiros vêm do índice, re-alojados, e são servidos pelo mesmo host do
-catálogo. Quando uma app não tem ícone (a Molly, o Cromite, o ReVanced Manager e o
-Syncthing-Fork, por exemplo, só publicam vetores), desenha-se um **monograma de cor
+catálogo.
+
+Quando uma app não tem ícone — a Molly, o Cromite, o ReVanced Manager e o
+Syncthing-Fork, por exemplo, só publicam vetores — desenha-se um **monograma de cor
 plana** derivada do nome do pacote. Sem gradientes.
+
+O monograma **preenche a caixa do ícone**: a letra ocupa cerca de 42% do lado, como
+a arte de um ícone adaptativo dentro da sua margem. Isto já esteve errado — a caixa
+encolhia até ao tamanho da letra, e um monograma saía como um selo de 20dp ao lado
+de ícones de 52dp. Era a razão principal pela qual as apps sem logotipo pareciam
+avariadas, e é uma regra, não um detalhe de implementação.
+
+As cores dos monogramas são as oito da paleta: verde, azul-petróleo, verde-acinzentado,
+oliva, castanho, azul-ardósia, âmbar escuro e verde-musgo. **Nada de roxo**: um
+monograma é um espaço reservado, não uma licença para sair da paleta.
+
+## A faixa da montra
+
+Debaixo do título, uma faixa de uma linha diz o que o catálogo tem e quando foi
+confirmado pela última vez:
+
+    2 atualizações · 42 apps · 4 instaladas        verificado há 4 minutos
+
+É a única superfície que usa a cor da casa em vez de um cinzento, e é a assinatura
+da app. A cor tem um trabalho: **enquanto a faixa estiver verde o catálogo está
+confirmado; passa a vermelho quando a última tentativa falhou**, com o motivo e um
+"Tentar de novo" no mesmo sítio onde estava a mentira. O âmbar aparece na contagem
+de atualizações, que é a única parte da linha que pede uma decisão.
+
+Enquanto se verifica, o lado direito passa a "a verificar…" com um indicador; quando
+termina, diz o resultado durante uns segundos ("catálogo atualizado", "já estava
+atualizado") e volta a "verificado há X". Nunca há um estado invisível: foi
+exactamente por isso que esta faixa existe — antes havia um ícone de refresh no canto
+do ecrã, sem spinner, sem data e sem erro.
+
+Quando a lista rola, **a faixa recolhe**: perde a cor e passa a cinzenta. Em cima é a
+assinatura do catálogo; a partir do primeiro scroll é só mais uma barra a competir
+com o conteúdo.
+
+## Filtros: dois controlos, três respostas
+
+A primeira versão punha quatro coisas diferentes no mesmo fato — a ordenação (que é
+um menu), dois filtros do catálogo e dezoito categorias — todas com o mesmo chip. Não
+havia hierarquia, e a única forma de saber o que estava escolhido era olhar para a cor
+de um chip que já tinha saído do ecrã, porque a fila fazia scroll na horizontal.
+
+Um controlo só pode ser uma de duas coisas:
+
+- **Ordenar é um menu.** Texto simples com uma seta, sem moldura. Não guarda estado:
+  muda a ordem e sai de cena.
+- **Filtrar é um estado.** Ganha moldura quando está vazio e preenchimento quando tem
+  algo ligado, e diz quantos filtros estão ativos ("Filtrar · 2").
+
+E há uma terceira resposta, que era a que faltava: **os filtros ativos ficam à vista
+como peças removíveis, fora da lista**. Não desaparecem com o scroll porque não vivem
+dentro dele. Quem chega a meio de uma lista filtrada vê sempre o que a está a filtrar,
+e tira o filtro sem ter de procurar onde é que ele se esconde.
+
+Regra: um filtro só aparece se apanhar alguma coisa. As contagens vivem ao lado de
+cada opção, na folha, para não ser preciso carregar para descobrir que não há nada.
+
+## Verificação do catálogo
+
+O catálogo é um ficheiro num repositório: **não há servidor para avisar que saiu uma
+versão nova**. Há três formas de perguntar, e todas usam o ETag — quando nada mudou,
+a resposta são uns bytes:
+
+1. **Puxar a lista** (`pull to refresh`) nos separadores Apps, Jogos e Procura.
+2. **Ao abrir a app**, se já passou o intervalo escolhido. A cadência mede o intervalo
+   *mínimo* entre verificações, não uma espera obrigatória.
+3. **Um temporizador** enquanto a app está à frente, com a cadência das definições
+   (desligado, 15 minutos, 1 hora, 3 horas, um dia). Fora de primeiro plano não se
+   verifica nada.
+
+A verificação explícita continua nas definições, junto da origem, da data e da chave
+de confiança. O que não existe é um ícone de refresh solto numa barra de topo.
+
+## Movimento
+
+O movimento explica uma mudança; não chama atenção. Quatro regras:
+
+- As linhas da lista **animam para o lugar** quando um filtro ou a ordenação mudam:
+  é isso que torna visível o que a lista fez.
+- Trocar de separador é uma dissolvida curta; **abrir uma app desliza**, porque é uma
+  ida a algum lado e não uma substituição.
+- A faixa recolhe com uma transição de cor, não com um salto.
+- Um progresso mexe-se porque há progresso. Nada pulsa.
+
+Durações: 120 ms para o que só confirma (fade de saída), 240 ms para o que explica,
+400 ms no máximo. Curva `FastOutSlowInEasing`. Sem `bounce` e sem `spring` à vista.
 
 ## Um filtro tem de responder a uma pergunta
 
@@ -120,6 +233,9 @@ Nunca um ecrã vazio sem explicação. Cada lista sem resultados diz porque est�
 vazia e, quando faz sentido, o que fazer a seguir — por exemplo, o separador de
 jogos explica que o catálogo aceita contribuições por pull request.
 
+E nunca um beco: um ecrã vazio por causa de um filtro tem um botão que o tira, e um
+ecrã vazio por causa de uma falha de rede tem um botão que tenta outra vez.
+
 ## O que a app nunca faz
 
 - Instalar ou atualizar sem mostrar o diálogo do sistema.
@@ -130,3 +246,7 @@ jogos explica que o catálogo aceita contribuições por pull request.
   instalar, num tom que não é de erro (não é um erro, é uma condição), e a etiqueta
   da lista tem prioridade sobre "fora da Play".
 - Pedir permissões sem explicar para que servem, no momento em que servem.
+- Verificar o catálogo sem o dizer. Uma verificação em curso, o resultado da última e
+  a data da última confirmada estão sempre na faixa — nunca um ícone que não se sabe
+  se está a fazer alguma coisa.
+- Deixar o teclado tapar a barra de navegação: com o IME à frente, o rodapé sai.

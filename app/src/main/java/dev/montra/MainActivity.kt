@@ -13,13 +13,19 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsEsports
@@ -63,6 +69,7 @@ import dev.montra.ui.MontraViewModel
 import dev.montra.ui.SearchScreen
 import dev.montra.ui.SettingsScreen
 import dev.montra.ui.theme.MontraTheme
+import dev.montra.ui.theme.Motion
 import dev.montra.ui.theme.Space
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -103,6 +110,13 @@ class MainActivity : ComponentActivity() {
         // change while we are away — we send the user to Settings for exactly that.
         viewModel.onResume()
     }
+
+    override fun onPause() {
+        super.onPause()
+        // A verificação automática só corre com a app à frente: uma loja não anda a
+        // bater no GitHub em segundo plano.
+        viewModel.onPause()
+    }
 }
 
 /**
@@ -124,7 +138,7 @@ private enum class Tab(
     SETTINGS("settings", "Definições", Icons.Outlined.Settings, Icons.Filled.Settings),
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun MontraRoot(
     viewModel: MontraViewModel,
@@ -156,6 +170,11 @@ fun MontraRoot(
         runCatching { context.startActivity(InstallManager.of(context).unknownSourcesSettingsIntent()) }
         Unit
     }
+
+    // Com o teclado aberto, a barra de navegação ficava debaixo dele: uma barra que
+    // se vê a fingir que está lá e que não se pode carregar. Sai de cena enquanto o
+    // teclado estiver à frente, como faz a loja de onde isto veio.
+    val keyboardUp = WindowInsets.isImeVisible
 
     // Asked when it becomes useful: the notification is how progress stays visible
     // after leaving the app. Denying it does not block the install.
@@ -208,11 +227,10 @@ fun MontraRoot(
                         }
                     },
                     actions = {
-                        if (route == Tab.APPS.route) {
-                            IconButton(onClick = { viewModel.refresh(true) }) {
-                                Icon(Icons.Filled.Refresh, contentDescription = "Atualizar catálogo")
-                            }
-                        }
+                        // Nada aqui de propósito. O refresh deixou de ser um ícone
+                        // órfão no canto: puxa-se a lista, e o estado dele vive na
+                        // faixa do catálogo, onde se vê se está a acontecer alguma
+                        // coisa. A opção explícita ficou nas definições.
                     },
                 )
             }
@@ -220,7 +238,7 @@ fun MontraRoot(
         bottomBar = {
             // Play hides the footer on an app page, and so do we: the page has its own
             // primary action and its own way back.
-            if (!isDetail) {
+            if (!isDetail && !keyboardUp) {
                 NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     Tab.entries.forEach { tab ->
                         val selected = route == tab.route
@@ -254,6 +272,12 @@ fun MontraRoot(
             navController = navController,
             startDestination = Tab.APPS.route,
             modifier = Modifier.padding(padding),
+            // Trocar de separador é uma substituição, não uma ida a algum lado: uma
+            // dissolvida curta. Abrir uma app é uma ida, e essa desliza.
+            enterTransition = { fadeIn(Motion.standard()) },
+            exitTransition = { fadeOut(Motion.quick()) },
+            popEnterTransition = { fadeIn(Motion.standard()) },
+            popExitTransition = { fadeOut(Motion.quick()) },
         ) {
             composable(Tab.APPS.route) {
                 AppsScreen(
@@ -261,6 +285,7 @@ fun MontraRoot(
                     onCategory = viewModel::setCategory,
                     onFilter = viewModel::setFilter,
                     onSort = viewModel::setSort,
+                    onRefresh = { viewModel.refresh(true) },
                     onOpenSearch = { navController.navigate(Tab.SEARCH.route) },
                     onOpen = { app -> navController.navigate("detail/${app.id}") },
                     onInstall = startInstall,
@@ -270,6 +295,7 @@ fun MontraRoot(
             composable(Tab.GAMES.route) {
                 GamesScreen(
                     state = state,
+                    onRefresh = { viewModel.refresh(true) },
                     onOpenSearch = { navController.navigate(Tab.SEARCH.route) },
                     onOpen = { app -> navController.navigate("detail/${app.id}") },
                     onInstall = startInstall,
@@ -283,6 +309,7 @@ fun MontraRoot(
                     results = viewModel.searchResults(),
                     onQuery = viewModel::setQuery,
                     onClear = viewModel::clearQuery,
+                    onRefresh = { viewModel.refresh(true) },
                     onOpen = { app -> navController.navigate("detail/${app.id}") },
                     onInstall = startInstall,
                     onAuthorize = authorize,
@@ -295,9 +322,20 @@ fun MontraRoot(
                     onSetIndexUrl = viewModel::setIndexUrl,
                     onAuthorize = authorize,
                     onHideRestricted = viewModel::setHideRestricted,
+                    onAutoRefresh = viewModel::setAutoRefresh,
                 )
             }
-            composable("detail/{id}") { entry ->
+            composable(
+                route = "detail/{id}",
+                enterTransition = {
+                    slideInHorizontally(animationSpec = Motion.standard()) { it / 4 } +
+                        fadeIn(Motion.standard())
+                },
+                popExitTransition = {
+                    slideOutHorizontally(animationSpec = Motion.standard()) { it / 4 } +
+                        fadeOut(Motion.quick())
+                },
+            ) { entry ->
                 val id = entry.arguments?.getString("id")
                 val row = state.rows.firstOrNull { it.app.id == id }
                 if (row == null) {

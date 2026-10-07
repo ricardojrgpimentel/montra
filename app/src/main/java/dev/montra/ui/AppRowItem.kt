@@ -2,7 +2,6 @@ package dev.montra.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +11,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
@@ -31,6 +32,7 @@ import dev.montra.install.InstallManager
 import dev.montra.install.InstallState
 import dev.montra.ui.components.AppIcon
 import dev.montra.ui.components.Badge
+import dev.montra.ui.components.SectionTitle
 import dev.montra.ui.theme.Shapes
 import dev.montra.ui.theme.Space
 import dev.montra.util.formatBytes
@@ -56,7 +58,7 @@ fun AppRowItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(Shapes.row))
             .clickable(onClick = onOpen),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         shape = RoundedCornerShape(Shapes.row),
     ) {
         Row(modifier = Modifier.padding(Space.md), verticalAlignment = Alignment.Top) {
@@ -194,29 +196,51 @@ private fun InstallAction(
     }
 }
 
+/** Uma secção da lista: um título e as linhas que lhe pertencem. */
+data class AppSectionSpec(
+    val title: String,
+    val rows: List<AppRow>,
+    /** Pinta o título com a cor de atenção: só para o que exige uma decisão. */
+    val accent: Boolean = false,
+)
+
 /**
- * A list of rows with section headings. Sections exist so forty apps do not read as
- * forty identical cards: what needs attention comes first.
+ * Emite as secções como itens soltos na LazyColumn, em vez de um único item com uma
+ * Column lá dentro.
+ *
+ * Não é uma questão de estilo: com uma Column, as quarenta linhas eram compostas
+ * todas de uma vez, e o `animateItem` não tinha linhas para animar — uma lista que
+ * salta quando se muda de filtro. Assim cada linha é um item, composta à medida do
+ * scroll e animada para o lugar quando a lista muda.
  */
-@Composable
-fun AppSection(
-    title: String,
-    rows: List<AppRow>,
+fun LazyListScope.appSections(
+    sections: List<AppSectionSpec>,
     needsPermission: Boolean,
     onOpen: (IndexApp) -> Unit,
     onInstall: (IndexApp) -> Unit,
     onAuthorize: () -> Unit,
 ) {
-    if (rows.isEmpty()) return
-    dev.montra.ui.components.SectionTitle(title, trailing = rows.size.toString())
-    Column(verticalArrangement = Arrangement.spacedBy(Space.md)) {
-        rows.forEach { row ->
+    val visible = sections.filter { it.rows.isNotEmpty() }
+    visible.forEachIndexed { index, section ->
+        item(key = "section:${section.title}") {
+            SectionTitle(
+                text = section.title,
+                trailing = section.rows.size.toString(),
+                divider = index > 0,
+                accent = section.accent,
+                modifier = Modifier.padding(horizontal = Space.lg),
+            )
+        }
+        items(items = section.rows, key = { it.app.id }) { row ->
             AppRowItem(
                 row = row,
                 needsPermission = needsPermission,
                 onOpen = { onOpen(row.app) },
                 onInstall = { onInstall(row.app) },
                 onAuthorize = onAuthorize,
+                modifier = Modifier
+                    .padding(horizontal = Space.lg)
+                    .animateItem(),
             )
         }
     }

@@ -18,6 +18,18 @@ import kotlinx.coroutines.withContext
 
 enum class IndexOrigin { BUNDLED, CACHED, NETWORK }
 
+/** Como terminou a última verificação, para a faixa poder dizê-lo sem inventar. */
+enum class RefreshOutcome {
+    /** Ainda não houve verificação nesta sessão. */
+    NONE,
+
+    /** O servidor serviu um catálogo diferente do que já tínhamos. */
+    UPDATED,
+
+    /** O servidor confirmou que o que temos é o mais recente (304, ou o mesmo `generatedAt`). */
+    CURRENT,
+}
+
 data class IndexState(
     val loading: Boolean = true,
     val apps: List<IndexApp> = emptyList(),
@@ -31,6 +43,11 @@ data class IndexState(
     val error: String? = null,
     /** Set when something *was* served but rejected: always worth showing loudly. */
     val rejectedMessage: String? = null,
+    /** Epoch millis of the last round trip that confirmed the catalogue. */
+    val lastCheckedAt: Long? = null,
+    val outcome: RefreshOutcome = RefreshOutcome.NONE,
+    /** Quando terminou a verificação, para a faixa poder mostrar o resultado só uns segundos. */
+    val outcomeAt: Long = 0L,
 )
 
 /**
@@ -55,7 +72,9 @@ class IndexRepository(
     suspend fun load() {
         val url = settings.currentIndexUrl()
         Log.i("a carregar o catálogo de $url (chave de confiança ${trust.keyId})")
-        _state.update { it.copy(loading = true, indexUrl = url) }
+        _state.update {
+            it.copy(loading = true, indexUrl = url, lastCheckedAt = settings.currentLastCheckedAt())
+        }
 
         // 1. last verified copy: verified again on every launch, cheap and paranoid
         val cached = source.cached()
@@ -101,12 +120,16 @@ class IndexRepository(
             val payload = source.fetchRemote(url, etag)
             if (payload == null) {
                 Log.i("o servidor respondeu 304: o catálogo em cache já é o mais recente")
-                _state.update { it.copy(refreshing = false, error = null) }
+                confirm(RefreshOutcome.CURRENT)
                 return@withLock
             }
             Log.d("recebidos ${payload.bytes.size} bytes de índice; a verificar a assinatura")
             when (val check = accept(payload)) {
                 is Check.Accepted -> {
+                    // O `generatedAt` é a versão do índice: se não mexeu, o que
+                    // recebemos é o mesmo catálogo e vale a pena dizê-lo em vez de
+                    // sugerir que houve novidades.
+                    val previous = _state.value.generatedAt
                     Log.i(
                         "assinatura válida (chave ${check.keyId}); ${check.index.apps.size} apps, " +
                             "gerado em ${check.index.generatedAt}",
@@ -115,6 +138,13 @@ class IndexRepository(
                     settings.setEtag(payload.etag)
                     publish(check, IndexOrigin.NETWORK, url)
                     _state.update { it.copy(refreshing = false, loading = false, error = null) }
+                    confirm(
+                        if (previous != null && previous == check.index.generatedAt) {
+                            RefreshOutcome.CURRENT
+                        } else {
+                            RefreshOutcome.UPDATED
+                        },
+                    )
                 }
                 is Check.Rejected -> {
                     Log.e("índice recebido RECUSADO: ${check.message}")
@@ -147,6 +177,26 @@ class IndexRepository(
     private sealed interface Check {
         data class Accepted(val index: IndexFile, val keyId: String) : Check
         data class Rejected(val message: String) : Check
+    }
+
+    /**
+     * Regista que o servidor confirmou o catálogo — um 304 incluído. A pergunta era
+     * "isto mudou?" e uma resposta negativa também é uma resposta: é isso que
+     * permite à faixa dizer "verificado há 4 minutos" sem estar a inventar.
+     */
+    private suspend fun confirm(outcome: RefreshOutcome) {
+        val now = System.currentTimeMillis()
+        settings.setLastCheckedAt(now)
+        _state.update {
+            it.copy(
+                refreshing = false,
+                loading = false,
+                error = null,
+                lastCheckedAt = now,
+                outcome = outcome,
+                outcomeAt = now,
+            )
+        }
     }
 
     private fun accept(payload: IndexSource.Payload): Check {
@@ -195,5 +245,8 @@ class IndexRepository(
         settings.setIndexUrl(url)
         source.cachedIndexFile.delete()
         source.cachedSignatureFile.delete()
+        _state.update {
+            it.copy(lastCheckedAt = null, outcome = RefreshOutcome.NONE, apps = emptyList())
+        }
     }
 }

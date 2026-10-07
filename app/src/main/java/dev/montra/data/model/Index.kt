@@ -190,6 +190,7 @@ fun categoryLabel(code: String): String = when (code) {
     "communication" -> "Comunicação"
     "development" -> "Desenvolvimento"
     "education" -> "Educação"
+    "emulators" -> "Emuladores"
     "finance" -> "Finanças"
     "games" -> "Jogos"
     "graphics" -> "Imagem"

@@ -50,8 +50,10 @@ fun formatBytes(bytes: Long): String {
  *
  * Deterministic from the package name, but picked from a curated set rather than
  * the whole colour wheel: a hash-derived hue produces the occasional purple avatar
- * in an otherwise green interface, which reads as accidental. These eight are dark
- * enough for white text in both themes.
+ * in an otherwise green interface, which reads as accidental. These are all dark
+ * enough for white text in both themes, and all of them belong to the same family
+ * as the palette in DESIGN.md — verde, azul-petróleo, oliva, âmbar escuro. Nada de
+ * roxo: um monograma é um espaço reservado, não uma licença para sair da paleta.
  */
 private val MONOGRAM_COLORS = intArrayOf(
     0xFF2E6B4F.toInt(), // verde Montra
@@ -60,8 +62,8 @@ private val MONOGRAM_COLORS = intArrayOf(
     0xFF5A6B3B.toInt(), // oliva
     0xFF6B4F3B.toInt(), // castanho
     0xFF3F5566.toInt(), // azul-ardósia
-    0xFF6B3B4F.toInt(), // vinho
-    0xFF4A4A6B.toInt(), // índigo acinzentado
+    0xFF6B5A2E.toInt(), // âmbar escuro, o par do acento
+    0xFF45503F.toInt(), // verde-musgo
 )
 
 fun monogramColor(seed: String): Int = MONOGRAM_COLORS[abs(seed.hashCode()) % MONOGRAM_COLORS.size]

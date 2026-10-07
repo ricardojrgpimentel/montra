@@ -6,16 +6,19 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -35,6 +38,7 @@ import dev.montra.ui.theme.Space
  * screen that is blank until you type is a dead end. The field takes focus on
  * arrival, because that is the only reason to be on this tab.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
     state: UiState,
@@ -42,6 +46,7 @@ fun SearchScreen(
     results: List<AppRow>,
     onQuery: (String) -> Unit,
     onClear: () -> Unit,
+    onRefresh: () -> Unit,
     onOpen: (IndexApp) -> Unit,
     onInstall: (IndexApp) -> Unit,
     onAuthorize: () -> Unit,
@@ -58,7 +63,9 @@ fun SearchScreen(
         state.rows.sortedByDescending { it.app.downloadCount ?: 0L }.take(6)
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
+    // O teclado tapa a lista: sem isto, os resultados e o fim da lista ficavam por
+    // baixo dele e a última sugestão era inalcançável.
+    Column(modifier = modifier.fillMaxSize().imePadding()) {
         OutlinedTextField(
             value = query,
             onValueChange = onQuery,
@@ -83,28 +90,20 @@ fun SearchScreen(
 
         Box(modifier = Modifier.fillMaxSize()) {
             when {
-                query.isBlank() -> LazyColumn(
-                    contentPadding = PaddingValues(
-                        start = Space.lg,
-                        end = Space.lg,
-                        top = Space.sm,
-                        bottom = Space.xxl,
-                    ),
-                ) {
-                    item {
-                        AppSection(
-                            title = "Mais descarregadas",
-                            rows = suggestions,
-                            needsPermission = !state.canInstallPackages,
-                            onOpen = onOpen,
-                            onInstall = onInstall,
-                            onAuthorize = onAuthorize,
-                        )
-                    }
-                }
+                query.isBlank() -> Results(
+                    title = "Mais descarregadas",
+                    rows = suggestions,
+                    state = state,
+                    onRefresh = onRefresh,
+                    onOpen = onOpen,
+                    onInstall = onInstall,
+                    onAuthorize = onAuthorize,
+                )
 
                 results.isEmpty() -> Column(
-                    modifier = Modifier.fillMaxSize().padding(Space.xl),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(Space.xl),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -113,36 +112,58 @@ fun SearchScreen(
                         style = MaterialTheme.typography.titleSmall,
                         textAlign = TextAlign.Center,
                     )
-                    androidx.compose.foundation.layout.Spacer(Modifier.padding(top = Space.sm))
                     Text(
                         text = "Procura por nome, resumo, autor, etiqueta ou nome do pacote — " +
                             "por exemplo \"emulador\" ou \"org.fdroid\".",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = Space.sm),
                     )
                 }
 
-                else -> LazyColumn(
-                    contentPadding = PaddingValues(
-                        start = Space.lg,
-                        end = Space.lg,
-                        top = Space.sm,
-                        bottom = Space.xxl,
-                    ),
-                ) {
-                    item {
-                        AppSection(
-                            title = if (results.size == 1) "1 resultado" else "${results.size} resultados",
-                            rows = results,
-                            needsPermission = !state.canInstallPackages,
-                            onOpen = onOpen,
-                            onInstall = onInstall,
-                            onAuthorize = onAuthorize,
-                        )
-                    }
-                }
+                else -> Results(
+                    title = if (results.size == 1) "1 resultado" else "${results.size} resultados",
+                    rows = results,
+                    state = state,
+                    onRefresh = onRefresh,
+                    onOpen = onOpen,
+                    onInstall = onInstall,
+                    onAuthorize = onAuthorize,
+                )
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun Results(
+    title: String,
+    rows: List<AppRow>,
+    state: UiState,
+    onRefresh: () -> Unit,
+    onOpen: (IndexApp) -> Unit,
+    onInstall: (IndexApp) -> Unit,
+    onAuthorize: () -> Unit,
+) {
+    PullToRefreshBox(
+        isRefreshing = state.index.refreshing,
+        onRefresh = onRefresh,
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(Space.md),
+            contentPadding = PaddingValues(top = Space.sm, bottom = Space.xxl),
+        ) {
+            appSections(
+                sections = listOf(AppSectionSpec(title, rows)),
+                needsPermission = !state.canInstallPackages,
+                onOpen = onOpen,
+                onInstall = onInstall,
+                onAuthorize = onAuthorize,
+            )
         }
     }
 }

@@ -7,15 +7,23 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import dev.montra.data.model.IndexApp
 import dev.montra.ui.components.AlertBlock
+import dev.montra.ui.components.CatalogueRibbon
 import dev.montra.ui.components.SearchBar
 import dev.montra.ui.theme.Space
 
@@ -26,9 +34,11 @@ import dev.montra.ui.theme.Space
  * When it is empty it says why and what to do about it, instead of showing a blank
  * screen: the catalogue is edited by pull request, and that is worth saying.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GamesScreen(
     state: UiState,
+    onRefresh: () -> Unit,
     onOpenSearch: () -> Unit,
     onOpen: (IndexApp) -> Unit,
     onInstall: (IndexApp) -> Unit,
@@ -36,12 +46,29 @@ fun GamesScreen(
     modifier: Modifier = Modifier,
 ) {
     val games = state.games
+    val listState = rememberLazyListState()
+    val collapsed by remember(listState) {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 48
+        }
+    }
+    val installedGames = games.count { it.isInstalled }
 
     Column(modifier = modifier.fillMaxSize()) {
-        SearchBar(
-            onClick = onOpenSearch,
-            placeholder = "Procurar jogos e emuladores",
-            modifier = Modifier.padding(horizontal = Space.lg, vertical = Space.md),
+        CatalogueRibbon(
+            counts = buildString {
+                append(games.size)
+                append(if (games.size == 1) " jogo ou emulador" else " jogos e emuladores")
+                if (installedGames > 0) append(" · $installedGames instalados")
+            },
+            updates = games.count { it.updateAvailable },
+            refreshing = state.index.refreshing,
+            lastCheckedAt = state.index.lastCheckedAt,
+            outcome = state.index.outcome,
+            outcomeAt = state.index.outcomeAt,
+            error = state.index.error ?: state.index.rejectedMessage,
+            onRetry = onRefresh,
+            collapsed = collapsed,
         )
 
         if (!state.canInstallPackages) {
@@ -49,9 +76,9 @@ fun GamesScreen(
                 title = "Falta uma autorização",
                 text = "O Android ainda não autorizou a Montra a instalar aplicações.",
                 action = {
-                    androidx.compose.material3.Button(onClick = onAuthorize) { Text("Autorizar") }
+                    Button(onClick = onAuthorize) { Text("Autorizar") }
                 },
-                modifier = Modifier.padding(horizontal = Space.lg),
+                modifier = Modifier.padding(horizontal = Space.lg, vertical = Space.sm),
             )
         }
 
@@ -63,7 +90,9 @@ fun GamesScreen(
                 ) { CircularProgressIndicator() }
 
                 games.isEmpty() -> Column(
-                    modifier = Modifier.fillMaxSize().padding(Space.xl),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(Space.xl),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -72,7 +101,6 @@ fun GamesScreen(
                         style = MaterialTheme.typography.titleSmall,
                         textAlign = TextAlign.Center,
                     )
-                    androidx.compose.foundation.layout.Spacer(Modifier.padding(top = Space.sm))
                     Text(
                         text = "O catálogo é um repositório de ficheiros JSON: qualquer pessoa " +
                             "pode propor um jogo ou um emulador abrindo um pull request. As " +
@@ -81,56 +109,50 @@ fun GamesScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = Space.sm),
                     )
                 }
 
-                else -> LazyColumn(
-                    contentPadding = PaddingValues(
-                        start = Space.lg,
-                        end = Space.lg,
-                        top = Space.sm,
-                        bottom = Space.xxl,
-                    ),
+                else -> PullToRefreshBox(
+                    isRefreshing = state.index.refreshing,
+                    onRefresh = onRefresh,
+                    modifier = Modifier.fillMaxSize(),
                 ) {
-                    val updates = games.filter { it.updateAvailable }
-                    val installed = games.filter { it.isInstalled && !it.updateAvailable }
-                    val rest = games.filter { !it.isInstalled && !it.updateAvailable }
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(Space.md),
+                        contentPadding = PaddingValues(top = Space.sm, bottom = Space.xxl),
+                    ) {
+                        item(key = "search") {
+                            SearchBar(
+                                onClick = onOpenSearch,
+                                placeholder = "Procurar jogos e emuladores",
+                                modifier = Modifier.padding(horizontal = Space.lg),
+                            )
+                        }
 
-                    if (updates.isNotEmpty()) {
-                        item {
-                            AppSection(
-                                title = "Atualizações disponíveis",
-                                rows = updates,
-                                needsPermission = !state.canInstallPackages,
-                                onOpen = onOpen,
-                                onInstall = onInstall,
-                                onAuthorize = onAuthorize,
-                            )
-                        }
-                    }
-                    if (installed.isNotEmpty()) {
-                        item {
-                            AppSection(
-                                title = "Instalados",
-                                rows = installed,
-                                needsPermission = !state.canInstallPackages,
-                                onOpen = onOpen,
-                                onInstall = onInstall,
-                                onAuthorize = onAuthorize,
-                            )
-                        }
-                    }
-                    if (rest.isNotEmpty()) {
-                        item {
-                            AppSection(
-                                title = "Jogos e emuladores",
-                                rows = rest,
-                                needsPermission = !state.canInstallPackages,
-                                onOpen = onOpen,
-                                onInstall = onInstall,
-                                onAuthorize = onAuthorize,
-                            )
-                        }
+                        val updates = games.filter { it.updateAvailable }
+                        val installed = games.filter { it.isInstalled && !it.updateAvailable }
+                        val rest = games.filter { !it.isInstalled && !it.updateAvailable }
+
+                        appSections(
+                            sections = buildList {
+                                if (updates.isNotEmpty()) {
+                                    add(AppSectionSpec("Atualizações disponíveis", updates, accent = true))
+                                }
+                                if (installed.isNotEmpty()) {
+                                    add(AppSectionSpec("Instalados", installed))
+                                }
+                                if (rest.isNotEmpty()) {
+                                    add(AppSectionSpec("Jogos e emuladores", rest))
+                                }
+                            },
+                            needsPermission = !state.canInstallPackages,
+                            onOpen = onOpen,
+                            onInstall = onInstall,
+                            onAuthorize = onAuthorize,
+                        )
                     }
                 }
             }

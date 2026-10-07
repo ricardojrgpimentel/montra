@@ -4,28 +4,30 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import dev.montra.data.model.IndexApp
-import dev.montra.data.model.categoryLabel
 import dev.montra.ui.components.AlertBlock
+import dev.montra.ui.components.CatalogueRibbon
 import dev.montra.ui.components.SearchBar
 import dev.montra.ui.theme.Space
 
@@ -33,9 +35,11 @@ import dev.montra.ui.theme.Space
  * The Apps tab: everything in the catalogue, grouped by what the person needs to do
  * about it — updates first, then what is already installed, then the rest.
  *
- * The categories chip row filters here only. Searching is its own tab, reached
- * through the search bar, which is how the Play Store does it and how the bottom bar
- * makes sense.
+ * The page has three fixed pieces above the list, in this order: the ribbon (what
+ * this catalogue is and when it was last confirmed), the filter bar (what is being
+ * shown), and the active filters. Only the list scrolls. That is deliberate: the
+ * complaint that started this was not being able to tell what was selected once the
+ * list moved.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +48,7 @@ fun AppsScreen(
     onCategory: (String?) -> Unit,
     onFilter: (AppFilter?) -> Unit,
     onSort: (SortOrder) -> Unit,
+    onRefresh: () -> Unit,
     onOpenSearch: () -> Unit,
     onOpen: (IndexApp) -> Unit,
     onInstall: (IndexApp) -> Unit,
@@ -60,11 +65,26 @@ fun AppsScreen(
         state.category?.let { category -> base.filter { it.app.categories.contains(category) } } ?: base
     }
 
+    val listState = rememberLazyListState()
+    // A faixa recolhe assim que a lista anda: em cima é a assinatura do catálogo, a
+    // partir do primeiro scroll é só mais uma barra a competir com o conteúdo.
+    val collapsed by remember(listState) {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 48
+        }
+    }
+
     Column(modifier = modifier.fillMaxSize()) {
-        SearchBar(
-            onClick = onOpenSearch,
-            placeholder = "Procurar por nome, etiqueta ou pacote",
-            modifier = Modifier.padding(horizontal = Space.lg, vertical = Space.md),
+        CatalogueRibbon(
+            counts = catalogueCounts(state),
+            updates = state.updateCount,
+            refreshing = state.index.refreshing,
+            lastCheckedAt = state.index.lastCheckedAt,
+            outcome = state.index.outcome,
+            outcomeAt = state.index.outcomeAt,
+            error = state.index.error ?: state.index.rejectedMessage,
+            onRetry = onRefresh,
+            collapsed = collapsed,
         )
 
         if (!state.canInstallPackages) {
@@ -73,56 +93,18 @@ fun AppsScreen(
                 text = "O Android ainda não autorizou a Montra a instalar aplicações. " +
                     "É uma autorização por app, dada nas definições do sistema.",
                 action = {
-                    androidx.compose.material3.Button(onClick = onAuthorize) {
-                        Text("Autorizar instalação")
-                    }
+                    Button(onClick = onAuthorize) { Text("Autorizar instalação") }
                 },
-                modifier = Modifier.padding(horizontal = Space.lg),
+                modifier = Modifier.padding(horizontal = Space.lg, vertical = Space.sm),
             )
         }
 
-        if (state.categories.isNotEmpty()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                LazyRow(
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(horizontal = Space.lg),
-                    horizontalArrangement = Arrangement.spacedBy(Space.sm),
-                ) {
-                    item { SortChip(state.sort, onSort) }
-                    // Só aparecem os filtros que apanhariam alguma coisa: um filtro
-                    // que não filtra nada é ruído.
-                    AppFilter.entries
-                        .filter { (state.filterCounts[it] ?: 0) > 0 }
-                        .forEach { entry ->
-                            item {
-                                FilterChip(
-                                    selected = state.filter == entry,
-                                    onClick = { onFilter(entry) },
-                                    label = { Text(entry.label) },
-                                )
-                            }
-                        }
-                    item {
-                        FilterChip(
-                            selected = state.category == null,
-                            onClick = { onCategory(null) },
-                            label = { Text("Todas") },
-                        )
-                    }
-                    items(state.categories.size) { index ->
-                        val category = state.categories[index]
-                        FilterChip(
-                            selected = state.category == category,
-                            onClick = { onCategory(if (state.category == category) null else category) },
-                            label = { Text(categoryLabel(category)) },
-                        )
-                    }
-                }
-            }
-        }
+        FilterBar(
+            state = state,
+            onSort = onSort,
+            onFilter = onFilter,
+            onCategory = onCategory,
+        )
 
         Box(modifier = Modifier.fillMaxSize()) {
             when {
@@ -131,37 +113,63 @@ fun AppsScreen(
                     contentAlignment = Alignment.Center,
                 ) { CircularProgressIndicator() }
 
-                filtered.isEmpty() -> EmptyState(state)
+                filtered.isEmpty() -> EmptyState(
+                    state = state,
+                    onRefresh = onRefresh,
+                    onClear = {
+                        onCategory(null)
+                        onFilter(null)
+                    },
+                )
 
-                else -> LazyColumn(
-                    contentPadding = PaddingValues(
-                        start = Space.lg,
-                        end = Space.lg,
-                        top = Space.sm,
-                        bottom = Space.xxl,
-                    ),
+                else -> PullToRefreshBox(
+                    isRefreshing = state.index.refreshing,
+                    onRefresh = onRefresh,
+                    modifier = Modifier.fillMaxSize(),
                 ) {
-                    val updates = filtered.filter { it.updateAvailable }
-                    val installed = filtered.filter { it.isInstalled && !it.updateAvailable }
-                    val rest = filtered.filter { !it.isInstalled && !it.updateAvailable }
-
-                    if (updates.isNotEmpty()) {
-                        item { AppSectionBlock("Atualizações disponíveis", updates, state, onOpen, onInstall, onAuthorize) }
-                    }
-                    if (installed.isNotEmpty()) {
-                        item { AppSectionBlock("Instaladas", installed, state, onOpen, onInstall, onAuthorize) }
-                    }
-                    if (rest.isNotEmpty()) {
-                        item {
-                            AppSectionBlock(
-                                if (updates.isEmpty() && installed.isEmpty()) "Tudo" else "Descobrir",
-                                rest,
-                                state,
-                                onOpen,
-                                onInstall,
-                                onAuthorize,
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(Space.md),
+                        contentPadding = PaddingValues(top = Space.sm, bottom = Space.xxl),
+                    ) {
+                        // A procura vive dentro da lista: é um atalho, não a única
+                        // porta (há um separador só para isso), e sai da frente assim
+                        // que se começa a ler.
+                        item(key = "search") {
+                            SearchBar(
+                                onClick = onOpenSearch,
+                                placeholder = "Procurar por nome, etiqueta ou pacote",
+                                modifier = Modifier.padding(horizontal = Space.lg),
                             )
                         }
+
+                        val updates = filtered.filter { it.updateAvailable }
+                        val installed = filtered.filter { it.isInstalled && !it.updateAvailable }
+                        val rest = filtered.filter { !it.isInstalled && !it.updateAvailable }
+
+                        appSections(
+                            sections = buildList {
+                                if (updates.isNotEmpty()) {
+                                    add(AppSectionSpec("Atualizações disponíveis", updates, accent = true))
+                                }
+                                if (installed.isNotEmpty()) {
+                                    add(AppSectionSpec("Instaladas", installed))
+                                }
+                                if (rest.isNotEmpty()) {
+                                    add(
+                                        AppSectionSpec(
+                                            if (updates.isEmpty() && installed.isEmpty()) "Tudo" else "Descobrir",
+                                            rest,
+                                        ),
+                                    )
+                                }
+                            },
+                            needsPermission = !state.canInstallPackages,
+                            onOpen = onOpen,
+                            onInstall = onInstall,
+                            onAuthorize = onAuthorize,
+                        )
                     }
                 }
             }
@@ -169,35 +177,31 @@ fun AppsScreen(
     }
 }
 
-@Composable
-private fun AppSectionBlock(
-    title: String,
-    rows: List<AppRow>,
-    state: UiState,
-    onOpen: (IndexApp) -> Unit,
-    onInstall: (IndexApp) -> Unit,
-    onAuthorize: () -> Unit,
-) {
-    AppSection(
-        title = title,
-        rows = rows,
-        needsPermission = !state.canInstallPackages,
-        onOpen = onOpen,
-        onInstall = onInstall,
-        onAuthorize = onAuthorize,
-    )
+/** "42 apps · 6 instaladas" — o que este catálogo tem, dito em números. */
+private fun catalogueCounts(state: UiState): String = buildString {
+    append(state.rows.size)
+    append(if (state.rows.size == 1) " app" else " apps")
+    if (state.installedCount > 0) {
+        append(" · ")
+        append(state.installedCount)
+        append(if (state.installedCount == 1) " instalada" else " instaladas")
+    }
 }
 
 @Composable
-private fun EmptyState(state: UiState) {
+private fun EmptyState(state: UiState, onRefresh: () -> Unit, onClear: () -> Unit) {
+    val failed = state.index.error != null
+    val filteredOut = state.filter != null || state.category != null
     Column(
-        modifier = Modifier.fillMaxSize().padding(Space.xl),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(Space.xl),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = when {
-                state.index.error != null -> state.index.error
+                failed -> state.index.error.orEmpty()
                 state.filter != null -> "Nada corresponde a este filtro."
                 state.category != null -> "Nada nesta categoria."
                 else -> "O catálogo está vazio."
@@ -206,7 +210,7 @@ private fun EmptyState(state: UiState) {
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        if (state.index.error != null) {
+        if (failed) {
             Text(
                 text = "O último catálogo verificado continua a ser usado.",
                 style = MaterialTheme.typography.bodySmall,
@@ -214,25 +218,12 @@ private fun EmptyState(state: UiState) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SortChip(current: SortOrder, onSort: (SortOrder) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        FilterChip(selected = false, onClick = { expanded = true }, label = { Text(current.label) })
-        androidx.compose.material3.DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            SortOrder.entries.forEach { order ->
-                androidx.compose.material3.DropdownMenuItem(
-                    text = { Text(order.label) },
-                    onClick = {
-                        onSort(order)
-                        expanded = false
-                    },
-                )
-            }
+        Spacer(Modifier.height(Space.lg))
+        // Um ecrã vazio sem saída é um beco. Ou se tira o filtro, ou se tenta outra vez.
+        if (filteredOut) {
+            OutlinedButton(onClick = onClear) { Text("Limpar filtros") }
+        } else if (failed) {
+            Button(onClick = onRefresh) { Text("Tentar de novo") }
         }
     }
 }

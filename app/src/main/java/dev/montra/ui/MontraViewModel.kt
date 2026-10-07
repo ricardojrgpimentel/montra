@@ -5,6 +5,7 @@ import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.montra.MontraApp
+import dev.montra.data.AutoRefresh
 import dev.montra.data.IndexState
 import dev.montra.data.model.Asset
 import dev.montra.data.model.IndexApp
@@ -17,6 +18,8 @@ import dev.montra.install.InstallState
 import dev.montra.security.ApkVerifier
 import dev.montra.util.fingerprintsMatch
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -81,12 +84,15 @@ data class UiState(
     val filter: AppFilter? = null,
     /** Quantas apps cada filtro apanharia: um filtro sem resultados não se mostra. */
     val filterCounts: Map<AppFilter, Int> = emptyMap(),
+    /** Quantas apps cada categoria tem, para a folha de filtros as poder numerar. */
+    val categoryCounts: Map<String, Int> = emptyMap(),
     val hideRestricted: Boolean = false,
     val restrictedCount: Int = 0,
     val categories: List<String> = emptyList(),
     val canInstallPackages: Boolean = true,
     val installedCount: Int = 0,
     val updateCount: Int = 0,
+    val autoRefresh: AutoRefresh = AutoRefresh.DEFAULT,
 )
 
 class MontraViewModel(application: Application) : AndroidViewModel(application) {
@@ -103,6 +109,10 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
     private val sort = MutableStateFlow(SortOrder.NAME)
     private val filter = MutableStateFlow<AppFilter?>(null)
     private val hideRestricted = MutableStateFlow(false)
+    private val autoRefresh = MutableStateFlow(AutoRefresh.DEFAULT)
+
+    /** Corre enquanto a app está à frente; pára quando ela sai. Ver [onPause]. */
+    private var ticker: Job? = null
 
     init {
         viewModelScope.launch { container.indexRepository.load() }
@@ -118,11 +128,17 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch { category.collect { rebuild() } }
         viewModelScope.launch { sort.collect { rebuild() } }
         viewModelScope.launch { filter.collect { rebuild() } }
+        viewModelScope.launch { autoRefresh.collect { rebuild() } }
         viewModelScope.launch {
             hideRestricted.value = container.settings.currentHideRestricted()
             rebuild()
         }
-
+        viewModelScope.launch {
+            // A preferência vive em disco: o fluxo é a fonte de verdade, não um valor
+            // lido uma vez, senão mudar a cadência nas definições só pegava no
+            // arranque seguinte.
+            container.settings.autoRefresh.collect { autoRefresh.value = it }
+        }
         // Depois de o índice carregar, e não antes.
         //
         // refreshInstalled() precisa da lista de apps para poder perguntar ao
@@ -178,6 +194,15 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch { container.settings.setHideRestricted(value) }
     }
 
+    fun setAutoRefresh(value: AutoRefresh) {
+        autoRefresh.value = value
+        viewModelScope.launch { container.settings.setAutoRefresh(value) }
+        // Escolher uma cadência e não ver nada acontecer é o mesmo que não a ter:
+        // se já passou tempo suficiente para a nova cadência, verifica já.
+        maybeAutoRefresh()
+    }
+
+    /** Puxar para atualizar: ignora o ETag, porque quem puxa quer mesmo perguntar. */
     fun refresh(force: Boolean = true) {
         viewModelScope.launch { container.indexRepository.refresh(force) }
     }
@@ -192,6 +217,35 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
     fun onResume() {
         _ui.update { it.copy(canInstallPackages = container.installManager.canRequestInstall()) }
         refreshInstalled()
+        // Abrir a app já é motivo para perguntar se saiu alguma coisa: a cadência
+        // mede o intervalo *mínimo* entre verificações, não uma espera obrigatória.
+        maybeAutoRefresh()
+        if (ticker?.isActive != true) {
+            ticker = viewModelScope.launch {
+                while (true) {
+                    delay(TICK)
+                    maybeAutoRefresh()
+                }
+            }
+        }
+    }
+
+    fun onPause() {
+        ticker?.cancel()
+        ticker = null
+    }
+
+    /**
+     * Verifica sozinha quando já passou a cadência escolhida. Sem `force`: com o
+     * ETag, uma verificação sem novidades custa um 304.
+     */
+    private fun maybeAutoRefresh() {
+        val interval = autoRefresh.value
+        if (!interval.enabled) return
+        val index = container.indexRepository.state.value
+        if (index.refreshing) return
+        val dueAt = (index.lastCheckedAt ?: 0L) + interval.minutes * 60_000L
+        if (System.currentTimeMillis() >= dueAt) refresh(force = false)
     }
 
     /**
@@ -302,6 +356,13 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
             )
             .toList()
 
+        // Uma categoria que não tem nada para mostrar não merece um chip — e a
+        // contagem é o que diz isso sem ter de se carregar no filtro para descobrir.
+        val categoryCounts = visible
+            .flatMap { app -> app.categories }
+            .groupingBy { it }
+            .eachCount()
+
         _ui.update {
             it.copy(
                 index = index,
@@ -317,12 +378,18 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                 ),
                 hideRestricted = hideRestricted.value,
                 restrictedCount = index.apps.count { it.hasRestrictedLicense() },
-                categories = visible.flatMap { app -> app.categories }.groupingBy { it }.eachCount()
-                    .entries.sortedByDescending { e -> e.value }.map { e -> e.key },
+                categories = categoryCounts.entries.sortedByDescending { e -> e.value }.map { e -> e.key },
+                categoryCounts = categoryCounts,
                 canInstallPackages = container.installManager.canRequestInstall(),
                 installedCount = installedNow.size,
                 updateCount = rows.count { row -> row.updateAvailable },
+                autoRefresh = autoRefresh.value,
             )
         }
+    }
+
+    private companion object {
+        /** De quanto em quanto tempo vale a pena perguntar se já é altura de verificar. */
+        const val TICK = 60_000L
     }
 }
