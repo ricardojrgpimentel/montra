@@ -77,7 +77,8 @@ O estado de cada app (`Idle`, `Downloading`, `Verifying`, `AwaitingUser`,
 ## Testes
 
 ```bash
-./gradlew :app:testDebugUnitTest
+./gradlew :app:testDebugUnitTest                            # 15 testes, JVM, sem rede
+./gradlew :app:connectedDebugAndroidTest                    # 3 testes num dispositivo/emulador com rede
 ```
 
 | Ficheiro | O que prova |
@@ -85,9 +86,19 @@ O estado de cada app (`Idle`, `Downloading`, `Verifying`, `AwaitingUser`,
 | `security/IndexVerifierTest` | assinatura válida aceite; um byte alterado, outra chave ou base64 malformado recusados; key id estável |
 | `data/RealIndexTest` | **os bytes reais do índice incluído na app verificam com o verificador real**; key id bate certo; bytes adulterados recusados; todas as apps têm release, sha256, certificado e ícone relativo |
 | `data/IndexModelTest` | campos desconhecidos ignorados; fallback de idioma; escolha de ABI |
+| `androidTest/CatalogueNetworkSmokeTest` | **no dispositivo, no processo da app**: descarrega o índice publicado por HTTPS, verifica a assinatura com a chave do APK, guarda em cache, e recusa um índice adulterado (com uma fonte hostil injetada) |
 
-O segundo é o que mais importa: liga o assinador (Node, `tools/sign-index.mjs`) ao
-verificador (Kotlin). Se qualquer dos lados mudar de formato, o build falha.
+O `RealIndexTest` liga o assinador (Node, `tools/sign-index.mjs`) ao verificador
+(Kotlin): se qualquer dos lados mudar de formato, o build falha. O teste
+instrumentado fecha o resto do caminho — rede, cache, e a recusa de um índice
+adulterado — no sítio onde interessa.
+
+## Registos
+
+`adb logcat -s Montra` conta a história completa de uma atualização: URL, que
+fonte ganhou (rede, cache ou snapshot incluído), se a assinatura verificou e
+porquê quando não verificou. Falhas são registadas também em release; o detalhe
+verboso é só em debug.
 
 ## Decisões que valem a pena conhecer
 

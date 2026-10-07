@@ -12,6 +12,7 @@ import android.provider.Settings
 import dev.montra.data.model.Asset
 import dev.montra.data.model.IndexApp
 import dev.montra.security.ApkVerifier
+import dev.montra.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -77,6 +78,7 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
      */
     suspend fun install(app: IndexApp, asset: Asset) {
         try {
+            Log.i("instalar ${app.id} (${asset.abi}, ${asset.size} bytes, sha256 ${asset.sha256.take(16)}…)")
             setState(app.id, InstallState.Downloading(0, asset.size, 0f))
             val downloaded = downloader.download(asset) { progress ->
                 setState(app.id, InstallState.Downloading(progress.bytes, progress.total, progress.fraction))
@@ -94,11 +96,14 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
                 }
             ) {
                 is ApkVerifier.Result.Rejected -> {
+                    Log.e("${app.id}: verificação falhou — ${result.reason}")
                     downloaded.file.delete()
                     setState(app.id, InstallState.Failed(result.reason))
                     return
                 }
-                is ApkVerifier.Result.Verified -> Unit
+                is ApkVerifier.Result.Verified -> Log.i(
+                    "${app.id}: verificado (sha256 e certificado ${result.certSha256?.take(17)}…)",
+                )
             }
 
             if (!canRequestInstall()) {
@@ -109,6 +114,7 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
             setState(app.id, InstallState.AwaitingUser)
             commit(app, downloaded.file)
         } catch (error: Exception) {
+            Log.e("${app.id}: instalação falhou", error)
             setState(
                 app.id,
                 InstallState.Failed(error.message ?: error::class.simpleName ?: "falha desconhecida"),
@@ -149,6 +155,7 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
     }
 
     fun onResult(appId: String, status: Int, message: String?) {
+        Log.i("$appId: resultado do instalador status=$status mensagem=${message ?: "-"}")
         setState(
             appId,
             when (status) {

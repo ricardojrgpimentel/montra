@@ -5,6 +5,7 @@ import dev.montra.data.model.IndexApp
 import dev.montra.data.model.IndexFile
 import dev.montra.data.model.IndexJson
 import dev.montra.security.SignatureCheck
+import dev.montra.util.Log
 import dev.montra.security.TrustStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,6 +54,7 @@ class IndexRepository(
 
     suspend fun load() {
         val url = settings.currentIndexUrl()
+        Log.i("a carregar o catálogo de $url (chave de confiança ${trust.keyId})")
         _state.update { it.copy(loading = true, indexUrl = url) }
 
         // 1. last verified copy: verified again on every launch, cheap and paranoid
@@ -60,11 +62,13 @@ class IndexRepository(
         if (cached != null) {
             when (val check = accept(cached)) {
                 is Check.Accepted -> {
+                    Log.i("cache em disco verificada: ${check.index.apps.size} apps")
                     publish(check, IndexOrigin.CACHED, url)
                     _state.update { it.copy(loading = false) }
                 }
                 is Check.Rejected -> {
                     // The cache does not verify any more: drop it rather than use it.
+                    Log.e("cache em disco recusada: ${check.message}")
                     source.cachedIndexFile.delete()
                     source.cachedSignatureFile.delete()
                     _state.update { it.copy(rejectedMessage = check.message) }
@@ -76,8 +80,12 @@ class IndexRepository(
         if (_state.value.apps.isEmpty()) {
             when (val check = accept(source.bundled())) {
                 is Check.Accepted -> publish(check, IndexOrigin.BUNDLED, url)
-                is Check.Rejected -> _state.update { it.copy(rejectedMessage = check.message) }
+                is Check.Rejected -> {
+                    Log.e("snapshot incluído na app recusado: ${check.message}")
+                    _state.update { it.copy(rejectedMessage = check.message) }
+                }
             }
+            Log.i("a mostrar o snapshot incluído na app: ${_state.value.apps.size} apps")
             _state.update { it.copy(loading = false) }
         }
 
@@ -92,17 +100,24 @@ class IndexRepository(
             val etag = if (force) null else settings.currentEtag()
             val payload = source.fetchRemote(url, etag)
             if (payload == null) {
+                Log.i("o servidor respondeu 304: o catálogo em cache já é o mais recente")
                 _state.update { it.copy(refreshing = false, error = null) }
                 return@withLock
             }
+            Log.d("recebidos ${payload.bytes.size} bytes de índice; a verificar a assinatura")
             when (val check = accept(payload)) {
                 is Check.Accepted -> {
+                    Log.i(
+                        "assinatura válida (chave ${check.keyId}); ${check.index.apps.size} apps, " +
+                            "gerado em ${check.index.generatedAt}",
+                    )
                     source.storeVerified(payload)
                     settings.setEtag(payload.etag)
                     publish(check, IndexOrigin.NETWORK, url)
                     _state.update { it.copy(refreshing = false, loading = false, error = null) }
                 }
                 is Check.Rejected -> {
+                    Log.e("índice recebido RECUSADO: ${check.message}")
                     // Keep serving what we have. Tell the user exactly why.
                     _state.update {
                         it.copy(
@@ -115,6 +130,7 @@ class IndexRepository(
                 }
             }
         } catch (error: Exception) {
+            Log.w("falha a atualizar o catálogo de $url", error)
             _state.update {
                 it.copy(
                     refreshing = false,

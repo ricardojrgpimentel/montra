@@ -93,4 +93,7 @@ dependencies {
     implementation(libs.okhttp)
 
     testImplementation(libs.junit)
+
+    androidTestImplementation(libs.androidx.test.junit)
+    androidTestImplementation(libs.androidx.test.runner)
 }

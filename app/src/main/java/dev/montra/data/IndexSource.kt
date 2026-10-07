@@ -21,7 +21,7 @@ import java.io.IOException
  * Nothing here trusts anything: this class only moves bytes. Verification
  * happens in [IndexRepository].
  */
-class IndexSource(private val context: Context, private val client: OkHttpClient) {
+open class IndexSource(private val context: Context, private val client: OkHttpClient) {
 
     class Payload(
         val bytes: ByteArray,
@@ -34,8 +34,13 @@ class IndexSource(private val context: Context, private val client: OkHttpClient
     val cachedIndexFile: File get() = File(cacheDir, "index.json")
     val cachedSignatureFile: File get() = File(cacheDir, "index.json.sig")
 
-    /** @return null when the server answered 304 Not Modified. */
-    suspend fun fetchRemote(indexUrl: String, etag: String?): Payload? = withContext(Dispatchers.IO) {
+    /**
+     * @return null when the server answered 304 Not Modified.
+     *
+     * `open` so a test can simulate a hostile host that serves a tampered index:
+     * the repository's refusal to publish it is the behaviour worth pinning down.
+     */
+    open suspend fun fetchRemote(indexUrl: String, etag: String?): Payload? = withContext(Dispatchers.IO) {
         val url = indexUrl.toHttpUrlOrNull() ?: throw IOException("URL do índice inválido: $indexUrl")
         require(url.isHttps || url.host == "localhost" || url.host == "10.0.2.2") {
             "o índice tem de ser servido por HTTPS"
