@@ -90,6 +90,18 @@ catálogo. Quando uma app não tem ícone (a Molly, o Cromite, o ReVanced Manage
 Syncthing-Fork, por exemplo, só publicam vetores), desenha-se um **monograma de cor
 plana** derivada do nome do pacote. Sem gradientes.
 
+## Restrições não são navegação
+
+Uma licença restritiva é uma **condição**, não um domínio. Por isso não há um
+separador para ela no rodapé: o rodapé responde a "o que quero fazer" (ver apps,
+jogar, procurar, configurar), e uma restrição legal não é nenhuma dessas coisas.
+O que existe é um filtro que só aparece quando há o que filtrar, uma opção para
+esconder, e o aviso antes do botão.
+
+Corolário: nunca inventar um destino de navegação para acomodar uma exceção. Se
+uma categoria precisar de um separador, é porque é um domínio — e nesse caso tem
+conteúdo suficiente para o justificar.
+
 ## Estados vazios
 
 Nunca um ecrã vazio sem explicação. Cada lista sem resultados diz porque está

@@ -47,6 +47,30 @@ principal e o seu próprio regresso. A barra de pesquisa dos separadores Apps e
 Jogos navega para o separador Procurar, em vez de haver dois filtros para a mesma
 coisa em sítios diferentes.
 
+### Licenças restritivas: filtro, não separador
+
+O catálogo aceita apps cujo código é público mas a licença impõe limitações
+(`LicenseRef-*`), desde que declaradas. Isso **não** ganhou um separador próprio,
+e a razão é de desenho: o rodapé é organizado por domínio (apps, jogos, procurar,
+definições), não por estado legal. Um quinto destino para um contentor com uma app
+seria peça de interface permanente para uma lista quase sempre vazia, e
+transformaria um aviso em navegação.
+
+Em vez disso:
+
+- um filtro **"Licença restritiva"** nos chips do separador Apps, que só aparece
+  se existirem apps nessa situação;
+- uma opção **"Esconder apps com licença restritiva"** nas definições, por omissão
+  desligada — o catálogo decidiu incluí-las, e esconder por omissão seria decidir
+  pelo utilizador;
+- e o trabalho de fundo: etiqueta na lista, bloco antes do botão de instalar, nota
+  no idioma do sistema.
+
+Note-se a diferença entre os dois avisos, que não são a mesma coisa: `nonFreeNet`
+é software **livre** que fala com uma rede proprietária (Nekogram, Nagram,
+ReVanced Manager); `restrictedLicense` é software cujo **código** não é livre
+(DevilutionX).
+
 ## Design
 
 As decisões visuais estão em [DESIGN.md](DESIGN.md): paleta, escala de tipografia,
