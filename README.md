@@ -2,6 +2,10 @@
 
 A app. Descarrega um catálogo, verifica a assinatura, verifica cada APK, instala.
 
+> Visão geral do sistema (porque é que isto funciona sem servidor, modelo de
+> confiança, estado verificado): [montra-index/docs/OVERVIEW.md](https://github.com/ricardojrgpimentel/montra-index/blob/main/docs/OVERVIEW.md).
+> O catálogo vive em [montra-index](https://github.com/ricardojrgpimentel/montra-index).
+
 - **Kotlin + Jetpack Compose**, minSdk 26, targetSdk 36
 - **Sem bibliotecas de UI de terceiros**: Material 3 e um carregador de imagens
   próprio (cache de memória + cache HTTP em disco). O APK de release tem 1,6 MB.
