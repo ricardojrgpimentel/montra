@@ -40,9 +40,21 @@ class ApkDownloader(private val context: Context, private val client: OkHttpClie
     @Volatile
     private var activeCall: Call? = null
 
+    @Volatile
+    private var activePart: File? = null
+
+    /**
+     * Cancels the HTTP call *and* removes the partial file right away.
+     *
+     * Waiting for the download coroutine to unwind before cleaning up leaves a
+     * 30 MB `.part` behind for as long as it takes the socket to notice, and the
+     * user's cache has no way to know it is garbage.
+     */
     fun cancel() {
         activeCall?.cancel()
         activeCall = null
+        activePart?.delete()
+        activePart = null
     }
 
     suspend fun download(
@@ -70,21 +82,31 @@ class ApkDownloader(private val context: Context, private val client: OkHttpClie
             val body = response.body ?: throw IOException("resposta vazia")
             val total = if (body.contentLength() > 0) body.contentLength() else asset.size
             val part = File(dir, "${target.name}.part")
+            activePart = part
             var received = 0L
-            body.byteStream().use { input ->
-                part.outputStream().use { output ->
-                    val buffer = ByteArray(64 * 1024)
-                    while (true) {
-                        val read = input.read(buffer)
-                        if (read <= 0) break
-                        digest.update(buffer, 0, read)
-                        output.write(buffer, 0, read)
-                        received += read
-                        onProgress(Progress(received, total))
+            try {
+                body.byteStream().use { input ->
+                    part.outputStream().use { output ->
+                        val buffer = ByteArray(64 * 1024)
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read <= 0) break
+                            digest.update(buffer, 0, read)
+                            output.write(buffer, 0, read)
+                            received += read
+                            onProgress(Progress(received, total))
+                        }
+                        output.flush()
                     }
-                    output.flush()
                 }
+            } catch (error: Exception) {
+                // Cancelar a meio (ou uma falha de rede) não pode deixar lixo no
+                // cache: um .part de 30 MB fica lá para sempre.
+                part.delete()
+                activePart = null
+                throw error
             }
+            activePart = null
             val sha = digest.digest().toHex()
             if (!sha.equals(asset.sha256, ignoreCase = true)) {
                 part.delete()

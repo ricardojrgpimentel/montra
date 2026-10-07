@@ -132,12 +132,29 @@ O estado de cada app (`Idle`, `Downloading`, `Verifying`, `AwaitingUser`,
 | `security/IndexVerifierTest` | assinatura válida aceite; um byte alterado, outra chave ou base64 malformado recusados; key id estável |
 | `data/RealIndexTest` | **os bytes reais do índice incluído na app verificam com o verificador real**; key id bate certo; bytes adulterados recusados; todas as apps têm release, sha256, certificado e ícone relativo |
 | `data/IndexModelTest` | campos desconhecidos ignorados; fallback de idioma; escolha de ABI |
-| `androidTest/CatalogueNetworkSmokeTest` | **no dispositivo, no processo da app**: descarrega o índice publicado por HTTPS, verifica a assinatura com a chave do APK, guarda em cache, e recusa um índice adulterado (com uma fonte hostil injetada); e o `InstallRequest` sobrevive à passagem por Intent sem perder o sha256 nem o certificado |
+| `androidTest/CatalogueNetworkSmokeTest` | **no dispositivo, no processo da app**: descarrega o índice publicado por HTTPS, verifica a assinatura com a chave do APK, guarda em cache, e recusa um índice adulterado (com uma fonte hostil injetada); o `InstallRequest` sobrevive à passagem por Intent sem perder o sha256 nem o certificado; e cancelar a meio de um download para o pipeline, deixa o estado em `Idle` e não deixa ficheiros parciais |
 
 O `RealIndexTest` liga o assinador (Node, `tools/sign-index.mjs`) ao verificador
 (Kotlin): se qualquer dos lados mudar de formato, o build falha. O teste
 instrumentado fecha o resto do caminho — rede, cache, e a recusa de um índice
 adulterado — no sítio onde interessa.
+
+### Correr os testes instrumentados
+
+`./gradlew :app:connectedDebugAndroidTest` reinstala a app a cada corrida, e
+reinstalar (ou desinstalar) repõe o appop "instalar apps desconhecidas" — o teste
+do cancelamento precisa dele e, sem ele, é **saltado** com a razão à vista (não
+falha por timeout sem explicação). Para o correr a sério, sem reinstalar:
+
+```bash
+./gradlew :app:assembleDebugAndroidTest
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+adb shell appops set dev.montra.debug REQUEST_INSTALL_PACKAGES allow
+adb shell am instrument -w \
+  -e class 'dev.montra.CatalogueNetworkSmokeTest#cancellingADownloadStopsItAndLeavesNothingBehind' \
+  dev.montra.debug.test/androidx.test.runner.AndroidJUnitRunner
+```
 
 ## Registos
 

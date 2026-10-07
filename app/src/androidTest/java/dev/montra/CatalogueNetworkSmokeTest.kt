@@ -8,7 +8,10 @@ import dev.montra.data.IndexSource
 import dev.montra.data.Settings
 import dev.montra.security.SignatureCheck
 import dev.montra.security.TrustStore
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -17,6 +20,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 
@@ -180,6 +184,89 @@ class CatalogueNetworkSmokeTest {
     fun anIntentWithoutAnAssetIsRefused() {
         val empty = android.content.Intent(context, MainActivity::class.java)
         assertEquals(null, dev.montra.install.InstallRequest.from(empty))
+    }
+
+    /**
+     * Cancelar a meio tem de parar o download, deixar o estado limpo (Idle, não um
+     * erro: o utilizador pediu aquilo) e não deixar ficheiros parciais no cache.
+     *
+     * Usa o maior APK abaixo de 40 MB para haver margem: cancela-se no primeiro
+     * evento de progresso, portanto custa poucos KB de tráfego.
+     */
+    @Test
+    fun cancellingADownloadStopsItAndLeavesNothingBehind() = runBlocking {
+        val parsed = dev.montra.data.model.IndexJson.decodeFromString(
+            dev.montra.data.model.IndexFile.serializer(),
+            source.fetchRemote(BuildConfig.DEFAULT_INDEX_URL, etag = null)!!.bytes.decodeToString(),
+        )
+        val candidate = parsed.apps
+            .mapNotNull { app ->
+                app.bestAssetFor(listOf("arm64-v8a", "armeabi-v7a"))?.let { app to it }
+            }
+            .filter { (_, asset) -> asset.size in 15_000_000..40_000_000 }
+            .maxByOrNull { (_, asset) -> asset.size }
+            ?: error("o catálogo devia ter um APK entre 15 e 40 MB para este teste")
+        val (app, asset) = candidate
+
+        val manager = dev.montra.install.InstallManager.of(context)
+
+        // O pipeline verifica a autorização antes de transferir, e um
+        // `connectedAndroidTest` desinstala a app no fim — o que apaga o appop
+        // "instalar apps desconhecidas". Sem ele este teste não falha: é saltado,
+        // com a razão à vista, em vez de dar um timeout sem explicação.
+        org.junit.Assume.assumeTrue(
+            "precisa de: adb shell appops set dev.montra.debug REQUEST_INSTALL_PACKAGES allow",
+            manager.canRequestInstall(),
+        )
+
+        dev.montra.install.InstallService.start(
+            context,
+            dev.montra.install.InstallRequest(
+                appId = app.id,
+                appName = app.name,
+                packageName = app.packageName,
+                pinnedCertSha256 = app.signingCertSha256,
+                asset = asset,
+            ),
+        )
+
+        // Espera que esteja mesmo a transferir, e só então cancela.
+        val downloading = withTimeout(20_000) {
+            manager.states.first { state ->
+                val current = state[app.id]
+                current is dev.montra.install.InstallState.Downloading && current.bytes > 0
+            }
+        }
+        assertTrue(
+            "esperava estar a transferir ${app.id}, vi ${downloading[app.id]}",
+            downloading[app.id] is dev.montra.install.InstallState.Downloading,
+        )
+
+        dev.montra.install.InstallService.cancel(context, app.id)
+
+        val settled = withTimeout(20_000) {
+            manager.states.first { state ->
+                state[app.id] == dev.montra.install.InstallState.Idle ||
+                    state[app.id] is dev.montra.install.InstallState.Failed
+            }
+        }
+        assertEquals(
+            "cancelar é uma decisão do utilizador, não uma falha",
+            dev.montra.install.InstallState.Idle,
+            settled[app.id],
+        )
+
+        // A limpeza é imediata, mas dá-se-lhe um instante em vez de assumir
+        // ordem entre threads; se ficar lixo, isto falha na mesma.
+        var leftovers = listOf<File>()
+        repeat(20) {
+            leftovers = File(context.cacheDir, "apk").listFiles()
+                ?.filter { file -> file.name.endsWith(".part") }
+                .orEmpty()
+            if (leftovers.isEmpty()) return@repeat
+            delay(100)
+        }
+        assertTrue("download cancelado não pode deixar ficheiros parciais: $leftovers", leftovers.isEmpty())
     }
 
     private fun indexOf(haystack: ByteArray, needle: ByteArray): Int {
