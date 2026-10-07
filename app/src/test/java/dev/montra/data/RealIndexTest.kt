@@ -1,6 +1,7 @@
 package dev.montra.data
 
 import dev.montra.data.model.IndexApp
+import dev.montra.data.model.isIncompatibleWith
 import dev.montra.data.model.IndexFile
 import dev.montra.data.model.IndexJson
 import dev.montra.security.IndexVerifier
@@ -147,6 +148,35 @@ class IndexModelTest {
         assertEquals("armeabi-v7a", parsed.bestAssetFor(listOf("armeabi-v7a"))?.abi)
         assertEquals("universal", parsed.bestAssetFor(listOf("x86"))?.abi)
         assertEquals("universal", parsed.bestAssetFor(emptyList())?.abi)
+    }
+
+    @Test
+    fun `um apk com minSdk acima do dispositivo e marcado incompativel`() {
+        val parsed = app(
+            """
+            {"id":"x","name":"X","summary":"s","packageName":"a.b.c","license":"MIT","sourceCode":"https://e.com",
+             "release":{"versionName":"1","versionCode":1,"tag":"v1","assets":[
+               {"abi":"universal","url":"https://e.com/a.apk","sha256":"${"e".repeat(64)}","size":1,"minSdk":35}]}}
+            """,
+        )
+        val asset = parsed.bestAssetFor(listOf("arm64-v8a"))!!
+        assertTrue(asset.isIncompatibleWith(30))
+        assertFalse(asset.isIncompatibleWith(35))
+        assertFalse(asset.isIncompatibleWith(36))
+    }
+
+    @Test
+    fun `minSdk desconhecido nao torna a app incompativel`() {
+        val parsed = app(
+            """
+            {"id":"x","name":"X","summary":"s","packageName":"a.b.c","license":"MIT","sourceCode":"https://e.com",
+             "release":{"versionName":"1","versionCode":1,"tag":"v1","assets":[
+               {"abi":"universal","url":"https://e.com/a.apk","sha256":"${"f".repeat(64)}","size":1}]}}
+            """,
+        )
+        val asset = parsed.bestAssetFor(listOf("arm64-v8a"))!!
+        assertNull(asset.minSdk)
+        assertFalse("sem minSdk confiamos na verificação do sistema", asset.isIncompatibleWith(21))
     }
 
     @Test

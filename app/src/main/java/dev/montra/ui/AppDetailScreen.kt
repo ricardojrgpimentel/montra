@@ -102,7 +102,7 @@ fun AppDetailScreen(
                 KeyValue("versionCode", (row.asset?.versionCode ?: app.release?.versionCode)?.toString() ?: "—")
                 KeyValue("tamanho", formatBytes(row.size))
                 KeyValue("ABI", row.asset?.abi?.replace("universal", "universal (todas)") ?: "—")
-                KeyValue("Android mínimo", "API ${row.asset?.minSdk ?: "—"}")
+                KeyValue("Android mínimo", row.asset?.minSdk?.let { "API $it" } ?: "não declarado")
                 KeyValue("publicado", app.release?.publishedAt?.take(10) ?: "—")
                 row.asset?.nativeAbis?.takeIf { it.isNotEmpty() }?.let {
                     KeyValue("bibliotecas nativas", it.joinToString(", "))
@@ -208,7 +208,9 @@ private fun InstallSection(row: AppRow, onInstall: (IndexApp) -> Unit, onClearEr
         }
         InstallState.Idle -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (row.asset == null) {
-                Text("Sem APK compatível com este dispositivo.", color = MaterialTheme.colorScheme.error)
+                Text("Sem APK compatível com a arquitetura deste dispositivo.", color = MaterialTheme.colorScheme.error)
+            } else if (row.incompatible != null) {
+                Text(row.incompatible!!, color = MaterialTheme.colorScheme.error)
             } else if (!row.isInstalled) {
                 Button(onClick = { onInstall(row.app) }) { Text("Instalar ${formatBytes(row.size)}") }
             } else if (row.updateAvailable) {

@@ -105,6 +105,16 @@ data class Asset(
     val verifiedAt: String? = null,
 )
 
+/**
+ * True when this APK declares a minSdk above the device's API level, so the
+ * system would refuse to install it (or worse, install it and crash).
+ *
+ * A null minSdk means the index could not read it: it is treated as compatible,
+ * because refusing to offer an app over missing metadata would be worse than the
+ * system's own install-time check, which still runs.
+ */
+fun Asset.isIncompatibleWith(deviceSdk: Int): Boolean = minSdk != null && minSdk > deviceSdk
+
 @Serializable
 data class ArtifactRef(
     val url: String,

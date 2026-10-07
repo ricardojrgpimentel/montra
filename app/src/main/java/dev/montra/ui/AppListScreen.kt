@@ -223,6 +223,10 @@ private fun AppCard(row: AppRow, onOpen: () -> Unit, onInstall: () -> Unit) {
                         Spacer(Modifier.width(6.dp))
                         Badge("atualizar", MaterialTheme.colorScheme.error)
                     }
+                    if (row.incompatible != null) {
+                        Spacer(Modifier.width(6.dp))
+                        Badge("incompatível", MaterialTheme.colorScheme.error)
+                    }
                 }
                 if (row.installState is InstallState.Downloading) {
                     Spacer(Modifier.height(6.dp))
@@ -270,8 +274,10 @@ private fun InstallAction(row: AppRow, onInstall: () -> Unit) {
         )
         is InstallState.Installed -> Badge("instalado", MaterialTheme.colorScheme.primary)
         else -> {
-            if (!row.isInstalled || row.updateAvailable) {
-                TextButton(onClick = onInstall, enabled = row.asset != null) {
+            if (row.incompatible != null) {
+                Badge("não corre aqui", MaterialTheme.colorScheme.error)
+            } else if (!row.isInstalled || row.updateAvailable) {
+                TextButton(onClick = onInstall, enabled = row.canInstall) {
                     Text(if (row.isInstalled) "Atualizar" else "Instalar")
                 }
             } else {

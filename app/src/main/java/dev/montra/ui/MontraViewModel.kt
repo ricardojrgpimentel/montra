@@ -8,6 +8,7 @@ import dev.montra.MontraApp
 import dev.montra.data.IndexState
 import dev.montra.data.model.Asset
 import dev.montra.data.model.IndexApp
+import dev.montra.data.model.isIncompatibleWith
 import dev.montra.install.InstallManager
 import dev.montra.install.InstallState
 import dev.montra.security.ApkVerifier
@@ -44,8 +45,11 @@ data class AppRow(
     val iconUrl: String?,
     val screenshotUrls: List<String>,
     val size: Long,
+    /** Set when this device cannot run the app at all (minSdk above this device). */
+    val incompatible: String? = null,
 ) {
     val isInstalled: Boolean get() = installed != null
+    val canInstall: Boolean get() = asset != null && incompatible == null && !signatureConflict
 }
 
 data class UiState(
@@ -182,6 +186,9 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                     installState = installStates[app.id] ?: InstallState.Idle,
                     iconUrl = app.icon?.let { container.indexRepository.mediaUrl(it) },
                     screenshotUrls = app.screenshots.map { container.indexRepository.mediaUrl(it) },
+                    incompatible = asset?.takeIf { it.isIncompatibleWith(Build.VERSION.SDK_INT) }?.let {
+                        "Precisa de Android API ${it.minSdk}; este dispositivo tem ${Build.VERSION.SDK_INT}"
+                    },
                     size = asset?.size ?: app.artifact?.size ?: 0L,
                 )
             }
