@@ -8,6 +8,7 @@ import dev.montra.MontraApp
 import dev.montra.data.IndexState
 import dev.montra.data.model.Asset
 import dev.montra.data.model.IndexApp
+import dev.montra.data.model.isGamesOrEmulators
 import dev.montra.data.model.isIncompatibleWith
 import dev.montra.install.InstallManager
 import dev.montra.install.InstallRequest
@@ -57,6 +58,8 @@ data class AppRow(
 data class UiState(
     val index: IndexState = IndexState(),
     val rows: List<AppRow> = emptyList(),
+    /** The same rows, narrowed to games and emulators: the Games tab's whole purpose. */
+    val games: List<AppRow> = emptyList(),
     val query: String = "",
     val category: String? = null,
     val sort: SortOrder = SortOrder.NAME,
@@ -97,6 +100,25 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
 
     fun setQuery(value: String) {
         query.value = value
+    }
+
+    fun clearQuery() {
+        query.value = ""
+    }
+
+    /** Case-insensitive match across the fields a person would actually search by. */
+    fun searchResults(): List<AppRow> {
+        val question = query.value.trim().lowercase()
+        if (question.isEmpty()) return emptyList()
+        return _ui.value.rows.filter { row ->
+            val app = row.app
+            app.name.lowercase().contains(question) ||
+                app.summary.lowercase().contains(question) ||
+                app.packageName.lowercase().contains(question) ||
+                app.author?.lowercase()?.contains(question) == true ||
+                app.tags.any { it.contains(question) } ||
+                app.categories.any { it.contains(question) }
+        }
     }
 
     fun setCategory(value: String?) {
@@ -179,20 +201,13 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
         val index = container.indexRepository.state.value
         val installStates = container.installManager.states.value
         val installedNow = installed.value
-        val question = query.value.trim().lowercase()
         val selectedCategory = category.value
 
+        // `rows` é a lista completa: cada separador aplica o seu próprio filtro
+        // (categorias, jogos, ou a pesquisa), em vez de o ViewModel adivinhar qual
+        // o ecrã que está à frente.
         val rows = index.apps
             .asSequence()
-            .filter { app -> selectedCategory == null || app.categories.contains(selectedCategory) }
-            .filter { app ->
-                question.isEmpty() ||
-                    app.name.lowercase().contains(question) ||
-                    app.summary.lowercase().contains(question) ||
-                    app.packageName.lowercase().contains(question) ||
-                    (app.author?.lowercase()?.contains(question) == true) ||
-                    app.tags.any { it.contains(question) }
-            }
             .map { app ->
                 val asset = app.bestAssetFor(deviceAbis)
                 val info = installedNow[app.packageName]
@@ -229,6 +244,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
             it.copy(
                 index = index,
                 rows = rows,
+                games = rows.filter { it.app.isGamesOrEmulators() },
                 query = query.value,
                 category = selectedCategory,
                 sort = sort.value,

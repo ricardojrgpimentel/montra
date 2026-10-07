@@ -11,9 +11,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -22,10 +19,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.montra.data.model.IndexApp
 import dev.montra.data.model.antiFeatureLabel
@@ -33,14 +27,25 @@ import dev.montra.data.model.categoryLabel
 import dev.montra.data.model.statusLabel
 import dev.montra.install.InstallManager
 import dev.montra.install.InstallState
-import dev.montra.security.ApkVerifier
+import dev.montra.ui.components.AlertBlock
 import dev.montra.ui.components.AppIcon
+import dev.montra.ui.components.Badge
+import dev.montra.ui.components.Block
 import dev.montra.ui.components.KeyValue
-import dev.montra.ui.components.SectionTitle
 import dev.montra.ui.components.ScreenshotRow
+import dev.montra.ui.components.SectionTitle
+import dev.montra.ui.theme.Space
 import dev.montra.util.formatBytes
 import java.util.Locale
 
+/**
+ * The app page.
+ *
+ * The order of the information is the order of the decision: what it is, whether it
+ * runs here, whether I want it, then the evidence, then everything else. Nothing is
+ * nested inside anything else: the page has one surface and the blocks on it are the
+ * page's own sections.
+ */
 @Composable
 fun AppDetailScreen(
     row: AppRow,
@@ -60,24 +65,45 @@ fun AppDetailScreen(
         modifier = modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            .padding(horizontal = Space.lg),
     ) {
+        Spacer(Modifier.height(Space.sm))
+
         Row(verticalAlignment = Alignment.CenterVertically) {
-            AppIcon(url = row.iconUrl, seed = app.packageName, text = app.name.take(1).uppercase(), size = 72)
-            Spacer(Modifier.width(16.dp))
-            Column {
-                Text(app.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                app.author?.let {
-                    Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Text(app.packageName, style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace)
+            AppIcon(
+                url = row.iconUrl,
+                seed = app.packageName,
+                text = app.name.take(1).uppercase(),
+                size = 72.dp,
+            )
+            Spacer(Modifier.width(Space.lg))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(app.name, style = MaterialTheme.typography.headlineSmall)
+                Spacer(Modifier.height(Space.xs))
+                Text(
+                    text = app.author ?: app.packageName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(Space.lg))
         Text(app.summary, style = MaterialTheme.typography.bodyLarge)
 
-        Spacer(Modifier.height(16.dp))
+        if (app.categories.isNotEmpty() || app.status != "active") {
+            Spacer(Modifier.height(Space.md))
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
+                app.categories.take(2).forEach { category ->
+                    Badge(categoryLabel(category), MaterialTheme.colorScheme.secondary)
+                }
+                if (app.status != "active") {
+                    Badge(statusLabel(app.status), MaterialTheme.colorScheme.tertiary)
+                }
+            }
+        }
+
+        Spacer(Modifier.height(Space.lg))
         InstallSection(
             row = row,
             canInstallPackages = canInstallPackages,
@@ -86,62 +112,72 @@ fun AppDetailScreen(
             onAuthorize = onAuthorize,
         )
 
-        if (!row.signatureConflict && row.installed != null && row.app.signingCertSha256 != null) {
-            val installedCert = ApkVerifier.installedSigningCertificateSha256(context, app.packageName)
-            if (installedCert != null && !dev.montra.util.fingerprintsMatch(installedCert, app.signingCertSha256)) {
-                WarningCard(
-                    "A versão instalada está assinada por outra chave. O Android vai recusar a atualização: " +
-                        "desinstala primeiro e volta a instalar a partir daqui.",
-                )
-            }
+        // A signature conflict is not our error and retrying does not fix it, so it
+        // gets its own explanation and its own exit.
+        if (row.signatureConflict) {
+            Spacer(Modifier.height(Space.md))
+            AlertBlock(
+                title = "Assinada por outra chave",
+                text = "A versão instalada neste telemóvel foi assinada por uma chave diferente " +
+                    "da que o catálogo fixa, por isso o Android vai recusar a atualização. " +
+                    "Desinstala primeiro e volta a instalar a partir daqui.",
+                action = {
+                    OutlinedButton(
+                        onClick = {
+                            context.startActivity(
+                                InstallManager.of(context).uninstallIntent(app.packageName),
+                            )
+                        },
+                    ) { Text("Desinstalar a versão atual") }
+                },
+            )
         }
 
         if (app.antiFeatures.isNotEmpty()) {
-            SectionTitle("Avisos")
-            app.antiFeatures.forEach { feature ->
-                WarningCard(antiFeatureLabel(feature))
+            Spacer(Modifier.height(Space.md))
+            Block {
+                Text("Avisos", style = MaterialTheme.typography.titleSmall)
+                Spacer(Modifier.height(Space.sm))
+                app.antiFeatures.forEach { feature ->
+                    Text(
+                        text = "• ${antiFeatureLabel(feature)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
 
         SectionTitle("Versão")
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
-            Column(Modifier.padding(12.dp)) {
-                KeyValue("versão", app.release?.versionName ?: "—")
-                KeyValue("versionCode", (row.asset?.versionCode ?: app.release?.versionCode)?.toString() ?: "—")
-                KeyValue("tamanho", formatBytes(row.size))
-                KeyValue("ABI", row.asset?.abi?.replace("universal", "universal (todas)") ?: "—")
-                KeyValue("Android mínimo", row.asset?.minSdk?.let { "API $it" } ?: "não declarado")
-                KeyValue("publicado", app.release?.publishedAt?.take(10) ?: "—")
-                row.asset?.nativeAbis?.takeIf { it.isNotEmpty() }?.let {
-                    KeyValue("bibliotecas nativas", it.joinToString(", "))
-                }
-                app.downloadCount?.let { KeyValue("descarregamentos", "%,d".format(it)) }
-                KeyValue("licença", app.license)
-                KeyValue("estado", statusLabel(app.status))
-            }
+        Block {
+            KeyValue("versão", app.release?.versionName ?: "—")
+            KeyValue("versionCode", (row.asset?.versionCode ?: app.release?.versionCode)?.toString() ?: "—")
+            KeyValue("tamanho", formatBytes(row.size))
+            KeyValue("arquitetura", row.asset?.abi?.replace("universal", "todas") ?: "—")
+            KeyValue("Android mínimo", row.asset?.minSdk?.let { "API $it" } ?: "não declarado")
+            KeyValue("publicado", app.release?.publishedAt?.take(10) ?: "—")
+            app.downloadCount?.let { KeyValue("descarregamentos", "%,d".format(it)) }
+            KeyValue("licença", app.license)
         }
 
         SectionTitle("Verificação")
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
-            Column(Modifier.padding(12.dp)) {
-                Text(
-                    "Esta app foi verificada contra o catálogo assinado antes de ser instalada.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(8.dp))
-                KeyValue("sha256 do APK", row.asset?.sha256?.chunked(32)?.joinToString("\n") ?: "—", mono = true)
-                KeyValue(
-                    "certificado de assinatura",
-                    app.signingCertSha256?.chunked(24)?.joinToString("\n") ?: "não fixado",
-                    mono = true,
-                )
-                if (keyId != null) {
-                    KeyValue("chave do catálogo", keyId, mono = true)
-                }
-                row.installed?.certSha256?.let {
-                    KeyValue("certificado instalado", it.chunked(24).joinToString("\n"), mono = true)
-                }
+        Block {
+            Text(
+                text = "Este APK foi confirmado byte a byte contra o catálogo assinado antes de " +
+                    "ser entregue ao instalador do Android.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(Space.sm))
+            KeyValue("sha256 do APK", row.asset?.sha256?.chunked(32)?.joinToString("\n") ?: "—", mono = true)
+            KeyValue(
+                "certificado",
+                app.signingCertSha256?.chunked(24)?.joinToString("\n") ?: "não fixado",
+                mono = true,
+            )
+            keyId?.let { KeyValue("chave do catálogo", it, mono = true) }
+            row.installed?.certSha256?.let {
+                KeyValue("certificado instalado", it.chunked(24).joinToString("\n"), mono = true)
             }
         }
 
@@ -152,7 +188,7 @@ fun AppDetailScreen(
 
         app.release?.changelog?.takeIf { it.isNotBlank() }?.let { changelog ->
             SectionTitle("Novidades em ${app.release.versionName}")
-            Text(stripMarkdown(changelog), style = MaterialTheme.typography.bodySmall)
+            Text(stripMarkdown(changelog), style = MaterialTheme.typography.bodyMedium)
         }
 
         if (row.screenshotUrls.isNotEmpty()) {
@@ -165,19 +201,20 @@ fun AppDetailScreen(
             LinkRow("Código-fonte", app.sourceCode, onOpenSource)
             app.links["website"]?.let { LinkRow("Site", it, onOpenSource) }
             app.links["docs"]?.let { LinkRow("Documentação", it, onOpenSource) }
-            app.links["changelog"]?.let { LinkRow("Registo de alterações", it, onOpenSource) }
+            app.links["changelog"]?.let { LinkRow("Alterações", it, onOpenSource) }
             app.links["translate"]?.let { LinkRow("Traduzir", it, onOpenSource) }
             app.links["donate"]?.let { LinkRow("Doar", it, onOpenSource) }
-            app.links["issues"]?.let { LinkRow("Problemas", it, onOpenSource) }
             app.playStore?.takeIf { it.present }?.url?.let { LinkRow("Também na Play Store", it, onOpenSource) }
         }
 
         if (app.warnings.isNotEmpty()) {
             SectionTitle("Notas do catálogo")
-            app.warnings.forEach { WarningCard(it) }
+            Column(verticalArrangement = Arrangement.spacedBy(Space.sm)) {
+                app.warnings.forEach { warning -> AlertBlock(text = warning) }
+            }
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(Space.xxl))
     }
 }
 
@@ -192,104 +229,103 @@ private fun InstallSection(
     val context = LocalContext.current
     when (val state = row.installState) {
         is InstallState.Downloading -> Column(Modifier.fillMaxWidth()) {
-            Text("A descarregar ${formatBytes(state.bytes)} de ${formatBytes(state.total)}")
-            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "A descarregar ${formatBytes(state.bytes)} de ${formatBytes(state.total)}",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Spacer(Modifier.height(Space.sm))
             LinearProgressIndicator(progress = { state.fraction }, modifier = Modifier.fillMaxWidth())
         }
 
-        is InstallState.Verifying -> Text("A verificar sha256 e certificado…")
-        is InstallState.AwaitingUser -> Text("A aguardar a confirmação do instalador do Android…")
-        is InstallState.Installed -> Column {
-            Text("Instalado.", color = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.height(8.dp))
-            InstallManager.launchIntent(context, row.app.packageName)?.let { intent ->
-                OutlinedButton(onClick = { context.startActivity(intent) }) { Text("Abrir") }
-            }
-        }
-        // Não é uma falha: é uma permissão por app que se resolve em dois toques,
-        // e por isso o ecrã tem de trazer o botão que a resolve.
-        InstallState.NeedsPermission -> Column {
-            WarningCard(
-                "O Android ainda não autorizou a Montra a instalar aplicações. " +
-                    "Abre a autorização, liga-a, e volta aqui — o download só começa depois disso.",
-            )
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = onAuthorize) { Text("Abrir autorização") }
-                TextButton(onClick = { onClearError(row.app.id) }) { Text("Dispensar") }
-            }
-        }
-
-        is InstallState.Failed -> Column {
-            WarningCard(state.reason)
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { onInstall(row.app) }) { Text("Tentar de novo") }
-                TextButton(onClick = { onClearError(row.app.id) }) { Text("Dispensar") }
-            }
-            if (row.signatureConflict) {
-                Spacer(Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = { context.startActivity(InstallManager.of(context).uninstallIntent(row.app.packageName)) },
-                ) { Text("Desinstalar a versão atual") }
-            }
-        }
-        InstallState.Idle -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (row.asset == null) {
-                Text("Sem APK compatível com a arquitetura deste dispositivo.", color = MaterialTheme.colorScheme.error)
-            } else if (row.incompatible != null) {
-                Text(row.incompatible!!, color = MaterialTheme.colorScheme.error)
-            } else if (!canInstallPackages) {
-                // O caminho principal passa a ser resolver a autorização, em vez de
-                // deixar o utilizador bater num erro que já sabemos que vem.
-                Button(onClick = onAuthorize) { Text("Autorizar instalação") }
-            } else if (!row.isInstalled) {
-                Button(onClick = { onInstall(row.app) }) { Text("Instalar ${formatBytes(row.size)}") }
-            } else if (row.updateAvailable) {
-                Button(onClick = { onInstall(row.app) }) {
-                    Text("Atualizar para ${row.app.release?.versionName}")
-                }
-            } else {
-                Column {
-                    Text("Já tens a versão mais recente.", color = MaterialTheme.colorScheme.primary)
-                    InstallManager.launchIntent(context, row.app.packageName)?.let { intent ->
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedButton(onClick = { context.startActivity(intent) }) { Text("Abrir") }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun WarningCard(text: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(12.dp),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onErrorContainer,
+        is InstallState.Verifying -> Text(
+            text = "A verificar o sha256 e o certificado…",
+            style = MaterialTheme.typography.bodyMedium,
         )
+
+        is InstallState.AwaitingUser -> Text(
+            text = "Confirma a instalação no diálogo do sistema.",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+
+        is InstallState.Installed -> Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
+            InstallManager.launchIntent(context, row.app.packageName)?.let { intent ->
+                Button(onClick = { context.startActivity(intent) }) { Text("Abrir") }
+            }
+            OutlinedButton(onClick = { onClearError(row.app.id) }) { Text("Concluir") }
+        }
+
+        InstallState.NeedsPermission -> AlertBlock(
+            title = "Falta uma autorização",
+            text = "O Android ainda não autorizou a Montra a instalar aplicações. Liga a " +
+                "autorização, volta aqui, e só então o download começa.",
+            action = {
+                Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
+                    Button(onClick = onAuthorize) { Text("Abrir autorização") }
+                    TextButton(onClick = { onClearError(row.app.id) }) { Text("Dispensar") }
+                }
+            },
+        )
+
+        is InstallState.Failed -> AlertBlock(
+            title = "Não foi possível",
+            text = state.reason,
+            action = {
+                Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
+                    Button(onClick = { onInstall(row.app) }) { Text("Tentar de novo") }
+                    TextButton(onClick = { onClearError(row.app.id) }) { Text("Dispensar") }
+                }
+            },
+        )
+
+        InstallState.Idle -> when {
+            row.incompatible != null -> {
+                val reason = row.incompatible ?: ""
+                AlertBlock(title = "Não corre aqui", text = reason)
+            }
+            row.asset == null -> AlertBlock(
+                text = "Esta app não publica um APK para a arquitetura deste dispositivo.",
+            )
+            !canInstallPackages -> Button(
+                onClick = onAuthorize,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Autorizar instalação") }
+            !row.isInstalled -> Button(
+                onClick = { onInstall(row.app) },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Instalar · ${formatBytes(row.size)}") }
+            row.updateAvailable -> Button(
+                onClick = { onInstall(row.app) },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Atualizar para ${row.app.release?.versionName}") }
+            else -> Row(
+                horizontalArrangement = Arrangement.spacedBy(Space.sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                InstallManager.launchIntent(context, row.app.packageName)?.let { intent ->
+                    Button(onClick = { context.startActivity(intent) }) { Text("Abrir") }
+                }
+                Badge("versão mais recente", MaterialTheme.colorScheme.primary)
+            }
+        }
     }
 }
 
 @Composable
 private fun LinkRow(label: String, url: String, onOpen: (String) -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(vertical = Space.xs),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium)
         TextButton(onClick = { onOpen(url) }) {
-            Text(url.removePrefix("https://").take(38), maxLines = 1)
+            Text(
+                text = url.removePrefix("https://").removePrefix("http://").take(34),
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+            )
         }
     }
-    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
 }
 
 /** Changelogs are markdown; this strips the syntax we cannot render yet. */

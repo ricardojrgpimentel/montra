@@ -191,3 +191,11 @@ fun statusLabel(status: String): String = when (status) {
     "deprecated" -> "descontinuada"
     else -> status
 }
+
+/**
+ * Games and emulators share one tab, because to the person browsing they answer the
+ * same question: "what can I play on this?". Keeping them as categories in the data
+ * means the tab can change without touching the index.
+ */
+fun IndexApp.isGamesOrEmulators(): Boolean =
+    categories.any { it == "games" || it == "emulators" }

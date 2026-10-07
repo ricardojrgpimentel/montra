@@ -18,12 +18,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -36,9 +45,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -47,10 +57,13 @@ import dev.montra.data.model.IndexApp
 import dev.montra.install.InstallManager
 import dev.montra.install.InstallRequest
 import dev.montra.ui.AppDetailScreen
-import dev.montra.ui.AppListScreen
+import dev.montra.ui.AppsScreen
+import dev.montra.ui.GamesScreen
 import dev.montra.ui.MontraViewModel
+import dev.montra.ui.SearchScreen
 import dev.montra.ui.SettingsScreen
 import dev.montra.ui.theme.MontraTheme
+import dev.montra.ui.theme.Space
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -79,18 +92,36 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        // Tapping the progress notification while the app is already open should
-        // still take the user to that app, not restart the activity (singleTop).
+        // Tapping the progress notification while the app is already open should take
+        // the user to that app, not restart the activity (singleTop).
         pendingAppId.value = intent.getStringExtra(InstallRequest.EXTRA_APP_ID)
     }
 
     override fun onResume() {
         super.onResume()
-        // The "install unknown apps" permission and the set of installed apps can
-        // both change while we are in the background — we send the user to Settings
-        // for exactly that reason, so the state has to be re-read on return.
+        // The "install unknown apps" permission and the set of installed apps can both
+        // change while we are away — we send the user to Settings for exactly that.
         viewModel.onResume()
     }
+}
+
+/**
+ * The four destinations of the footer, in the order they appear.
+ *
+ * Apps is first and is where the app lands: this is a catalogue of tools where games
+ * are a growing minority, so landing on games would be a statement the data does not
+ * make yet. If that ever flips, swapping two lines here is the whole change.
+ */
+private enum class Tab(
+    val route: String,
+    val label: String,
+    val icon: ImageVector,
+    val selectedIcon: ImageVector,
+) {
+    APPS("apps", "Apps", Icons.Outlined.Apps, Icons.Filled.Apps),
+    GAMES("games", "Jogos", Icons.Outlined.SportsEsports, Icons.Filled.SportsEsports),
+    SEARCH("search", "Procurar", Icons.Outlined.Search, Icons.Filled.Search),
+    SETTINGS("settings", "Definições", Icons.Outlined.Settings, Icons.Filled.Settings),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -105,9 +136,15 @@ fun MontraRoot(
     val navController = rememberNavController()
     val context = LocalContext.current
     val backStackEntry by navController.currentBackStackEntryAsState()
-    val route = backStackEntry?.destination?.route
+    val route = backStackEntry?.destination?.route ?: Tab.APPS.route
+    val isDetail = route.startsWith("detail")
+    val detailedApp = if (isDetail) {
+        state.rows.firstOrNull { it.app.id == route.substringAfter("detail/") }
+    } else {
+        null
+    }
 
-    // Deep link from the notification; waits for the catalogue if it is still loading.
+    // Deep link from a download notification; waits for the catalogue if it is loading.
     LaunchedEffect(requestedAppId, state.rows.size) {
         val id = requestedAppId ?: return@LaunchedEffect
         if (state.rows.any { it.app.id == id }) {
@@ -121,8 +158,8 @@ fun MontraRoot(
         Unit
     }
 
-    // Asked at the moment it becomes useful: the notification is how the user sees
-    // progress after leaving the app. Denying it does not block the install.
+    // Asked when it becomes useful: the notification is how progress stays visible
+    // after leaving the app. Denying it does not block the install.
     var pendingInstall by remember { mutableStateOf<IndexApp?>(null) }
     val notificationPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -144,44 +181,118 @@ fun MontraRoot(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(titleFor(route)) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                ),
-                navigationIcon = {
-                    if (route != "list") {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+            // The search tab owns its own field; a title above it would be a line of
+            // chrome saying what the field already says.
+            if (route != Tab.SEARCH.route) {
+                TopAppBar(
+                    title = {
+                        Text(
+                            when {
+                                isDetail -> detailedApp?.app?.name ?: "Detalhes"
+                                route == Tab.SETTINGS.route -> "Definições"
+                                route == Tab.GAMES.route -> "Jogos e emuladores"
+                                else -> "Montra"
+                            },
+                        )
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                    ),
+                    navigationIcon = {
+                        if (isDetail) {
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Voltar",
+                                )
+                            }
                         }
-                    }
-                },
-                actions = {
-                    if (route == "list") {
-                        IconButton(onClick = { viewModel.refresh(true) }) {
-                            Icon(Icons.Filled.Refresh, contentDescription = "Atualizar catálogo")
+                    },
+                    actions = {
+                        if (route == Tab.APPS.route) {
+                            IconButton(onClick = { viewModel.refresh(true) }) {
+                                Icon(Icons.Filled.Refresh, contentDescription = "Atualizar catálogo")
+                            }
                         }
+                    },
+                )
+            }
+        },
+        bottomBar = {
+            // Play hides the footer on an app page, and so do we: the page has its own
+            // primary action and its own way back.
+            if (!isDetail) {
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                    Tab.entries.forEach { tab ->
+                        val selected = route == tab.route
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = {
+                                if (!selected) {
+                                    navController.navigate(tab.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = if (selected) tab.selectedIcon else tab.icon,
+                                    contentDescription = null,
+                                )
+                            },
+                            label = { Text(tab.label) },
+                        )
                     }
-                    IconButton(onClick = { navController.navigate("settings") }) {
-                        Icon(Icons.Filled.Settings, contentDescription = "Definições")
-                    }
-                },
-            )
+                }
+            }
         },
     ) { padding ->
         NavHost(
             navController = navController,
-            startDestination = "list",
+            startDestination = Tab.APPS.route,
             modifier = Modifier.padding(padding),
         ) {
-            composable("list") {
-                AppListScreen(
+            composable(Tab.APPS.route) {
+                AppsScreen(
                     state = state,
-                    onQuery = viewModel::setQuery,
                     onCategory = viewModel::setCategory,
                     onSort = viewModel::setSort,
+                    onOpenSearch = { navController.navigate(Tab.SEARCH.route) },
                     onOpen = { app -> navController.navigate("detail/${app.id}") },
                     onInstall = startInstall,
+                    onAuthorize = authorize,
+                )
+            }
+            composable(Tab.GAMES.route) {
+                GamesScreen(
+                    state = state,
+                    onOpenSearch = { navController.navigate(Tab.SEARCH.route) },
+                    onOpen = { app -> navController.navigate("detail/${app.id}") },
+                    onInstall = startInstall,
+                    onAuthorize = authorize,
+                )
+            }
+            composable(Tab.SEARCH.route) {
+                SearchScreen(
+                    state = state,
+                    query = state.query,
+                    results = viewModel.searchResults(),
+                    onQuery = viewModel::setQuery,
+                    onClear = viewModel::clearQuery,
+                    onOpen = { app -> navController.navigate("detail/${app.id}") },
+                    onInstall = startInstall,
+                    onAuthorize = authorize,
+                )
+            }
+            composable(Tab.SETTINGS.route) {
+                SettingsScreen(
+                    state = state,
+                    onRefresh = { viewModel.refresh(true) },
+                    onSetIndexUrl = viewModel::setIndexUrl,
                     onAuthorize = authorize,
                 )
             }
@@ -189,7 +300,7 @@ fun MontraRoot(
                 val id = entry.arguments?.getString("id")
                 val row = state.rows.firstOrNull { it.app.id == id }
                 if (row == null) {
-                    Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+                    Column(modifier = Modifier.fillMaxSize().padding(Space.xl)) {
                         Text("Esta app já não está no catálogo.")
                     }
                 } else {
@@ -204,23 +315,8 @@ fun MontraRoot(
                     )
                 }
             }
-            composable("settings") {
-                SettingsScreen(
-                    state = state,
-                    onRefresh = { viewModel.refresh(true) },
-                    onSetIndexUrl = viewModel::setIndexUrl,
-                    onAuthorize = authorize,
-                )
-            }
         }
     }
-}
-
-private fun titleFor(route: String?): String = when {
-    route == null -> "Montra"
-    route.startsWith("detail") -> "Detalhes"
-    route == "settings" -> "Definições"
-    else -> "Montra"
 }
 
 fun openUrl(context: Context, url: String) {
