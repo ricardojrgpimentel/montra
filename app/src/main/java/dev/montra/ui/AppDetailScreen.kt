@@ -146,12 +146,15 @@ fun AppDetailScreen(
             )
         }
 
-        if (app.antiFeatures.isNotEmpty()) {
+        // A licença restritiva já tem o seu bloco acima: repeti-la aqui em baixo
+        // seria o mesmo texto duas vezes no mesmo ecrã.
+        val otherAntiFeatures = app.antiFeatures.filter { it != "restrictedLicense" }
+        if (otherAntiFeatures.isNotEmpty()) {
             Spacer(Modifier.height(Space.md))
             Block {
                 Text("Avisos", style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.height(Space.sm))
-                app.antiFeatures.forEach { feature ->
+                otherAntiFeatures.forEach { feature ->
                     Text(
                         text = "• ${antiFeatureLabel(feature)}",
                         style = MaterialTheme.typography.bodyMedium,
