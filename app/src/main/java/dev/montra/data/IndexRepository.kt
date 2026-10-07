@@ -130,7 +130,10 @@ class IndexRepository(
                 }
             }
         } catch (error: Exception) {
-            Log.w("falha a atualizar o catálogo de $url", error)
+            // A causa vai na mensagem, não só no throwable: muitas ROMs limpam o
+            // stack trace do buffer, e quem depura fica sem saber o que falhou.
+            val cause = error.message?.takeIf { it.isNotBlank() } ?: "(sem mensagem)"
+            Log.w("falha a atualizar o catálogo de $url — ${error::class.java.simpleName}: $cause", error)
             _state.update {
                 it.copy(
                     refreshing = false,
