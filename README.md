@@ -55,12 +55,54 @@ app/src/main/assets/
 └── index-signing.pub.pem      chave de confiança (parte da identidade da app)
 ```
 
+## Permissões, progresso e notificações
+
+Duas coisas que uma loja tem de fazer bem, porque são onde o utilizador desiste:
+
+**A autorização para instalar.** O Android exige uma autorização *por app*
+("Instalar apps desconhecidas"). Se ela faltar, nada é transferido: a app verifica
+primeiro, mostra uma faixa no topo da lista e transforma o botão de cada app de
+"Instalar" em "Autorizar", que abre diretamente o ecrã do sistema onde o
+interruptor está. Um erro a vermelho depois de 15 MB descarregados era a versão
+anterior — e era má.
+
+**O progresso.** O download corre num serviço em primeiro plano
+(`install/InstallService`, tipo `dataSync`), não no ViewModel: um APK de 300 MB não
+pode morrer quando o utilizador sai da app, e é isso que permite a notificação.
+
+- Canal `downloads`, importância `LOW`: visível e atualizável, nunca sonoro.
+- Mostra bytes reais e percentagem, depois "A verificar…", "Confirma a instalação"
+  e por fim "instalada" ou a razão da falha.
+- Tocar abre a app no ecrã dessa aplicação (o `InstallRequest` viaja no Intent e a
+  MainActivity faz o deep link, com `singleTop` para não reiniciar).
+- Traz uma ação **Cancelar** que aborta o `Call` do OkHttp — cancelar a corrotina
+  não chega, porque a leitura do socket é uma chamada bloqueante.
+- O estado vive num único sítio (`InstallManager`), pelo que o ecrã e a
+  notificação não podem discordar.
+
+A permissão `POST_NOTIFICATIONS` é pedida no momento em que passa a ser útil (no
+primeiro toque em Instalar). Recusá-la não bloqueia a instalação: o progresso
+continua visível no ecrã.
+
+### O diálogo do sistema
+
+Uma sessão de `PackageInstaller` que precise de confirmação devolve
+`STATUS_PENDING_USER_ACTION` **com um Intent** que a app tem de lançar. Ignorar isto
+não dá erro: a instalação fica pendurada à espera de um diálogo que ninguém mostra.
+Foi exatamente o que se observou num Android 16, e é por isso que o
+`InstallResultReceiver` lança o Intent sempre que ele venha — e trata também o
+caminho pré-Android 12, onde era obrigatório.
+
 ## Fluxo de instalação
 
 ```
 utilizador carrega em Instalar
         │
+        ├─ falta autorização para instalar apps desconhecidas? → botão que a resolve, sem download
+        ├─ pedido vai para o InstallService (primeiro plano, notificação de progresso)
+        │
         ├─ asset = bestAssetFor(Build.SUPPORTED_ABIS)   sem APK compatível → diz-se, não se instala
+        ├─ minSdk acima desta API → "incompatível", não se tenta
         │
         ├─ download com SHA-256 calculado em streaming
         │     └─ não corresponde ao índice → ficheiro apagado, erro explícito
@@ -90,7 +132,7 @@ O estado de cada app (`Idle`, `Downloading`, `Verifying`, `AwaitingUser`,
 | `security/IndexVerifierTest` | assinatura válida aceite; um byte alterado, outra chave ou base64 malformado recusados; key id estável |
 | `data/RealIndexTest` | **os bytes reais do índice incluído na app verificam com o verificador real**; key id bate certo; bytes adulterados recusados; todas as apps têm release, sha256, certificado e ícone relativo |
 | `data/IndexModelTest` | campos desconhecidos ignorados; fallback de idioma; escolha de ABI |
-| `androidTest/CatalogueNetworkSmokeTest` | **no dispositivo, no processo da app**: descarrega o índice publicado por HTTPS, verifica a assinatura com a chave do APK, guarda em cache, e recusa um índice adulterado (com uma fonte hostil injetada) |
+| `androidTest/CatalogueNetworkSmokeTest` | **no dispositivo, no processo da app**: descarrega o índice publicado por HTTPS, verifica a assinatura com a chave do APK, guarda em cache, e recusa um índice adulterado (com uma fonte hostil injetada); e o `InstallRequest` sobrevive à passagem por Intent sem perder o sha256 nem o certificado |
 
 O `RealIndexTest` liga o assinador (Node, `tools/sign-index.mjs`) ao verificador
 (Kotlin): se qualquer dos lados mudar de formato, o build falha. O teste

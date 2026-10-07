@@ -141,6 +141,47 @@ class CatalogueNetworkSmokeTest {
         assertTrue("o snapshot incluído no APK não verifica: $check", check is SignatureCheck.Valid)
     }
 
+    /**
+     * The install pipeline crosses a process boundary via Intent extras. If that
+     * serialisation loses a field — the sha256, the pinned certificate — the app
+     * would either refuse everything or, worse, skip a check. Pinned down here.
+     */
+    @Test
+    fun installRequestSurvivesAnIntent() {
+        val asset = dev.montra.data.model.Asset(
+            abi = "arm64-v8a",
+            url = "https://example.invalid/app.apk",
+            sha256 = "a".repeat(64),
+            size = 12_345_678L,
+            signingCertSha256 = "ab:cd:ef",
+            versionCode = 42,
+            versionName = "1.2.3",
+        )
+        val original = dev.montra.install.InstallRequest(
+            appId = "exemplo",
+            appName = "Exemplo",
+            packageName = "com.exemplo.app",
+            pinnedCertSha256 = "ab:cd:ef",
+            asset = asset,
+        )
+
+        val intent = original.putInto(android.content.Intent(context, MainActivity::class.java))
+        val restored = dev.montra.install.InstallRequest.from(intent)
+
+        assertNotNull("o pedido tem de sobreviver ao Intent", restored)
+        assertEquals(original, restored)
+        assertEquals("a".repeat(64), restored!!.asset.sha256)
+        assertEquals(42, restored.asset.versionCode)
+        assertEquals(12_345_678L, restored.asset.size)
+        assertEquals("ab:cd:ef", restored.asset.signingCertSha256)
+    }
+
+    @Test
+    fun anIntentWithoutAnAssetIsRefused() {
+        val empty = android.content.Intent(context, MainActivity::class.java)
+        assertEquals(null, dev.montra.install.InstallRequest.from(empty))
+    }
+
     private fun indexOf(haystack: ByteArray, needle: ByteArray): Int {
         outer@ for (i in 0..haystack.size - needle.size) {
             for (j in needle.indices) if (haystack[i + j] != needle[j]) continue@outer

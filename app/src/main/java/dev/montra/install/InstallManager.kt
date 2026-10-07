@@ -10,17 +10,19 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import dev.montra.data.model.Asset
-import dev.montra.data.model.IndexApp
 import dev.montra.security.ApkVerifier
 import dev.montra.util.Log
+import dev.montra.util.fingerprintsMatch
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.IOException
 
 sealed interface InstallState {
     data object Idle : InstallState
@@ -28,6 +30,13 @@ sealed interface InstallState {
 
     /** Download complete, now checking hash and signature before asking the system. */
     data object Verifying : InstallState
+
+    /**
+     * Android has not been told that this app may install packages. This is not a
+     * failure — it is a permission the user grants in two taps, so the UI is
+     * expected to offer that, not merely report it.
+     */
+    data object NeedsPermission : InstallState
 
     /** The system installer is showing its own confirmation dialog. */
     data object AwaitingUser : InstallState
@@ -43,6 +52,10 @@ sealed interface InstallState {
  * it has no idea what our index promised. So verification happens here, before a
  * session is even created, and the session is only opened for a file that already
  * matched both the SHA-256 and the pinned certificate.
+ *
+ * A singleton owned by the application container, because the work runs in
+ * [InstallService] while the UI observes it: one state machine, two views of it
+ * (the screen and the notification).
  */
 class InstallManager(private val context: Context, private val downloader: ApkDownloader) {
 
@@ -63,72 +76,94 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
     )
 
     /** Android refuses in-place updates when the installed app has another signer. */
-    fun installedSignatureMatches(app: IndexApp): Boolean? {
-        val expected = app.signingCertSha256 ?: return null
-        val installed = ApkVerifier.installedSigningCertificateSha256(context, app.packageName) ?: return null
-        return dev.montra.util.fingerprintsMatch(expected, installed)
+    fun installedSignatureMatches(asset: Asset, packageName: String): Boolean? {
+        val expected = asset.signingCertSha256 ?: return null
+        val installed = ApkVerifier.installedSigningCertificateSha256(context, packageName) ?: return null
+        return fingerprintsMatch(expected, installed)
     }
 
     fun uninstallIntent(packageName: String): Intent =
         Intent(Intent.ACTION_DELETE, Uri.parse("package:$packageName"))
 
+    fun cancelDownload() {
+        downloader.cancel()
+    }
+
     /**
-     * Runs the whole pipeline for one app. Never throws: every failure ends up as
-     * [InstallState.Failed] so the UI always has something true to show.
+     * Runs the whole pipeline for one app. Never throws on failure: every problem
+     * ends up as a state the UI can explain.
      */
-    suspend fun install(app: IndexApp, asset: Asset) {
+    suspend fun install(request: InstallRequest) {
+        // Checked before a single byte is downloaded. Asking for 15 MB and only then
+        // saying "you never granted me permission" wastes the user's data and their
+        // patience — and it is the wrong order for a permission we can prompt for.
+        if (!canRequestInstall()) {
+            Log.i("${request.appId}: falta autorização para instalar apps desconhecidas")
+            setState(request.appId, InstallState.NeedsPermission)
+            return
+        }
+
+        val asset = request.asset
         try {
-            Log.i("instalar ${app.id} (${asset.abi}, ${asset.size} bytes, sha256 ${asset.sha256.take(16)}…)")
-            setState(app.id, InstallState.Downloading(0, asset.size, 0f))
+            Log.i("instalar ${request.appId} (${asset.abi}, ${asset.size} bytes, sha256 ${asset.sha256.take(16)}…)")
+            setState(request.appId, InstallState.Downloading(0, asset.size, 0f))
             val downloaded = downloader.download(asset) { progress ->
-                setState(app.id, InstallState.Downloading(progress.bytes, progress.total, progress.fraction))
+                setState(
+                    request.appId,
+                    InstallState.Downloading(progress.bytes, progress.total, progress.fraction),
+                )
             }
 
-            setState(app.id, InstallState.Verifying)
+            setState(request.appId, InstallState.Verifying)
             when (
                 val result = withContext(Dispatchers.IO) {
                     ApkVerifier.verify(
                         context = context,
                         file = downloaded.file,
                         expectedSha256 = asset.sha256,
-                        expectedCertFingerprint = asset.signingCertSha256 ?: app.signingCertSha256,
+                        expectedCertFingerprint = asset.signingCertSha256 ?: request.pinnedCertSha256,
                     )
                 }
             ) {
                 is ApkVerifier.Result.Rejected -> {
-                    Log.e("${app.id}: verificação falhou — ${result.reason}")
+                    Log.e("${request.appId}: verificação falhou — ${result.reason}")
                     downloaded.file.delete()
-                    setState(app.id, InstallState.Failed(result.reason))
+                    setState(request.appId, InstallState.Failed(result.reason))
                     return
                 }
                 is ApkVerifier.Result.Verified -> Log.i(
-                    "${app.id}: verificado (sha256 e certificado ${result.certSha256?.take(17)}…)",
+                    "${request.appId}: verificado (sha256 e certificado ${result.certSha256?.take(17)}…)",
                 )
             }
 
-            if (!canRequestInstall()) {
-                setState(app.id, InstallState.Failed("precisas de autorizar esta app a instalar aplicações desconhecidas"))
+            setState(request.appId, InstallState.AwaitingUser)
+            commit(request, downloaded.file)
+        } catch (cancelled: CancellationException) {
+            Log.i("${request.appId}: download cancelado")
+            setState(request.appId, InstallState.Idle)
+            throw cancelled
+        } catch (error: Exception) {
+            if (!currentCoroutineContext().isActive) {
+                // Cancelled mid-flight: an error state here would contradict the
+                // cancel the user just asked for.
+                setState(request.appId, InstallState.Idle)
                 return
             }
-
-            setState(app.id, InstallState.AwaitingUser)
-            commit(app, downloaded.file)
-        } catch (error: Exception) {
-            Log.e("${app.id}: instalação falhou", error)
+            Log.e("${request.appId}: instalação falhou", error)
             setState(
-                app.id,
+                request.appId,
                 InstallState.Failed(error.message ?: error::class.simpleName ?: "falha desconhecida"),
             )
         }
     }
 
-    private suspend fun commit(app: IndexApp, apk: File) = withContext(Dispatchers.IO) {
+    private suspend fun commit(request: InstallRequest, apk: File) = withContext(Dispatchers.IO) {
         val installer = context.packageManager.packageInstaller
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
-            setAppPackageName(app.packageName)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) setRequireUserAction(
-                PackageInstaller.SessionParams.USER_ACTION_REQUIRED,
-            )
+            setAppPackageName(request.packageName)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_REQUIRED)
+            }
         }
         val sessionId = installer.createSession(params)
         try {
@@ -138,7 +173,7 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
                     session.fsync(output)
                 }
                 val intent = Intent(context, InstallResultReceiver::class.java)
-                    .putExtra(InstallResultReceiver.EXTRA_APP_ID, app.id)
+                    .putExtra(InstallResultReceiver.EXTRA_APP_ID, request.appId)
                     .putExtra(InstallResultReceiver.EXTRA_SESSION_ID, sessionId)
                 val flags = PendingIntent.FLAG_UPDATE_CURRENT or
                     (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0)
@@ -147,8 +182,11 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
             }
         } catch (error: Exception) {
             runCatching { installer.abandonSession(sessionId) }
-            setState(app.id, InstallState.Failed(error.message ?: "o sistema recusou a sessão de instalação"))
-            throw error
+            Log.e("${request.appId}: o sistema recusou a sessão de instalação", error)
+            setState(
+                request.appId,
+                InstallState.Failed(error.message ?: "o sistema recusou a sessão de instalação"),
+            )
         } finally {
             apk.delete()
         }
@@ -196,12 +234,44 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
     }
 }
 
-/** Receives the outcome of a PackageInstaller session. Manifest-declared, not exported. */
+/**
+ * Receives the outcome of a PackageInstaller session. Manifest-declared, not exported.
+ *
+ * The subtlety that cost an afternoon: when a session commits with
+ * STATUS_PENDING_USER_ACTION, the platform hands the app an Intent (EXTRA_INTENT)
+ * that shows the confirmation dialog, and expects the app to launch it. Get this
+ * wrong and the install does not fail — it hangs, with a session waiting forever
+ * for a dialog nobody is showing. Observed exactly that on Android 16, so the
+ * intent is launched whenever it is delivered, on every API level.
+ */
 class InstallResultReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val appId = intent.getStringExtra(EXTRA_APP_ID) ?: return
         val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)
         val message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
+
+        val confirmation = if (status == PackageInstaller.STATUS_PENDING_USER_ACTION) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+            }
+        } else {
+            null
+        }
+
+        Log.d(
+            "$appId: resultado status=$status, extras=${intent.extras?.keySet()?.joinToString()}, " +
+                "diálogo do sistema=${confirmation != null}",
+        )
+
+        if (confirmation != null) {
+            confirmation.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            runCatching { context.startActivity(confirmation) }
+                .onFailure { Log.w("$appId: não consegui abrir o diálogo do instalador", it) }
+        }
+
         InstallManager.of(context).onResult(appId, status, message)
     }
 
@@ -210,8 +280,3 @@ class InstallResultReceiver : BroadcastReceiver() {
         const val EXTRA_SESSION_ID = "dev.montra.extra.SESSION_ID"
     }
 }
-
-/** Small helper kept next to the installer: is this failure worth retrying? */
-fun InstallState.Failed.causeIsNetwork(): Boolean =
-    reason.contains("HTTP", ignoreCase = true) || reason.contains("SHA-256", ignoreCase = true) ||
-        reason.contains("timeout", ignoreCase = true) || reason.contains("Unable to resolve host", ignoreCase = true)

@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -54,9 +55,14 @@ fun AppListScreen(
     onSort: (SortOrder) -> Unit,
     onOpen: (IndexApp) -> Unit,
     onInstall: (IndexApp) -> Unit,
+    onAuthorize: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
+        if (!state.canInstallPackages) {
+            PermissionBanner(onAuthorize)
+        }
+
         OutlinedTextField(
             value = state.query,
             onValueChange = onQuery,
@@ -115,12 +121,42 @@ fun AppListScreen(
                     items(state.rows, key = { it.app.id }) { row ->
                         AppCard(
                             row = row,
+                            needsPermission = !state.canInstallPackages,
                             onOpen = { onOpen(row.app) },
                             onInstall = { onInstall(row.app) },
+                            onAuthorize = onAuthorize,
                         )
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Android requires a per-app grant before anything can be installed. Saying so once,
+ * at the top, with the button that fixes it, is better than letting every install
+ * attempt end in a red error.
+ */
+@Composable
+private fun PermissionBanner(onAuthorize: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+    ) {
+        Column(Modifier.padding(12.dp)) {
+            Text(
+                "O Android ainda não autorizou a Montra a instalar aplicações.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+            )
+            Text(
+                "É uma autorização por app, dada nas definições do sistema.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+            )
+            Spacer(Modifier.height(6.dp))
+            Button(onClick = onAuthorize) { Text("Autorizar instalação") }
         }
     }
 }
@@ -173,7 +209,13 @@ private fun SortChip(current: SortOrder, onSort: (SortOrder) -> Unit) {
 }
 
 @Composable
-private fun AppCard(row: AppRow, onOpen: () -> Unit, onInstall: () -> Unit) {
+private fun AppCard(
+    row: AppRow,
+    needsPermission: Boolean,
+    onOpen: () -> Unit,
+    onInstall: () -> Unit,
+    onAuthorize: () -> Unit,
+) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
@@ -247,7 +289,12 @@ private fun AppCard(row: AppRow, onOpen: () -> Unit, onInstall: () -> Unit) {
                 }
             }
             Spacer(Modifier.width(8.dp))
-            InstallAction(row = row, onInstall = onInstall)
+            InstallAction(
+                row = row,
+                needsPermission = needsPermission,
+                onInstall = onInstall,
+                onAuthorize = onAuthorize,
+            )
         }
     }
 }
@@ -266,12 +313,28 @@ fun Badge(text: String, color: androidx.compose.ui.graphics.Color) {
 }
 
 @Composable
-private fun InstallAction(row: AppRow, onInstall: () -> Unit) {
+private fun InstallAction(
+    row: AppRow,
+    needsPermission: Boolean,
+    onInstall: () -> Unit,
+    onAuthorize: () -> Unit,
+) {
+    if (needsPermission && row.installState is InstallState.Idle) {
+        // O botão passa a ser a solução, não um caminho para um erro.
+        TextButton(onClick = onAuthorize) { Text("Autorizar") }
+        return
+    }
     when (row.installState) {
-        is InstallState.Downloading -> CircularProgressIndicator(modifier = Modifier.size(24.dp))
-        is InstallState.Verifying, InstallState.AwaitingUser -> CircularProgressIndicator(
+        is InstallState.Downloading, is InstallState.Verifying -> Box(
             modifier = Modifier.size(24.dp),
-        )
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator(modifier = Modifier.fillMaxSize())
+        }
+        // O instalador do sistema está a pedir confirmação: dizer isso é mais útil
+        // do que um spinner, porque a ação não é nossa.
+        InstallState.AwaitingUser -> Badge("no instalador", MaterialTheme.colorScheme.tertiary)
+        InstallState.NeedsPermission -> TextButton(onClick = onAuthorize) { Text("Autorizar") }
         is InstallState.Installed -> Badge("instalado", MaterialTheme.colorScheme.primary)
         else -> {
             if (row.incompatible != null) {

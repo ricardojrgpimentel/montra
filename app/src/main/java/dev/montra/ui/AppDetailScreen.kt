@@ -45,8 +45,10 @@ import java.util.Locale
 fun AppDetailScreen(
     row: AppRow,
     keyId: String?,
+    canInstallPackages: Boolean,
     onInstall: (IndexApp) -> Unit,
     onClearError: (String) -> Unit,
+    onAuthorize: () -> Unit,
     onOpenSource: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -76,7 +78,13 @@ fun AppDetailScreen(
         Text(app.summary, style = MaterialTheme.typography.bodyLarge)
 
         Spacer(Modifier.height(16.dp))
-        InstallSection(row = row, onInstall = onInstall, onClearError = onClearError)
+        InstallSection(
+            row = row,
+            canInstallPackages = canInstallPackages,
+            onInstall = onInstall,
+            onClearError = onClearError,
+            onAuthorize = onAuthorize,
+        )
 
         if (!row.signatureConflict && row.installed != null && row.app.signingCertSha256 != null) {
             val installedCert = ApkVerifier.installedSigningCertificateSha256(context, app.packageName)
@@ -174,7 +182,13 @@ fun AppDetailScreen(
 }
 
 @Composable
-private fun InstallSection(row: AppRow, onInstall: (IndexApp) -> Unit, onClearError: (String) -> Unit) {
+private fun InstallSection(
+    row: AppRow,
+    canInstallPackages: Boolean,
+    onInstall: (IndexApp) -> Unit,
+    onClearError: (String) -> Unit,
+    onAuthorize: () -> Unit,
+) {
     val context = LocalContext.current
     when (val state = row.installState) {
         is InstallState.Downloading -> Column(Modifier.fillMaxWidth()) {
@@ -192,6 +206,20 @@ private fun InstallSection(row: AppRow, onInstall: (IndexApp) -> Unit, onClearEr
                 OutlinedButton(onClick = { context.startActivity(intent) }) { Text("Abrir") }
             }
         }
+        // Não é uma falha: é uma permissão por app que se resolve em dois toques,
+        // e por isso o ecrã tem de trazer o botão que a resolve.
+        InstallState.NeedsPermission -> Column {
+            WarningCard(
+                "O Android ainda não autorizou a Montra a instalar aplicações. " +
+                    "Abre a autorização, liga-a, e volta aqui — o download só começa depois disso.",
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = onAuthorize) { Text("Abrir autorização") }
+                TextButton(onClick = { onClearError(row.app.id) }) { Text("Dispensar") }
+            }
+        }
+
         is InstallState.Failed -> Column {
             WarningCard(state.reason)
             Spacer(Modifier.height(8.dp))
@@ -211,6 +239,10 @@ private fun InstallSection(row: AppRow, onInstall: (IndexApp) -> Unit, onClearEr
                 Text("Sem APK compatível com a arquitetura deste dispositivo.", color = MaterialTheme.colorScheme.error)
             } else if (row.incompatible != null) {
                 Text(row.incompatible!!, color = MaterialTheme.colorScheme.error)
+            } else if (!canInstallPackages) {
+                // O caminho principal passa a ser resolver a autorização, em vez de
+                // deixar o utilizador bater num erro que já sabemos que vem.
+                Button(onClick = onAuthorize) { Text("Autorizar instalação") }
             } else if (!row.isInstalled) {
                 Button(onClick = { onInstall(row.app) }) { Text("Instalar ${formatBytes(row.size)}") }
             } else if (row.updateAvailable) {

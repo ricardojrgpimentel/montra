@@ -5,6 +5,7 @@ import dev.montra.data.model.Asset
 import dev.montra.util.toHex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
@@ -29,6 +30,21 @@ class ApkDownloader(private val context: Context, private val client: OkHttpClie
 
     private val dir: File get() = File(context.cacheDir, "apk").apply { mkdirs() }
 
+    /**
+     * The in-flight HTTP call, so a cancel is immediate.
+     *
+     * Cancelling the coroutine is not enough: the download runs on a blocking
+     * OkHttp call, and suspending is not the same as interrupting. Only
+     * Call.cancel() aborts the socket read that is actually in progress.
+     */
+    @Volatile
+    private var activeCall: Call? = null
+
+    fun cancel() {
+        activeCall?.cancel()
+        activeCall = null
+    }
+
     suspend fun download(
         asset: Asset,
         onProgress: (Progress) -> Unit = {},
@@ -46,7 +62,10 @@ class ApkDownloader(private val context: Context, private val client: OkHttpClie
 
         val request = Request.Builder().url(asset.url).build()
         val digest = MessageDigest.getInstance("SHA-256")
-        client.newCall(request).execute().use { response ->
+        val call = client.newCall(request)
+        activeCall = call
+        try {
+        call.execute().use { response ->
             if (!response.isSuccessful) throw IOException("HTTP ${response.code} ao descarregar o APK")
             val body = response.body ?: throw IOException("resposta vazia")
             val total = if (body.contentLength() > 0) body.contentLength() else asset.size
@@ -76,6 +95,9 @@ class ApkDownloader(private val context: Context, private val client: OkHttpClie
             if (target.exists()) target.delete()
             if (!part.renameTo(target)) throw IOException("não foi possível finalizar o download")
             return@withContext Downloaded(target, sha)
+        }
+        } finally {
+            activeCall = null
         }
     }
 

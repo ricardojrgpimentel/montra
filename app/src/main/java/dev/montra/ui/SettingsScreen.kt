@@ -38,6 +38,7 @@ fun SettingsScreen(
     state: UiState,
     onRefresh: () -> Unit,
     onSetIndexUrl: (String) -> Unit,
+    onAuthorize: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -115,9 +116,7 @@ fun SettingsScreen(
                 )
                 if (!state.canInstallPackages) {
                     Spacer(Modifier.height(8.dp))
-                    OutlinedButton(
-                        onClick = { context.startActivity(InstallManager.of(context).unknownSourcesSettingsIntent()) },
-                    ) { Text("Abrir permissões") }
+                    OutlinedButton(onClick = onAuthorize) { Text("Abrir permissões") }
                 }
             }
         }

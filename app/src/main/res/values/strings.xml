@@ -1,4 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Montra</string>
+
+    <string name="channel_downloads">Transferências</string>
+    <string name="channel_downloads_detail">Progresso das aplicações a instalar</string>
+    <string name="channel_downloads_description">Mostra o progresso dos downloads e das instalações.</string>
+    <string name="notification_downloading">A descarregar %1$s</string>
+    <string name="notification_verifying">A verificar %1$s</string>
+    <string name="notification_verifying_detail">sha256 e certificado de assinatura</string>
+    <string name="notification_confirm">Confirma a instalação de %1$s</string>
+    <string name="notification_confirm_detail">O instalador do Android está à tua espera</string>
+    <string name="notification_installed">%1$s instalada</string>
+    <string name="notification_installed_detail">Toca para abrir</string>
+    <string name="notification_failed">Falhou: %1$s</string>
+    <string name="notification_cancelled">Instalação cancelada</string>
+    <string name="notification_needs_permission">O Android ainda não autorizou esta app a instalar aplicações</string>
+    <string name="action_cancel">Cancelar</string>
 </resources>

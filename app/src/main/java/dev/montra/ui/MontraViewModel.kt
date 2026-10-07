@@ -10,6 +10,8 @@ import dev.montra.data.model.Asset
 import dev.montra.data.model.IndexApp
 import dev.montra.data.model.isIncompatibleWith
 import dev.montra.install.InstallManager
+import dev.montra.install.InstallRequest
+import dev.montra.install.InstallService
 import dev.montra.install.InstallState
 import dev.montra.security.ApkVerifier
 import dev.montra.util.fingerprintsMatch
@@ -121,12 +123,33 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
         refreshInstalled()
     }
 
+    /**
+     * Hands the work to a foreground service instead of downloading in the
+     * ViewModel: a 300 MB download must survive the user leaving the app, and the
+     * service is also what makes the progress notification possible.
+     */
     fun install(app: IndexApp) {
         val asset = app.bestAssetFor(deviceAbis) ?: run {
-            container.installManager.setState(app.id, InstallState.Failed("esta app não publica um APK para a arquitetura deste dispositivo"))
+            container.installManager.setState(
+                app.id,
+                InstallState.Failed("esta app não publica um APK para a arquitetura deste dispositivo"),
+            )
             return
         }
-        viewModelScope.launch { container.installManager.install(app, asset) }
+        InstallService.start(
+            getApplication(),
+            InstallRequest(
+                appId = app.id,
+                appName = app.name,
+                packageName = app.packageName,
+                pinnedCertSha256 = app.signingCertSha256,
+                asset = asset,
+            ),
+        )
+    }
+
+    fun cancelInstall(appId: String) {
+        InstallService.cancel(getApplication(), appId)
     }
 
     fun clearInstallError(appId: String) {

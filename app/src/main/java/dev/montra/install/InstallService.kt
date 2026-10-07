@@ -1,0 +1,180 @@
+package dev.montra.install
+
+import android.app.Service
+import android.content.Context
+import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.os.Build
+import android.os.IBinder
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.ServiceCompat
+import dev.montra.R
+import dev.montra.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+
+/**
+ * Runs one install in the foreground.
+ *
+ * Why a service instead of the ViewModel: the catalogue contains APKs over 300 MB,
+ * and a download that dies when the user switches to another app (or when Android
+ * reclaims a cached process) is a broken store. A foreground service keeps the
+ * process alive, gives the user real progress in the shade, and makes the download
+ * a thing they can leave running — and cancel from the notification.
+ *
+ * The service owns no state: it drives [InstallManager], whose StateFlow the UI
+ * reads, so the screen and the notification can never disagree.
+ */
+class InstallService : Service() {
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var job: Job? = null
+    private var current: InstallRequest? = null
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_CANCEL) {
+            cancelCurrent()
+            return START_NOT_STICKY
+        }
+
+        val request = intent?.let { InstallRequest.from(it) }
+        if (request == null) {
+            // Nothing to do: never leave a foreground service running with no work.
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
+
+        InstallNotifications.ensureChannel(this)
+        current = request
+
+        // Must happen fast after startForegroundService, so this notification is
+        // built synchronously and shows "0 bytes" until the first progress event.
+        ServiceCompat.startForeground(
+            this,
+            InstallNotifications.NOTIFICATION_ID,
+            InstallNotifications.progress(this, request, 0, request.asset.size),
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+            } else {
+                0
+            },
+        )
+
+        job?.cancel()
+        job = scope.launch {
+            // Mirror the pipeline state into the notification for as long as this
+            // service is the one doing the work.
+            val mirror = launch {
+                val manager = InstallManager.of(this@InstallService)
+                manager.states.collectLatest { states ->
+                    val state = states[request.appId] ?: return@collectLatest
+                    if (current?.appId != request.appId) return@collectLatest
+                    notify(request, state)
+                }
+            }
+            try {
+                InstallManager.of(this@InstallService).install(request)
+            } finally {
+                mirror.cancel()
+                finish(request)
+            }
+        }
+        return START_NOT_STICKY
+    }
+
+    private fun notify(request: InstallRequest, state: InstallState) {
+        val notification = when (state) {
+            is InstallState.Downloading ->
+                InstallNotifications.progress(this, request, state.bytes, state.total)
+            is InstallState.Verifying -> InstallNotifications.verifying(this, request)
+            is InstallState.AwaitingUser -> InstallNotifications.awaitingUser(this, request)
+            is InstallState.NeedsPermission -> InstallNotifications.failed(
+                this,
+                request,
+                getString(R.string.notification_needs_permission),
+            )
+            is InstallState.Installed -> InstallNotifications.installed(this, request)
+            is InstallState.Failed -> InstallNotifications.failed(this, request, state.reason)
+            InstallState.Idle -> return
+        }
+        // A denied POST_NOTIFICATIONS permission must not crash the download: the
+        // app's own screen still shows progress, so this is best-effort.
+        runCatching {
+            NotificationManagerCompat.from(this).notify(InstallNotifications.NOTIFICATION_ID, notification)
+        }
+    }
+
+    private fun finish(request: InstallRequest) {
+        val state = InstallManager.of(this).stateOf(request.appId)
+        val final = when (state) {
+            is InstallState.Installed -> InstallNotifications.installed(this, request)
+            is InstallState.Failed -> InstallNotifications.failed(this, request, state.reason)
+            is InstallState.NeedsPermission -> InstallNotifications.failed(
+                this,
+                request,
+                getString(R.string.notification_needs_permission),
+            )
+            // Left waiting for the user to confirm in the system installer: keep the
+            // notification, the system will dismiss it with the session.
+            is InstallState.AwaitingUser -> InstallNotifications.awaitingUser(this, request)
+            else -> InstallNotifications.failed(
+                this,
+                request,
+                getString(R.string.notification_cancelled),
+            )
+        }
+        runCatching {
+            NotificationManagerCompat.from(this).notify(InstallNotifications.NOTIFICATION_ID, final)
+        }
+        // Detach: the final notification stays in the shade, the service does not.
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_DETACH)
+        current = null
+        stopSelf()
+    }
+
+    private fun cancelCurrent() {
+        Log.i("instalação cancelada pelo utilizador na notificação")
+        job?.cancel()
+        val request = current
+        if (request != null) {
+            InstallManager.of(this).setState(request.appId, InstallState.Idle)
+            InstallManager.of(this).cancelDownload()
+            NotificationManagerCompat.from(this).cancel(InstallNotifications.NOTIFICATION_ID)
+        }
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+        stopSelf()
+    }
+
+    override fun onDestroy() {
+        scope.cancel()
+        super.onDestroy()
+    }
+
+    companion object {
+        const val ACTION_CANCEL = "dev.montra.action.CANCEL_INSTALL"
+
+        /** Starts (or restarts) the pipeline for [request] in the foreground. */
+        fun start(context: Context, request: InstallRequest) {
+            val intent = request.putInto(Intent(context, InstallService::class.java))
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
+        }
+
+        fun cancel(context: Context, appId: String) {
+            val intent = Intent(context, InstallService::class.java)
+                .setAction(ACTION_CANCEL)
+                .putExtra(InstallRequest.EXTRA_APP_ID, appId)
+            context.startService(intent)
+        }
+    }
+}
