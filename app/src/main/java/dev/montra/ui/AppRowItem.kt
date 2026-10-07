@@ -24,8 +24,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import dev.montra.data.model.IndexApp
+import dev.montra.install.InstallManager
 import dev.montra.install.InstallState
 import dev.montra.ui.components.AppIcon
 import dev.montra.ui.components.Badge
@@ -115,8 +117,8 @@ fun AppRowItem(
 private fun statusBadge(row: AppRow): Pair<String, androidx.compose.ui.graphics.Color>? = when {
     row.incompatible != null -> "não corre aqui" to androidx.compose.ui.graphics.Color(0xFFBA1A1A)
     row.signatureConflict -> "assinatura diferente" to androidx.compose.ui.graphics.Color(0xFFBA1A1A)
-    row.updateAvailable -> "atualizar" to androidx.compose.ui.graphics.Color(0xFF3B6470)
-    row.isInstalled -> "instalada" to androidx.compose.ui.graphics.Color(0xFF2E6B4F)
+    // Só o que o botão não consegue dizer. "atualizar" e "instalada" saíam também na
+    // ação, à direita, e o mesmo texto repetido no mesmo contentor não acrescenta.
     row.app.playStore?.present == false -> "fora da Play" to androidx.compose.ui.graphics.Color(0xFF3B6470)
     else -> null
 }
@@ -176,7 +178,16 @@ private fun InstallAction(
         InstallState.Idle -> when {
             !row.isInstalled -> TextButton(onClick = onInstall, enabled = row.canInstall) { Text("Instalar") }
             row.updateAvailable -> TextButton(onClick = onInstall, enabled = row.canInstall) { Text("Atualizar") }
-            else -> Badge("instalada", MaterialTheme.colorScheme.primary)
+            // Instalada e atual: a ação útil é abri-la, não repetir um distintivo.
+            else -> {
+                val context = LocalContext.current
+                TextButton(
+                    onClick = {
+                        InstallManager.launchIntent(context, row.app.packageName)
+                            ?.let { intent -> runCatching { context.startActivity(intent) } }
+                    },
+                ) { Text("Abrir") }
+            }
         }
     }
 }

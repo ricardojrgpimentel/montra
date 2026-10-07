@@ -18,6 +18,8 @@ import dev.montra.security.ApkVerifier
 import dev.montra.util.fingerprintsMatch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -95,7 +97,20 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch { query.collect { rebuild() } }
         viewModelScope.launch { category.collect { rebuild() } }
         viewModelScope.launch { sort.collect { rebuild() } }
-        refreshInstalled()
+
+        // Depois de o índice carregar, e não antes.
+        //
+        // refreshInstalled() precisa da lista de apps para poder perguntar ao
+        // sistema por cada uma. Chamá-lo no init (ou no onResume, que corre antes de
+        // a rede responder) consultava uma lista vazia e o resultado era um mapa
+        // vazio: nenhuma app aparecia como instalada, sem erro nenhum. Era uma
+        // corrida, e por isso é que às vezes funcionava.
+        viewModelScope.launch {
+            container.indexRepository.state
+                .map { it.apps.size }
+                .distinctUntilChanged()
+                .collect { count -> if (count > 0) refreshInstalled() }
+        }
     }
 
     fun setQuery(value: String) {
@@ -215,11 +230,19 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                 val conflict = info?.certSha256 != null && pinnedCert != null &&
                     !fingerprintsMatch(pinnedCert, info.certSha256)
                 val targetVersion = asset?.versionCode ?: app.release?.versionCode
+                // Um projeto que publica splits atribui versionCodes diferentes por
+                // ABI (o Obtainium: 2356 no universal, 23563 no arm64). Quem tem o
+                // universal instalado não deve ver "Atualizar" para a mesma versão,
+                // portanto o nome da versão manda quando existe.
+                val targetName = asset?.versionName ?: app.release?.versionName
+                val sameVersionName = info?.versionName != null && targetName != null &&
+                    info.versionName == targetName
                 AppRow(
                     app = app,
                     asset = asset,
                     installed = info,
-                    updateAvailable = info != null && targetVersion != null && targetVersion > info.versionCode,
+                    updateAvailable = info != null && targetVersion != null &&
+                        targetVersion > info.versionCode && !sameVersionName,
                     signatureConflict = conflict,
                     installState = installStates[app.id] ?: InstallState.Idle,
                     iconUrl = app.icon?.let { container.indexRepository.mediaUrl(it) },
