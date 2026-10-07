@@ -54,13 +54,13 @@ jobs:
       - name: publicar o APK de debug
         uses: actions/upload-artifact@v4
         with:
-          name: openshelf-debug
+          name: montra-debug
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
       - name: resumo
         run: |
-          echo "### OpenShelf" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Montra" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| artefacto | tamanho |" >> "$GITHUB_STEP_SUMMARY"
           echo "| --- | --- |" >> "$GITHUB_STEP_SUMMARY"

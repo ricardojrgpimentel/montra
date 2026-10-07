@@ -1,4 +1,4 @@
-// OpenShelf — a store with no backend.
+// Montra — a store with no backend.
 //
 // The catalogue lives in a git repository as JSON. This app downloads that one
 // file, verifies its signature against a public key baked into the APK, and then

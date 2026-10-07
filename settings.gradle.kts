@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "OpenShelf"
+rootProject.name = "Montra"
 include(":app")

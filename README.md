@@ -1,4 +1,4 @@
-# OpenShelf — cliente Android
+# Montra — cliente Android
 
 A app. Descarrega um catálogo, verifica a assinatura, verifica cada APK, instala.
 
@@ -29,8 +29,8 @@ pelo git) com `storeFile`, `storePassword`, `keyAlias`, `keyPassword` e configur
 ## Estrutura
 
 ```
-app/src/main/java/dev/openshelf/
-├── OpenShelfApp.kt            Application + AppContainer (wiring manual)
+app/src/main/java/dev/montra/
+├── MontraApp.kt            Application + AppContainer (wiring manual)
 ├── MainActivity.kt            NavHost: lista, detalhe, definições
 ├── security/
 │   ├── IndexVerifier.kt       ECDSA P-256 sobre os bytes do índice; key id

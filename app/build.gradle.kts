@@ -6,14 +6,14 @@ plugins {
 }
 
 android {
-    namespace = "dev.openshelf"
+    namespace = "dev.montra"
     compileSdk = 36
     // Pinned so a build uses the build-tools already installed rather than
     // trying to download a specific version mid-build.
     buildToolsVersion = "36.0.0"
 
     defaultConfig {
-        applicationId = "dev.openshelf"
+        applicationId = "dev.montra"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
@@ -26,7 +26,7 @@ android {
         buildConfigField(
             "String",
             "DEFAULT_INDEX_URL",
-            "\"https://raw.githubusercontent.com/ricardojrgpimentel/openshelf-index/main/index.json\"",
+            "\"https://raw.githubusercontent.com/ricardojrgpimentel/montra-index/main/index.json\"",
         )
         // A bundled snapshot ships in assets/ so the very first launch works offline.
         buildConfigField("String", "BUNDLED_INDEX_ASSET", "\"index.json\"")

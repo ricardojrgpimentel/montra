@@ -1,4 +1,4 @@
-# OpenShelf — R8 rules.
+# Montra — R8 rules.
 #
 # Most of this is about kotlinx.serialization: the compiler plugin generates
 # serializers as synthetic classes that R8 sees no direct references to, and a
@@ -7,13 +7,13 @@
 -keepattributes *Annotation*, InnerClasses, Signature, RuntimeVisibleAnnotations
 
 # --- kotlinx.serialization ---------------------------------------------------
--keepclassmembers class dev.openshelf.data.model.** {
+-keepclassmembers class dev.montra.data.model.** {
     *** Companion;
 }
--keepclasseswithmembers class dev.openshelf.data.model.** {
+-keepclasseswithmembers class dev.montra.data.model.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
--keep class dev.openshelf.data.model.**$$serializer { *; }
+-keep class dev.montra.data.model.**$$serializer { *; }
 -keepclassmembers class kotlinx.serialization.json.** {
     *** Companion;
 }
@@ -31,4 +31,4 @@
 
 # --- app --------------------------------------------------------------------
 # The installer receiver is instantiated by the framework from the manifest.
--keep class dev.openshelf.install.InstallResultReceiver { public <init>(...); }
+-keep class dev.montra.install.InstallResultReceiver { public <init>(...); }
