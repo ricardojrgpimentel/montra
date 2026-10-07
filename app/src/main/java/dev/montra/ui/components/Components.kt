@@ -203,11 +203,15 @@ fun AlertBlock(
     text: String,
     title: String? = null,
     modifier: Modifier = Modifier,
+    // Vermelho é para o que corre mal. Uma licença restritiva é uma condição a
+    // conhecer, não um erro, e por isso tem o seu próprio tom.
+    containerColor: Color = MaterialTheme.colorScheme.errorContainer,
+    contentColor: Color = MaterialTheme.colorScheme.onErrorContainer,
     action: (@Composable () -> Unit)? = null,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.errorContainer,
+        color = containerColor,
         shape = RoundedCornerShape(Shapes.block),
     ) {
         Column(modifier = Modifier.padding(Space.lg)) {
@@ -215,14 +219,14 @@ fun AlertBlock(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    color = contentColor,
                 )
                 Box(Modifier.height(Space.xs))
             }
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer,
+                color = contentColor,
             )
             if (action != null) {
                 Box(Modifier.height(Space.md))

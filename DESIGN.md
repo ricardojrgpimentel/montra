@@ -102,4 +102,7 @@ jogos explica que o catálogo aceita contribuições por pull request.
 - Esconder que uma app não corre neste dispositivo, ou que está assinada por outra
   chave do que a versão instalada.
 - Mostrar um número de versão ou um tamanho que não corresponda ao APK verificado.
+- Esconder que uma licença é restritiva. A nota aparece **antes** do botão de
+  instalar, num tom que não é de erro (não é um erro, é uma condição), e a etiqueta
+  da lista tem prioridade sobre "fora da Play".
 - Pedir permissões sem explicar para que servem, no momento em que servem.

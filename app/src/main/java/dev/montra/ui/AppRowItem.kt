@@ -117,6 +117,8 @@ fun AppRowItem(
 private fun statusBadge(row: AppRow): Pair<String, androidx.compose.ui.graphics.Color>? = when {
     row.incompatible != null -> "não corre aqui" to androidx.compose.ui.graphics.Color(0xFFBA1A1A)
     row.signatureConflict -> "assinatura diferente" to androidx.compose.ui.graphics.Color(0xFFBA1A1A)
+    // Uma licença restritiva é mais importante de saber do que a ausência na Play Store.
+    row.app.hasRestrictedLicense() -> "licença restritiva" to androidx.compose.ui.graphics.Color(0xFF8A5A00)
     // Só o que o botão não consegue dizer. "atualizar" e "instalada" saíam também na
     // ação, à direita, e o mesmo texto repetido no mesmo contentor não acrescenta.
     row.app.playStore?.present == false -> "fora da Play" to androidx.compose.ui.graphics.Color(0xFF3B6470)

@@ -25,6 +25,8 @@ data class IndexApp(
     val description: Map<String, String> = emptyMap(),
     val packageName: String,
     val license: String,
+    /** Presente quando a licença não é livre: o que ela permite e o que não permite. */
+    val licenseNote: Map<String, String> = emptyMap(),
     val sourceCode: String,
     val author: String? = null,
     val categories: List<String> = emptyList(),
@@ -47,6 +49,18 @@ data class IndexApp(
 ) {
     val isActive: Boolean get() = status == "active"
     val availableOnPlayStore: Boolean get() = playStore?.present == true
+
+    /** Código público, mas com restrições de uso que o utilizador tem o direito de saber. */
+    fun hasRestrictedLicense(): Boolean = antiFeatures.contains("restrictedLicense")
+
+    fun licenseNoteFor(languageTag: String?): String? {
+        if (licenseNote.isEmpty()) return null
+        if (languageTag != null) {
+            licenseNote[languageTag]?.let { return it }
+            licenseNote[languageTag.substringBefore('-')]?.let { return it }
+        }
+        return licenseNote["en"] ?: licenseNote.values.firstOrNull()
+    }
 
     fun descriptionFor(languageTag: String?): String? {
         if (languageTag != null) {
@@ -152,6 +166,7 @@ fun antiFeatureLabel(code: String): String = when (code) {
     "noSourceSince" -> "Deixou de publicar código-fonte"
     "disabledAlgorithm" -> "Assinado com algoritmo descontinuado"
     "upstreamNonFree" -> "Deriva de software não livre"
+    "restrictedLicense" -> "Licença restritiva: código público, mas com limitações de uso"
     else -> code
 }
 

@@ -103,6 +103,19 @@ fun AppDetailScreen(
             }
         }
 
+        // Antes do botão, não depois e não escondido numa etiqueta: quem vai instalar
+        // tem o direito de saber que a licença não é livre antes de decidir.
+        if (app.hasRestrictedLicense()) {
+            Spacer(Modifier.height(Space.lg))
+            AlertBlock(
+                title = "Licença restritiva: ${app.license.removePrefix("LicenseRef-")}",
+                text = app.licenseNoteFor(language)
+                    ?: "Esta aplicação tem o código público, mas a licença impõe limitações de uso.",
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            )
+        }
+
         Spacer(Modifier.height(Space.lg))
         InstallSection(
             row = row,
