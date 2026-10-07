@@ -1,0 +1,18 @@
+version: 2
+
+# As actions dos workflows estão presas ao commit exacto, não a uma tag (ver a nota
+# no topo do android.yml). Sem isto os pins envelhecem e alguém acaba por os trocar
+# de volta por uma tag para "limpar" o diff.
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(actions)"
+    # Actualizações de rotina num PR só; uma subida de major vem separada, porque
+    # essa muda comportamento e merece ser lida.
+    groups:
+      actions-menores:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
