@@ -108,9 +108,9 @@ Escala de 4: `4 · 8 · 12 · 16 · 24 · 32`. Não se inventam valores.
 - Folhas de baixo: `24dp` no topo.
 
 Separadores de secção: **uma linha de 1dp** em `outlineVariant`, acima do título. É a
-única linha horizontal do ecrã e existe para duas secções não dependerem só do espaço
-— que é o que acontece quando a lista é longa e o título já saiu do ecrã. A primeira
-secção não leva linha: não há nada acima dela de que se separe.
+única linha horizontal das listas e existe para duas secções não dependerem só do
+espaço — que é o que acontece quando a lista é longa e o título já saiu do ecrã. A
+primeira secção não leva linha: não há nada acima dela de que se separe.
 
 *Evitar: raios exagerados que espremem o conteúdo, e a combinação de contorno fino
 com sombra larga — escolhe-se a borda **ou** a sombra. Aqui: sem sombra, a
@@ -142,11 +142,12 @@ confirmado pela última vez:
 
     2 atualizações · 42 apps · 4 instaladas        verificado há 4 minutos
 
-É a única superfície que usa a cor da casa em vez de um cinzento, e é a assinatura
-da app. A cor tem um trabalho: **enquanto a faixa estiver verde o catálogo está
-confirmado; passa a vermelho quando a última tentativa falhou**, com o motivo e um
-"Tentar de novo" no mesmo sítio onde estava a mentira. O âmbar aparece na contagem
-de atualizações, que é a única parte da linha que pede uma decisão.
+É a única superfície de largura inteira com a cor da casa em vez de um cinzento, e é
+a assinatura da app. A cor tem um trabalho: **enquanto a faixa estiver verde o
+catálogo está confirmado; passa a vermelho quando a última tentativa falhou**, com o
+motivo e um "Tentar de novo" na própria faixa, em vez de escondidos nas definições. O
+âmbar aparece na contagem de atualizações, que é a única parte da linha que pede uma
+decisão.
 
 Enquanto se verifica, o lado direito passa a "a verificar…" com um indicador; quando
 termina, diz o resultado durante uns segundos ("catálogo atualizado", "já estava
