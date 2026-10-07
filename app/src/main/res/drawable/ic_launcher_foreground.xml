@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A shelf with an app dropping into it: the app installs what the catalogue lists. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,26 m-12,0 a12,12 0 1,0 24,0 a12,12 0 1,0 -24,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M50,30 L58,30 L58,46 L68,46 L68,52 L58,52 L58,58 L50,58 L50,52 L40,52 L40,46 L50,46 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,64 L78,64 L78,70 L30,70 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,76 L78,76 L78,82 L30,82 Z" />
+</vector>
