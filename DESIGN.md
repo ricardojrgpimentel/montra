@@ -231,6 +231,26 @@ Quando a lista rola, **a faixa recolhe**: perde a cor e passa a cinzenta. Em cim
 assinatura do catálogo; a partir do primeiro scroll é só mais uma barra a competir
 com o conteúdo.
 
+## A voz
+
+Português de Portugal, tratamento por "tu", e nada da voz de montra de loja de
+aplicações: nem "poderoso", nem "intuitivo", nem "a melhor forma de". Quem lê isto
+já sabe o que é uma loja de apps.
+
+- **Cada controlo explica porque existe.** Um interruptor sem a frase que diz o que
+  ele decide é um botão que ninguém sabe se deve tocar. "Esconder apps com licença
+  restritiva" não chega: falta o que isso faz ao catálogo e quem fica de fora.
+- **Rótulos em minúscula, frases em maiúscula.** `versão`, `assinatura`, `chave de
+  confiança` são metadados e vivem numa tabela; "O Android ainda não autorizou…" é
+  uma frase e vive no texto.
+- **O erro diz o que fazer.** "Índice recusado" é um diagnóstico; sem a saída ao
+  lado, é só má notícia.
+- **Um número vale mais do que um adjetivo.** "48 apps", "desde 9 de abril de
+  2023", "2,5 MB". É o que torna uma frase verificável em vez de persuasiva.
+- **Nada de exclamações**, e nada de duas frases onde uma chega.
+- **A versão diz-se por inteiro.** Nome e `versionCode`, juntos, em "Sobre": é o
+  que se lê em voz alta quando alguém reporta um problema.
+
 ## Uma app parada
 
 Uma app sem lançamentos há mais de **seis meses** ganha um aviso âmbar: o

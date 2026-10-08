@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -41,6 +42,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
@@ -238,9 +240,18 @@ fun Badge(text: String, color: Color = MaterialTheme.colorScheme.primary) {
 /**
  * One line of label/value. The value is monospaced when it is something a user
  * should be able to compare character by character (a hash, a fingerprint).
+ *
+ * [valueColor] existe para o valor poder dizer estado sem sair da linha — uma
+ * assinatura inválida é uma frase em vermelho, não uma frase igual às outras. O
+ * rótulo fica sempre cinzento: quem carrega a cor é o valor, que é o que muda.
  */
 @Composable
-fun KeyValue(label: String, value: String, mono: Boolean = false) {
+fun KeyValue(
+    label: String,
+    value: String,
+    mono: Boolean = false,
+    valueColor: Color = Color.Unspecified,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -261,8 +272,42 @@ fun KeyValue(label: String, value: String, mono: Boolean = false) {
             } else {
                 MaterialTheme.typography.bodyMedium
             },
+            color = valueColor,
             textAlign = TextAlign.End,
         )
+    }
+}
+
+/**
+ * Uma ligação que sai da app. Partilhada pela ficha e pelas definições: o mesmo
+ * gesto tem de fazer a mesma coisa nos dois sítios.
+ */
+@Composable
+fun LinkRow(label: String, url: String, onOpen: (String) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = Space.xs),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+        TextButton(
+            onClick = { onOpen(url) },
+            // Quem encolhe é a ligação, e com reticências: cortar a um número fixo de
+            // caracteres deixava "github.com/ricardojrgpimentel/mont" no ecrã, que
+            // parece um URL e não é.
+            modifier = Modifier.weight(1f, fill = false),
+        ) {
+            Text(
+                // O esquema não acrescenta nada a quem lê e ocupa metade da linha.
+                text = url.removePrefix("https://").removePrefix("http://"),
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.End,
+            )
+        }
     }
 }
 

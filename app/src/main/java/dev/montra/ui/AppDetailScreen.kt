@@ -32,6 +32,7 @@ import dev.montra.ui.components.AppIcon
 import dev.montra.ui.components.Badge
 import dev.montra.ui.components.Block
 import dev.montra.ui.components.KeyValue
+import dev.montra.ui.components.LinkRow
 import dev.montra.ui.components.ScreenshotRow
 import dev.montra.ui.components.SectionTitle
 import dev.montra.ui.theme.Space
@@ -373,24 +374,6 @@ private fun InstallSection(
                 }
                 Badge("versão mais recente", MaterialTheme.colorScheme.primary)
             }
-        }
-    }
-}
-
-@Composable
-private fun LinkRow(label: String, url: String, onOpen: (String) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = Space.xs),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium)
-        TextButton(onClick = { onOpen(url) }) {
-            Text(
-                text = url.removePrefix("https://").removePrefix("http://").take(34),
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 1,
-            )
         }
     }
 }

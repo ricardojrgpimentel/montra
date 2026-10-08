@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -36,6 +37,7 @@ import dev.montra.data.ThemeMode
 import dev.montra.install.InstallManager
 import dev.montra.ui.components.Block
 import dev.montra.ui.components.KeyValue
+import dev.montra.ui.components.LinkRow
 import dev.montra.ui.components.SectionTitle
 import dev.montra.ui.theme.Space
 import dev.montra.util.verifiedLabel
@@ -51,6 +53,7 @@ fun SettingsScreen(
     onHideRestricted: (Boolean) -> Unit,
     onAutoRefresh: (AutoRefresh) -> Unit,
     onThemeMode: (ThemeMode) -> Unit,
+    onOpenUrl: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -93,7 +96,17 @@ fun SettingsScreen(
                 KeyValue("apps", state.index.apps.size.toString())
                 KeyValue("instaladas daqui", state.installedCount.toString())
                 KeyValue("atualizações", state.updateCount.toString())
-                KeyValue("assinatura", if (state.index.signatureValid) "válida" else "NÃO VERIFICADA")
+                KeyValue(
+                    label = "assinatura",
+                    value = if (state.index.signatureValid) "válida" else "recusada",
+                    // O estado é do valor, não do rótulo: a linha inteira a vermelho
+                    // faria da chave de confiança um erro também.
+                    valueColor = if (state.index.signatureValid) {
+                        Color.Unspecified
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+                )
                 KeyValue("chave de confiança", state.index.keyId ?: "—", mono = true)
             }
 
@@ -138,7 +151,8 @@ fun SettingsScreen(
                 singleLine = false,
                 supportingText = {
                     Text(
-                        "Tem de ser HTTPS. O ficheiro index.json.sig tem de estar ao lado.",
+                        "Tem de ser HTTPS, e o index.json.sig tem de estar ao lado: um " +
+                            "índice sem assinatura que a app reconheça é recusado.",
                         style = MaterialTheme.typography.labelSmall,
                     )
                 },
@@ -148,6 +162,13 @@ fun SettingsScreen(
                 onClick = { onSetIndexUrl(draft.trim()) },
                 enabled = draft.trim().startsWith("https://") && draft.trim() != state.index.indexUrl,
             ) { Text("Usar este catálogo") }
+            Spacer(Modifier.height(Space.sm))
+            Text(
+                text = "Qualquer URL serve: um fork do catálogo é uma loja nova, com a sua " +
+                    "própria chave de confiança.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
 
             SectionTitle("Verificação automática")
             Text(
@@ -176,9 +197,11 @@ fun SettingsScreen(
             Block {
                 Text(
                     if (state.canInstallPackages) {
-                        "Esta app pode instalar aplicações."
+                        "A Montra está autorizada a instalar aplicações. Cada instalação " +
+                            "continua a passar pelo diálogo do Android."
                     } else {
-                        "O Android ainda não autorizou esta app a instalar aplicações desconhecidas."
+                        "O Android ainda não autorizou a Montra a instalar aplicações " +
+                            "desconhecidas. Sem isto, nenhum download começa."
                     },
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -221,19 +244,55 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
             )
 
-            Spacer(Modifier.height(Space.md))
-            HorizontalDivider()
-            Spacer(Modifier.height(Space.md))
-            Text(
-                "Montra ${BuildConfig.VERSION_NAME}",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                "Código aberto. O catálogo é dados em git: contribuir é abrir um pull request.",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            SectionTitle("Sobre")
+            Block {
+                Text(
+                    text = "Montra",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(Modifier.height(Space.xs))
+                // A versão e o código ficam juntos porque é isto que se lê em voz alta
+                // quando se reporta um problema, e é a única coisa nesta app que o
+                // utilizador não consegue ver sem vir aqui.
+                KeyValue("versão", BuildConfig.VERSION_NAME)
+                KeyValue("versionCode", BuildConfig.VERSION_CODE.toString())
+                KeyValue("licença", "AGPL-3.0-or-later")
+                Spacer(Modifier.height(Space.sm))
+                Text(
+                    text = "Código aberto. O catálogo é dados em git: contribuir é abrir um " +
+                        "pull request.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Spacer(Modifier.height(Space.sm))
+            LinkRow("Site", "https://ricardopimen.tel", onOpenUrl)
+            LinkRow("Código", "https://github.com/ricardojrgpimentel/montra", onOpenUrl)
+            LinkRow("Catálogo", "https://github.com/ricardojrgpimentel/montra-index", onOpenUrl)
+
+            SectionTitle("Créditos")
+            Block {
+                Text("Feito por Ricardo Pimentel.", style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(Space.sm))
+                Text(
+                    text = "Interfaces com Jetpack Compose e Material 3, do Android Open " +
+                        "Source Project; rede com OkHttp, da Square. Tudo sob Apache-2.0.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(Space.sm))
+                Text(
+                    text = "Cada aplicação do catálogo pertence a quem a faz: os ícones e as " +
+                        "capturas são re-alojados a partir do repositório dela, e a ficha liga " +
+                        "lá. As regras de desenho partiram do catálogo Impeccable.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                LinkRow("Regras de desenho", "https://impeccable.style/slop", onOpenUrl)
+            }
+
             Spacer(Modifier.height(Space.xl))
         }
     }

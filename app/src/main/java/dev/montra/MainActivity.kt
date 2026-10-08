@@ -330,6 +330,7 @@ fun MontraRoot(
                     onHideRestricted = viewModel::setHideRestricted,
                     onAutoRefresh = viewModel::setAutoRefresh,
                     onThemeMode = viewModel::setThemeMode,
+                    onOpenUrl = { url -> openUrl(context, url) },
                 )
             }
             composable(

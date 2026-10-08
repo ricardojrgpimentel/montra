@@ -55,7 +55,7 @@ têm na cabeça:
 | **Apps** | tudo o que o catálogo tem, em secções: atualizações, instaladas, o resto |
 | **Jogos** | jogos e emuladores (as categorias `games` e `emulators`); vazio, explica que se contribui por pull request |
 | **Procurar** | campo próprio com foco automático e sugestões quando está vazio |
-| **Definições** | origem do catálogo, chave de confiança, estado da verificação, URL configurável |
+| **Definições** | aspeto, origem e estado do catálogo, URL configurável, verificação automática, instalação, licenças, e o "Sobre" com a versão, as ligações e os créditos |
 
 O rodapé desaparece na página de uma app: essa página tem a sua própria ação
 principal e o seu próprio regresso. A barra de pesquisa dos separadores Apps e
