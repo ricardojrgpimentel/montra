@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+  <defs>
+    <linearGradient id="m3BgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#347758"/>
+      <stop offset="100%" stop-color="#24553E"/>
+    </linearGradient>
+    <linearGradient id="m3ShelfGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FBFDF8" stop-opacity="0.98"/>
+      <stop offset="100%" stop-color="#EAF3EE" stop-opacity="0.90"/>
+    </linearGradient>
+    <filter id="m3SoftShadow" x="-15%" y="-15%" width="130%" height="140%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#101410" flood-opacity="0.3"/>
+    </filter>
+    <filter id="m3Glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- Background Squircle Canvas -->
+  <rect width="512" height="512" rx="112" fill="url(#m3BgGrad)"/>
+
+  <!-- Cryptographic Trust & Architecture Watermark Grid -->
+  <circle cx="256" cy="256" r="176" stroke="#FBFDF8" stroke-width="1.5" stroke-dasharray="6 6" stroke-opacity="0.15"/>
+  <circle cx="256" cy="256" r="120" stroke="#FBFDF8" stroke-width="1" stroke-dasharray="3 4" stroke-opacity="0.12"/>
+  <line x1="256" y1="80" x2="256" y2="432" stroke="#FBFDF8" stroke-width="1" stroke-dasharray="4 8" stroke-opacity="0.12"/>
+  <line x1="80" y1="256" x2="432" y2="256" stroke="#FBFDF8" stroke-width="1" stroke-dasharray="4 8" stroke-opacity="0.12"/>
+
+  <!-- Main Symbol Group: Cryptographic Seal & Storefront Display -->
+  <g filter="url(#m3SoftShadow)">
+    <!-- Outer Cryptographic Hexagon Seal (Trust Badge) -->
+    <path d="M256 128L352 184V304L256 360L160 304V184L256 128Z" fill="#101410" fill-opacity="0.18" stroke="#FBFDF8" stroke-width="3" stroke-opacity="0.3"/>
+
+    <!-- Central Storefront Display Window Vault -->
+    <rect x="180" y="168" width="152" height="120" rx="24" fill="#FFFFFF" fill-opacity="0.96" filter="url(#m3Glow)"/>
+    
+    <!-- Vault Inner Window Arch / Cutout -->
+    <path d="M220 220C220 197.909 237.909 180 260 180C282.091 180 300 197.909 300 220V260H220V220Z" fill="#EAF3EE"/>
+    
+    <!-- Cryptographic Signature Checkmark / Key Emblem inside Vault -->
+    <path d="M236 240L252 256L280 224" stroke="#2E6B4F" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- The Storefront Display Shelf Bar (Foundation) -->
+    <rect x="112" y="304" width="288" height="20" rx="10" fill="url(#m3ShelfGrad)"/>
+    <!-- Shelf Top Specular Highlight -->
+    <rect x="118" y="306" width="276" height="3" rx="1.5" fill="#FFFFFF" fill-opacity="0.9"/>
+
+    <!-- Foundation Pillar Struts / Cryptographic Anchors Below Shelf -->
+    <path d="M160 324L160 364" stroke="#FBFDF8" stroke-width="7" stroke-linecap="round" stroke-opacity="0.85"/>
+    <path d="M256 324L256 376" stroke="#FBFDF8" stroke-width="9" stroke-linecap="round" stroke-opacity="0.95"/>
+    <path d="M352 324L352 364" stroke="#FBFDF8" stroke-width="7" stroke-linecap="round" stroke-opacity="0.85"/>
+
+    <!-- Signed Genesis Root SHA Ledger Bar -->
+    <rect x="184" y="388" width="144" height="8" rx="4" fill="#3D8B67" fill-opacity="0.6"/>
+  </g>
+</svg>

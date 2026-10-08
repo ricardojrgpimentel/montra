@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#347758"/>
+      <stop offset="100%" stop-color="#24553E"/>
+    </linearGradient>
+    <linearGradient id="shelfGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FBFDF8" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#EAF3EE" stop-opacity="0.85"/>
+    </linearGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="130%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#101410" flood-opacity="0.25"/>
+    </filter>
+    <filter id="subtleGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base Canvas -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+
+  <!-- Subtle Inner Guide Grid / Architecture Watermark (20% opacity) -->
+  <circle cx="256" cy="256" r="180" stroke="#FBFDF8" stroke-width="1.5" stroke-dasharray="4 6" stroke-opacity="0.15"/>
+  <circle cx="256" cy="256" r="120" stroke="#FBFDF8" stroke-width="1" stroke-dasharray="3 5" stroke-opacity="0.12"/>
+  <line x1="256" y1="80" x2="256" y2="432" stroke="#FBFDF8" stroke-width="1" stroke-dasharray="4 8" stroke-opacity="0.12"/>
+
+  <!-- Icon Symbol Group: Minimalist Storefront & Display Shelf -->
+  <g filter="url(#softShadow)">
+    <!-- Curated App Blocks on Shelf (3 geometric blocks) -->
+    <!-- Left Curated Block (Square App Pod) -->
+    <rect x="136" y="196" width="60" height="60" rx="14" fill="#FBFDF8" fill-opacity="0.95" filter="url(#subtleGlow)"/>
+    <circle cx="166" cy="226" r="10" fill="#2E6B4F"/>
+
+    <!-- Center Curated Block (Featured Hero Hexagon / Arch App Pod) -->
+    <rect x="220" y="152" width="72" height="104" rx="20" fill="#FFFFFF" filter="url(#subtleGlow)"/>
+    <!-- App Pod Detail: Micro Display Window -->
+    <rect x="236" y="172" width="40" height="32" rx="8" fill="#EAF3EE"/>
+    <circle cx="256" cy="228" r="6" fill="#2E6B4F"/>
+
+    <!-- Right Curated Block (Tall Modular App Pod) -->
+    <rect x="316" y="184" width="60" height="72" rx="16" fill="#FBFDF8" fill-opacity="0.9" filter="url(#subtleGlow)"/>
+    <rect x="332" y="200" width="28" height="6" rx="3" fill="#3D8B67" fill-opacity="0.5"/>
+    <rect x="332" y="214" width="20" height="6" rx="3" fill="#3D8B67" fill-opacity="0.5"/>
+
+    <!-- The Storefront Display Shelf Bar (Clean Precision Horizontal Foundation) -->
+    <rect x="112" y="272" width="288" height="18" rx="9" fill="url(#shelfGrad)"/>
+    <!-- Shelf Accent Line / Precision Horizon -->
+    <rect x="116" y="274" width="280" height="3" rx="1.5" fill="#FFFFFF" fill-opacity="0.8"/>
+
+    <!-- Architectural Foundation Pegs / Pillar Struts below Shelf -->
+    <path d="M156 290L156 324" stroke="#FBFDF8" stroke-width="6" stroke-linecap="round" stroke-opacity="0.8"/>
+    <path d="M256 290L256 332" stroke="#FBFDF8" stroke-width="7" stroke-linecap="round" stroke-opacity="0.9"/>
+    <path d="M356 290L356 324" stroke="#FBFDF8" stroke-width="6" stroke-linecap="round" stroke-opacity="0.8"/>
+    
+    <!-- Secondary Base Horizon (Ground Rail) -->
+    <path d="M196 344L316 344" stroke="#FBFDF8" stroke-width="5" stroke-linecap="round" stroke-opacity="0.5"/>
+  </g>
+</svg>

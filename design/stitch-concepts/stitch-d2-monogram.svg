@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+  <defs>
+    <linearGradient id="mBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#347758"/>
+      <stop offset="100%" stop-color="#24553E"/>
+    </linearGradient>
+    <linearGradient id="mArchGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#EAF3EE"/>
+    </linearGradient>
+    <filter id="mSoftShadow" x="-10%" y="-10%" width="120%" height="130%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#101410" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Background Squircle Canvas -->
+  <rect width="512" height="512" rx="112" fill="url(#mBgGrad)"/>
+
+  <!-- Subtle Architectural Grid & Geometry Watermark -->
+  <circle cx="256" cy="256" r="170" stroke="#FBFDF8" stroke-width="1.5" stroke-dasharray="4 6" stroke-opacity="0.12"/>
+  <line x1="256" y1="96" x2="256" y2="416" stroke="#FBFDF8" stroke-width="1" stroke-dasharray="3 6" stroke-opacity="0.1"/>
+
+  <!-- Architectural Monogram 'M' & Display Arches Symbol -->
+  <g filter="url(#mSoftShadow)">
+    <!-- Base Display Shelf / Tier Foundation -->
+    <rect x="112" y="340" width="288" height="16" rx="8" fill="#FBFDF8" fill-opacity="0.9"/>
+    
+    <!-- Foundation Pillar Struts -->
+    <path d="M160 356L160 384" stroke="#FBFDF8" stroke-width="6" stroke-linecap="round" stroke-opacity="0.8"/>
+    <path d="M256 356L256 392" stroke="#FBFDF8" stroke-width="8" stroke-linecap="round" stroke-opacity="0.9"/>
+    <path d="M352 356L352 384" stroke="#FBFDF8" stroke-width="6" stroke-linecap="round" stroke-opacity="0.8"/>
+
+    <!-- The Modernist Architectural 'M' Arches -->
+    <!-- Left Pillar / Arch of M -->
+    <path d="M140 340V210C140 176.863 166.863 150 200 150V340H140Z" fill="url(#mArchGrad)"/>
+    
+    <!-- Right Pillar / Arch of M -->
+    <path d="M372 340V210C372 176.863 345.137 150 312 150V340H372Z" fill="url(#mArchGrad)"/>
+
+    <!-- Center Vault / Downward Apex of M resting on the shelf -->
+    <path d="M200 170L256 260L312 170V340H200V170Z" fill="#2E6B4F" fill-opacity="0.15"/>
+    <path d="M212 180L256 250L300 180V340H212V180Z" fill="url(#mArchGrad)"/>
+
+    <!-- Central Keystone / Vault Arch Cutout (Window) -->
+    <rect x="240" y="220" width="32" height="50" rx="6" fill="#2E6B4F"/>
+    <circle cx="256" cy="195" r="8" fill="#2E6B4F"/>
+  </g>
+</svg>

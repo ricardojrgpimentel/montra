@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 400" width="840" height="400" fill="none">
+  <defs>
+    <!-- Gradients for Icon Mark -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#347758"/>
+      <stop offset="100%" stop-color="#24553E"/>
+    </linearGradient>
+    <linearGradient id="shelfGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FBFDF8" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#EAF3EE" stop-opacity="0.85"/>
+    </linearGradient>
+    <filter id="softShadow" x="-15%" y="-15%" width="130%" height="140%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#101410" flood-opacity="0.25"/>
+    </filter>
+    <filter id="subtleGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#000000" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <style>
+    .brand-title { font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif; font-weight: 700; font-size: 56px; letter-spacing: -0.03em; }
+    .brand-subtitle { font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif; font-weight: 500; font-size: 16px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7; }
+    .label { font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif; font-weight: 600; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; }
+  </style>
+
+  <!-- BACKGROUND: Split layout showing Light Substrate and Dark Ambient Substrate -->
+  <!-- Light Substrate Card (Top) -->
+  <rect x="0" y="0" width="840" height="190" fill="#F7FAF3"/>
+  <rect x="40" y="30" width="760" height="130" rx="20" fill="#FFFFFF" stroke="#E1EBE3" stroke-width="1.5" filter="url(#subtleGlow)"/>
+
+  <!-- Dark Ambient Substrate Card (Bottom) -->
+  <rect x="0" y="190" width="840" height="210" fill="#141814"/>
+  <rect x="40" y="220" width="760" height="140" rx="20" fill="#1A211D" stroke="#2B3630" stroke-width="1.5"/>
+
+  <!-- ==================== 1. PRIMARY HORIZONTAL LOCKUP (LIGHT BACKGROUND) ==================== -->
+  <g transform="translate(70, 50)">
+    <!-- Icon Mark Thumbnail (Scale 0.28, translated) -->
+    <g transform="translate(0, 5) scale(0.24)">
+      <!-- Squircle Base -->
+      <rect width="380" height="380" rx="84" fill="url(#bgGrad)" filter="url(#softShadow)"/>
+      
+      <!-- Symbol Group -->
+      <g transform="translate(30, 20)">
+        <!-- Left Curated Block -->
+        <rect x="80" y="150" width="60" height="60" rx="14" fill="#FBFDF8" fill-opacity="0.95"/>
+        <circle cx="110" cy="180" r="10" fill="#2E6B4F"/>
+
+        <!-- Center Curated Block -->
+        <rect x="156" y="106" width="72" height="104" rx="20" fill="#FFFFFF"/>
+        <rect x="172" y="126" width="40" height="32" rx="8" fill="#EAF3EE"/>
+        <circle cx="192" cy="182" r="6" fill="#2E6B4F"/>
+
+        <!-- Right Curated Block -->
+        <rect x="244" y="138" width="60" height="72" rx="16" fill="#FBFDF8" fill-opacity="0.9"/>
+        <rect x="260" y="154" width="28" height="6" rx="3" fill="#3D8B67" fill-opacity="0.5"/>
+        <rect x="260" y="168" width="20" height="6" rx="3" fill="#3D8B67" fill-opacity="0.5"/>
+
+        <!-- Storefront Shelf -->
+        <rect x="56" y="226" width="268" height="18" rx="9" fill="url(#shelfGrad)"/>
+        <rect x="60" y="228" width="260" height="3" rx="1.5" fill="#FFFFFF" fill-opacity="0.8"/>
+
+        <!-- Pillars -->
+        <path d="M100 244L100 278" stroke="#FBFDF8" stroke-width="6" stroke-linecap="round" stroke-opacity="0.8"/>
+        <path d="M190 244L190 286" stroke="#FBFDF8" stroke-width="7" stroke-linecap="round" stroke-opacity="0.9"/>
+        <path d="M280 244L280 278" stroke="#FBFDF8" stroke-width="6" stroke-linecap="round" stroke-opacity="0.8"/>
+      </g>
+    </g>
+
+    <!-- Typography Lockup -->
+    <g transform="translate(118, 62)">
+      <text x="0" y="38" class="brand-title" fill="#101410">Montra</text>
+      <text x="2" y="60" class="brand-subtitle" fill="#2E6B4F">Storefront &amp; Display Shelf</text>
+    </g>
+
+    <!-- Substrate Badge -->
+    <rect x="610" y="14" width="120" height="24" rx="6" fill="#F1F5ED" stroke="#D8DBD4" stroke-width="1"/>
+    <text x="620" y="30" class="label" fill="#2E6B4F" font-size="10">Primary Substrate</text>
+  </g>
+
+
+  <!-- ==================== 2. INVERTED HORIZONTAL LOCKUP (DARK BACKGROUND) ==================== -->
+  <g transform="translate(70, 240)">
+    <!-- Icon Mark Thumbnail -->
+    <g transform="translate(0, 5) scale(0.24)">
+      <rect width="380" height="380" rx="84" fill="url(#bgGrad)" filter="url(#softShadow)"/>
+      <g transform="translate(30, 20)">
+        <rect x="80" y="150" width="60" height="60" rx="14" fill="#FBFDF8" fill-opacity="0.95"/>
+        <circle cx="110" cy="180" r="10" fill="#2E6B4F"/>
+        <rect x="156" y="106" width="72" height="104" rx="20" fill="#FFFFFF"/>
+        <rect x="172" y="126" width="40" height="32" rx="8" fill="#EAF3EE"/>
+        <circle cx="192" cy="182" r="6" fill="#2E6B4F"/>
+        <rect x="244" y="138" width="60" height="72" rx="16" fill="#FBFDF8" fill-opacity="0.9"/>
+        <rect x="260" y="154" width="28" height="6" rx="3" fill="#3D8B67" fill-opacity="0.5"/>
+        <rect x="260" y="168" width="20" height="6" rx="3" fill="#3D8B67" fill-opacity="0.5"/>
+        <rect x="56" y="226" width="268" height="18" rx="9" fill="url(#shelfGrad)"/>
+        <rect x="60" y="228" width="260" height="3" rx="1.5" fill="#FFFFFF" fill-opacity="0.8"/>
+        <path d="M100 244L100 278" stroke="#FBFDF8" stroke-width="6" stroke-linecap="round" stroke-opacity="0.8"/>
+        <path d="M190 244L190 286" stroke="#FBFDF8" stroke-width="7" stroke-linecap="round" stroke-opacity="0.9"/>
+        <path d="M280 244L280 278" stroke="#FBFDF8" stroke-width="6" stroke-linecap="round" stroke-opacity="0.8"/>
+      </g>
+    </g>
+
+    <!-- Typography Lockup (Inverted White) -->
+    <g transform="translate(118, 62)">
+      <text x="0" y="38" class="brand-title" fill="#FFFFFF">Montra</text>
+      <text x="2" y="60" class="brand-subtitle" fill="#8AE6B8">Decentralized Specimen Tree</text>
+    </g>
+
+    <!-- Substrate Badge -->
+    <rect x="590" y="14" width="140" height="24" rx="6" fill="#243029" stroke="#34473D" stroke-width="1"/>
+    <text x="600" y="30" class="label" fill="#8AE6B8" font-size="10">Inverted Dark Substrate</text>
+  </g>
+</svg>
