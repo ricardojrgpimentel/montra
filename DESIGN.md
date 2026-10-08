@@ -118,6 +118,19 @@ superfície define a linha.*
 
 ## O ícone da Montra
 
+A identidade atual é a **Direção 1 do Stitch**, documentada em
+[design/stitch-concepts/README.md](design/stitch-concepts/README.md).
+`design/stitch.py` converte o SVG aprovado em quatro VectorDrawables: símbolo
+da interface, foreground, background com sangria e silhueta monocromática.
+Mantém os gradientes e os detalhes dos módulos; sombras e guias de construção
+ficam na apresentação. O canvas de 512px ocupa os 72dp visíveis do ícone
+adaptativo de 108dp, e o símbolo fica dentro do círculo de segurança de 66dp.
+`python3 design/verify-drawable.py stitch-d1` verifica os quatro ficheiros em CI
+e localmente. A marca aparece no cabeçalho Apps e no Sobre, acompanhada pelo
+nome em texto nativo, com a cor do tema.
+
+### Identidade anterior (referência)
+
 O ícone é uma montra em dois tempos: **três apps expostas numa prateleira** e, por
 baixo, **a faixa** — a mesma superfície que a app usa para dizer o estado do catálogo.
 Branco plano sobre `#2E6B4F`, sem gradientes, sem sombra e sem cor dinâmica: aqui o
@@ -160,6 +173,11 @@ versão da marca. Um gráfico promocional é a única superfície onde apetece i
 uma frase; a frase não existe, e um logo sozinho não mente.
 
 ## O wordmark
+
+O logo atual para documentação é
+[montra-wordmark-stitch.svg](design/stitch-concepts/montra-wordmark-stitch.svg),
+com uma exportação PNG incluída para manter a tipografia estável no README.
+As regras e ficheiros abaixo descrevem a identidade anterior.
 
 O nome **não é texto**: são contornos. Um logo escrito com `font-family` muda de forma
 conforme a fonte que existir na máquina de quem abre o ficheiro, e isso não é um logo,

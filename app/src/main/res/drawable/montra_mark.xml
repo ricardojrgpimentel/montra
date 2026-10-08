@@ -2,9 +2,16 @@
 <!-- Gerado por design/stitch.py a partir da Direção 1 do Stitch. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
-    android:width="108dp" android:height="108dp"
-    android:viewportWidth="108" android:viewportHeight="108">
-    <group android:translateX="18" android:translateY="18" android:scaleX="0.140625" android:scaleY="0.140625">
+    android:width="48dp" android:height="48dp"
+    android:viewportWidth="512" android:viewportHeight="512">
+    <path android:pathData="M0.00,112.00 a112.00,112.00 0 0 1 112.00,-112.00 h288.00 a112.00,112.00 0 0 1 112.00,112.00 v288.00 a112.00,112.00 0 0 1 -112.00,112.00 h-288.00 a112.00,112.00 0 0 1 -112.00,-112.00 z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="0.0" android:startY="0.0" android:endX="512.0" android:endY="512.0">
+                <item android:color="#FF347758" android:offset="0.0" />
+                <item android:color="#FF24553E" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
     <path android:pathData="M136.00,210.00 a14.00,14.00 0 0 1 14.00,-14.00 h32.00 a14.00,14.00 0 0 1 14.00,14.00 v32.00 a14.00,14.00 0 0 1 -14.00,14.00 h-32.00 a14.00,14.00 0 0 1 -14.00,-14.00 z"
         android:fillColor="#FBFDF8"
         android:fillAlpha="0.95" />
@@ -60,5 +67,4 @@
         android:strokeWidth="5"
         android:strokeAlpha="0.5"
         android:strokeLineCap="round" />
-    </group>
 </vector>

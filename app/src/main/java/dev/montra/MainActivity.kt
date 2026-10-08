@@ -70,6 +70,7 @@ import dev.montra.ui.GamesScreen
 import dev.montra.ui.MontraViewModel
 import dev.montra.ui.SearchScreen
 import dev.montra.ui.SettingsScreen
+import dev.montra.ui.components.MontraBrand
 import dev.montra.ui.theme.MontraTheme
 import dev.montra.ui.theme.Motion
 import dev.montra.ui.theme.Space
@@ -209,14 +210,18 @@ fun MontraRoot(
             if (route != Tab.SEARCH.route) {
                 TopAppBar(
                     title = {
-                        Text(
-                            when {
-                                isDetail -> detailedApp?.app?.name ?: "Detalhes"
-                                route == Tab.SETTINGS.route -> "Definições"
-                                route == Tab.GAMES.route -> "Jogos e emuladores"
-                                else -> "Montra"
-                            },
-                        )
+                        if (!isDetail && route == Tab.APPS.route) {
+                            MontraBrand()
+                        } else {
+                            Text(
+                                when {
+                                    isDetail -> detailedApp?.app?.name ?: "Detalhes"
+                                    route == Tab.SETTINGS.route -> "Definições"
+                                    route == Tab.GAMES.route -> "Jogos e emuladores"
+                                    else -> "Montra"
+                                },
+                            )
+                        }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surface,

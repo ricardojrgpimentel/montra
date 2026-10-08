@@ -28,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.montra.BuildConfig
 import dev.montra.data.AutoRefresh
@@ -38,6 +37,7 @@ import dev.montra.install.InstallManager
 import dev.montra.ui.components.Block
 import dev.montra.ui.components.KeyValue
 import dev.montra.ui.components.LinkRow
+import dev.montra.ui.components.MontraBrand
 import dev.montra.ui.components.SectionTitle
 import dev.montra.ui.theme.Space
 import dev.montra.util.verifiedLabel
@@ -246,11 +246,7 @@ fun SettingsScreen(
 
             SectionTitle("Sobre")
             Block {
-                Text(
-                    text = "Montra",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                MontraBrand()
                 Spacer(Modifier.height(Space.xs))
                 // A versão e o código ficam juntos porque é isto que se lê em voz alta
                 // quando se reporta um problema, e é a única coisa nesta app que o

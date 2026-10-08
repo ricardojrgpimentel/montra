@@ -18,10 +18,12 @@ Uso: python3 design/verify-drawable.py        # identifica o conceito sozinho
 import shutil
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import icons
 import render
+import stitch
 
 ROOT = Path(__file__).resolve().parent.parent
 DRAWABLE = ROOT / "app" / "src" / "main" / "res" / "drawable" / "ic_launcher_foreground.xml"
@@ -85,6 +87,22 @@ def render_svg_from_drawable(text):
 def main():
     esperado = sys.argv[1] if len(sys.argv) > 1 else None
     text = DRAWABLE.read_text(encoding="utf-8")
+
+    if esperado == "stitch-d1" or "Gerado por design/stitch.py" in text:
+        if esperado and esperado != "stitch-d1":
+            sys.exit(f"o drawable instalado é stitch-d1, mas o esperado era {esperado}")
+        for name, expected in stitch.outputs().items():
+            actual = DRAWABLE.parent / name
+            if not actual.is_file() or actual.read_text(encoding="utf-8") != expected:
+                sys.exit(f"{name} diverge da Direção 1: correr python3 design/stitch.py")
+        adaptive = ET.parse(DRAWABLE.parent.parent / "mipmap-anydpi-v26/ic_launcher.xml").getroot()
+        for role in ("background", "foreground", "monochrome"):
+            layer = adaptive.find(role)
+            reference = f"@drawable/ic_launcher_{role}"
+            if layer is None or layer.attrib.get("{http://schemas.android.com/apk/res/android}drawable") != reference:
+                sys.exit(f"o ícone adaptativo tem de referenciar {reference}")
+        print("ok: marca, ícone adaptativo, fundo e monocromático correspondem à Direção 1 do Stitch")
+        return
 
     key = identify(text)
     if key is None:

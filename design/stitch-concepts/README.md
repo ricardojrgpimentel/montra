@@ -15,6 +15,19 @@ Projeto Stitch: **`Montra Logo & App Icon Design`** (ID: `7777111789677733119`)
   * `stitch-d1-wordmark-showcase.svg` e `stitch-d1-wordmark-showcase.png`: Apresentação oficial gerada pelo Stitch com as variantes para fundos claros (`#F7FAF3` / `#101410`) e escuros (`#141814` / `#FFFFFF`).
   * `montra-wordmark-stitch.svg` e `montra-wordmark-stitch@2x.png`: Versão horizontal transparente para integração web/documentação.
 
+## Integração Android
+
+`python3 design/stitch.py` converte `stitch-d1-storefront.svg` em
+`montra_mark.xml`, `ic_launcher_foreground.xml`, `ic_launcher_background.xml` e
+`ic_launcher_monochrome.xml`. A versão Android conserva a geometria dos módulos,
+os detalhes e os gradientes; remove as sombras e as guias de construção.
+O fundo tem sangria completa e o símbolo ocupa a área visível de 72dp no viewport
+adaptativo de 108dp. A versão monocromática usa a silhueta dos módulos e prateleira.
+
+A marca aparece no cabeçalho Apps e no Sobre. O nome usa texto nativo e adapta-se
+ao tema claro/escuro. O README usa o wordmark PNG aprovado.
+`python3 design/verify-drawable.py stitch-d1` verifica os quatro recursos gerados.
+
 ---
 
 ## Conceitos Alternativos Explorados

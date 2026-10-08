@@ -1,6 +1,6 @@
 # Montra — cliente Android
 
-<img src="design/wordmark/montra-wordmark@2x.png" alt="Montra" width="280">
+<img src="design/stitch-concepts/montra-wordmark-stitch@2x.png" alt="Montra" width="350">
 
 A app. Descarrega um catálogo, verifica a assinatura, verifica cada APK, instala.
 
@@ -20,6 +20,7 @@ A app. Descarrega um catálogo, verifica a assinatura, verifica cada APK, instal
 Tiradas num emulador descartável (`./design/capturas.sh`) e não no telemóvel de quem
 as tirou: um emulador não traz notificações nem a lista de aplicações instaladas para
 dentro de uma imagem que vai para um repositório público.
+Estas capturas são anteriores à integração da identidade da Direção 1 do Stitch.
 
 | | | |
 | --- | --- | --- |
@@ -111,6 +112,21 @@ acusa uma app de estar parada sem saber quando é que ela lançou. As regras est
 
 ## Design
 
+A identidade atual é a **Direção 1 — Vitrine & Prateleira Minimalista**, aprovada
+no [Stitch](design/stitch-concepts/README.md). O novo
+[logo](design/stitch-concepts/montra-wordmark-stitch.svg) e o
+[ícone](design/stitch-concepts/stitch-d1-storefront.svg) estão no projeto.
+O símbolo aparece no cabeçalho do separador Apps, no Sobre e no ícone adaptativo
+do launcher, com uma variante monocromática para ícones temáticos.
+
+<img src="design/loja/icone-512.png" alt="Novo ícone da Montra: apps numa prateleira" width="128">
+
+`python3 design/stitch.py` gera os quatro VectorDrawables a partir do SVG aprovado;
+`python3 design/verify-drawable.py stitch-d1` confirma que correspondem à fonte.
+A adaptação Android mantém os módulos, os detalhes e os gradientes e dispensa
+as sombras e as guias de construção da apresentação. O nome usa texto nativo
+com a cor do tema para continuar legível em modo claro e escuro.
+
 As decisões visuais estão em [DESIGN.md](DESIGN.md): paleta, escala de tipografia,
 escala de espaço, formas, e o que a app nunca faz. O código referencia essas
 constantes (`ui/theme`) em vez de inventar valores por composable. O ficheiro foi
@@ -144,10 +160,13 @@ app/src/main/assets/
 └── index-signing.pub.pem      chave de confiança (parte da identidade da app)
 ```
 
-O ícone e o logo também são gerados, e não desenhados à mão no XML:
+Os assets Android são gerados, e não desenhados à mão no XML. Os geradores da
+identidade anterior continuam disponíveis para referência:
 
 ```
 design/
+├── stitch.py                  SVG aprovado → marca, foreground, background e monocromático
+├── stitch-concepts/           nova identidade aprovada e conceitos alternativos
 ├── icons.py                   a geometria: uma fonte para o SVG e para o VectorDrawable
 ├── render.py                  o motor de renderização que o ícone e o logo partilham
 ├── render-previews.sh         pré-visualiza com a máscara circular, a 512px e a 48px
