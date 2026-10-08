@@ -234,15 +234,22 @@ com o conteúdo.
 ## Uma app parada
 
 Uma app sem lançamentos há mais de **seis meses** ganha um aviso âmbar: o
-distintivo "sem atualizações" na linha e um bloco na ficha com **a data do último
-lançamento** — "Sem atualizações desde 23 de fevereiro de 2026".
+distintivo "sem lançamentos" na linha e um bloco na ficha com **a data do último
+lançamento** — "Sem lançamentos no catálogo desde 23 de fevereiro de 2026".
+
+**O aviso é sobre o que o catálogo vê, e diz isso.** O catálogo só conhece as
+releases que o projeto publica no GitHub; o F-Droid, por exemplo, publica primeiro
+no GitLab e o espelho do GitHub fica para trás. "Sem atualizações" seria uma
+afirmação sobre o projeto, que o catálogo não tem como fazer; "sem lançamentos no
+catálogo" é uma afirmação sobre o que ele sabe — e essa confirma-se no repositório
+que a ficha liga.
 
 **Âmbar, não vermelho.** Uma app parada não é uma avaria nem um erro de ninguém: é
 uma condição que muda a decisão de quem vai instalar, e as condições deste catálogo
 são âmbar — uma licença que limita, uma atualização à espera. O vermelho continua
 reservado ao que corre mal, e uma app que ninguém lançou não corre mal por isso.
 
-**A data é o que torna o aviso verificável.** "Sem atualizações" sozinho é uma
+**A data é o que torna o aviso verificável.** "Sem lançamentos" sozinho é uma
 opinião; "desde 23 de fevereiro de 2026" é um facto que a pessoa confirma no
 repositório. É por isso que a data vai no aviso, e não uma contagem de meses.
 
@@ -251,7 +258,7 @@ não há aviso nenhum: não se acusa uma app de estar parada sem saber quando é
 ela lançou.
 
 Na linha, o distintivo entra na ordem de prioridade que já existe — não corre aqui,
-assinatura diferente, licença restritiva, **sem atualizações**, fora da Play — e
+assinatura diferente, licença restritiva, **sem lançamentos**, fora da Play — e
 uma linha continua a mostrar **um** distintivo só. O "fora da Play" cede o lugar
 porque é o único dos cinco que quem entra nesta loja já sabe, e que os filtros
 continuam a responder.

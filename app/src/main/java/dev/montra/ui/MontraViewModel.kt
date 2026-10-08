@@ -71,8 +71,9 @@ data class AppRow(
     /** Set when this device cannot run the app at all (minSdk above this device). */
     val incompatible: String? = null,
     /**
-     * O último lançamento tem mais de seis meses. Sai da data que o índice publica,
-     * e não de uma bandeira gravada: uma data não envelhece numa cache.
+     * O catálogo não vê um lançamento deste projeto há mais de seis meses. Sai da
+     * data que o índice publica, e não de uma bandeira gravada: uma data não
+     * envelhece numa cache.
      */
     val staleRelease: Boolean = false,
 ) {

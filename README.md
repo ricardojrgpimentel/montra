@@ -92,11 +92,17 @@ ReVanced Manager); `restrictedLicense` é software cujo **código** não é livr
 ### Uma app parada também se diz
 
 Uma app sem lançamentos há mais de seis meses tem o mesmo tratamento: distintivo
-âmbar **"sem atualizações"** na linha — no lugar de "fora da Play", que é o único
+âmbar **"sem lançamentos"** na linha — no lugar de "fora da Play", que é o único
 dos distintivos que quem entra nesta loja já sabe — e um bloco âmbar na ficha com
-**a data do último lançamento**: *"Sem atualizações desde 9 de abril de 2023"*.
+**a data do último lançamento**: *"Sem lançamentos no catálogo desde 9 de abril de
+2023"*.
 
-A data está lá porque é ela que torna o aviso verificável: "sem atualizações" é uma
+O aviso é sobre o que o **catálogo** vê, e di-lo: o catálogo só conhece as releases
+que o projeto publica no GitHub, e o F-Droid publica primeiro no GitLab. "Sem
+atualizações" seria uma afirmação sobre o projeto, que a loja não tem como fazer;
+"sem lançamentos no catálogo" é uma afirmação sobre o que ela sabe.
+
+A data está lá porque é ela que torna o aviso verificável: "sem lançamentos" é uma
 opinião; "desde 9 de abril de 2023" é um facto que se confirma no repositório. Sai
 de `release.publishedAt`, que o índice já publica, e não de uma bandeira gravada —
 uma data não envelhece numa cache. Sem data no índice não há aviso nenhum: não se

@@ -157,9 +157,10 @@ fun AppDetailScreen(
             releaseDateLabel(app.release?.publishedAt)?.let { since ->
                 Spacer(Modifier.height(Space.lg))
                 AlertBlock(
-                    title = "Sem atualizações desde $since",
-                    text = "O último lançamento tem mais de seis meses. Vê o repositório " +
-                        "para saberes se o projeto continua.",
+                    title = "Sem lançamentos no catálogo desde $since",
+                    text = "O catálogo só vê as releases que o projeto publica no GitHub. " +
+                        "Se ele lançar noutro sítio, isto não dá por isso — vale a pena " +
+                        "confirmar no repositório.",
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                     contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
