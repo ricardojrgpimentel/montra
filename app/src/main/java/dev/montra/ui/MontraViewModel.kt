@@ -18,6 +18,7 @@ import dev.montra.install.InstallService
 import dev.montra.install.InstallState
 import dev.montra.security.ApkVerifier
 import dev.montra.util.fingerprintsMatch
+import dev.montra.util.isStaleRelease
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -69,6 +70,11 @@ data class AppRow(
     val size: Long,
     /** Set when this device cannot run the app at all (minSdk above this device). */
     val incompatible: String? = null,
+    /**
+     * O último lançamento tem mais de seis meses. Sai da data que o índice publica,
+     * e não de uma bandeira gravada: uma data não envelhece numa cache.
+     */
+    val staleRelease: Boolean = false,
 ) {
     val isInstalled: Boolean get() = installed != null
     val canInstall: Boolean get() = asset != null && incompatible == null && !signatureConflict
@@ -323,6 +329,9 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
         val installStates = container.installManager.states.value
         val installedNow = installed.value
         val selectedCategory = category.value
+        // Uma vez por reconstrução, não uma vez por linha: o aviso de app parada é a
+        // única coisa aqui que depende do relógio.
+        val now = System.currentTimeMillis()
 
         // `rows` é a lista completa: cada separador aplica o seu próprio filtro
         // (categorias, jogos, ou a pesquisa), em vez de o ViewModel adivinhar qual
@@ -362,6 +371,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                         "Precisa de Android API ${it.minSdk}; este dispositivo tem ${Build.VERSION.SDK_INT}"
                     },
                     size = asset?.size ?: app.artifact?.size ?: 0L,
+                    staleRelease = isStaleRelease(app.release?.publishedAt, now),
                 )
             }
             .sortedWith(

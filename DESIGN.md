@@ -231,6 +231,35 @@ Quando a lista rola, **a faixa recolhe**: perde a cor e passa a cinzenta. Em cim
 assinatura do catálogo; a partir do primeiro scroll é só mais uma barra a competir
 com o conteúdo.
 
+## Uma app parada
+
+Uma app sem lançamentos há mais de **seis meses** ganha um aviso âmbar: o
+distintivo "sem atualizações" na linha e um bloco na ficha com **a data do último
+lançamento** — "Sem atualizações desde 23 de fevereiro de 2026".
+
+**Âmbar, não vermelho.** Uma app parada não é uma avaria nem um erro de ninguém: é
+uma condição que muda a decisão de quem vai instalar, e as condições deste catálogo
+são âmbar — uma licença que limita, uma atualização à espera. O vermelho continua
+reservado ao que corre mal, e uma app que ninguém lançou não corre mal por isso.
+
+**A data é o que torna o aviso verificável.** "Sem atualizações" sozinho é uma
+opinião; "desde 23 de fevereiro de 2026" é um facto que a pessoa confirma no
+repositório. É por isso que a data vai no aviso, e não uma contagem de meses.
+
+O limiar é estrito: **mais** de seis meses, não seis meses. E sem data no índice
+não há aviso nenhum: não se acusa uma app de estar parada sem saber quando é que
+ela lançou.
+
+Na linha, o distintivo entra na ordem de prioridade que já existe — não corre aqui,
+assinatura diferente, licença restritiva, **sem atualizações**, fora da Play — e
+uma linha continua a mostrar **um** distintivo só. O "fora da Play" cede o lugar
+porque é o único dos cinco que quem entra nesta loja já sabe, e que os filtros
+continuam a responder.
+
+O aviso não tem estado próprio: sai de `release.publishedAt`, que o índice já
+publica. Uma data não envelhece numa cache; uma bandeira "parada" gravada ontem
+envelhece.
+
 ## Filtros: dois controlos, três respostas
 
 A primeira versão punha quatro coisas diferentes no mesmo fato — a ordenação (que é

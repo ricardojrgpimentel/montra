@@ -89,6 +89,20 @@ Note-se a diferença entre os dois avisos, que não são a mesma coisa: `nonFree
 ReVanced Manager); `restrictedLicense` é software cujo **código** não é livre
 (DevilutionX).
 
+### Uma app parada também se diz
+
+Uma app sem lançamentos há mais de seis meses tem o mesmo tratamento: distintivo
+âmbar **"sem atualizações"** na linha — no lugar de "fora da Play", que é o único
+dos distintivos que quem entra nesta loja já sabe — e um bloco âmbar na ficha com
+**a data do último lançamento**: *"Sem atualizações desde 9 de abril de 2023"*.
+
+A data está lá porque é ela que torna o aviso verificável: "sem atualizações" é uma
+opinião; "desde 9 de abril de 2023" é um facto que se confirma no repositório. Sai
+de `release.publishedAt`, que o índice já publica, e não de uma bandeira gravada —
+uma data não envelhece numa cache. Sem data no índice não há aviso nenhum: não se
+acusa uma app de estar parada sem saber quando é que ela lançou. As regras estão no
+[DESIGN.md](DESIGN.md#uma-app-parada).
+
 ## Design
 
 As decisões visuais estão em [DESIGN.md](DESIGN.md): paleta, escala de tipografia,

@@ -115,12 +115,17 @@ fun AppRowItem(
 /**
  * At most one badge per row: a line with four badges says nothing. The order is the
  * order of importance to the person deciding whether to install.
+ *
+ * "Sem atualizações" fica à frente de "fora da Play" porque este último é o único
+ * dos cinco que quem entra nesta loja já sabe — e os filtros continuam a
+ * respondê-lo. O que não se sabe, e muda a decisão, é que a app parou.
  */
 private fun statusBadge(row: AppRow): Pair<String, androidx.compose.ui.graphics.Color>? = when {
     row.incompatible != null -> "não corre aqui" to androidx.compose.ui.graphics.Color(0xFFBA1A1A)
     row.signatureConflict -> "assinatura diferente" to androidx.compose.ui.graphics.Color(0xFFBA1A1A)
     // Uma licença restritiva é mais importante de saber do que a ausência na Play Store.
     row.app.hasRestrictedLicense() -> "licença restritiva" to androidx.compose.ui.graphics.Color(0xFF8A5A00)
+    row.staleRelease -> "sem atualizações" to androidx.compose.ui.graphics.Color(0xFF8A5A00)
     // Só o que o botão não consegue dizer. "atualizar" e "instalada" saíam também na
     // ação, à direita, e o mesmo texto repetido no mesmo contentor não acrescenta.
     row.app.playStore?.present == false -> "fora da Play" to androidx.compose.ui.graphics.Color(0xFF3B6470)

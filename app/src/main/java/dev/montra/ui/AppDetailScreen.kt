@@ -36,6 +36,7 @@ import dev.montra.ui.components.ScreenshotRow
 import dev.montra.ui.components.SectionTitle
 import dev.montra.ui.theme.Space
 import dev.montra.util.formatBytes
+import dev.montra.util.releaseDateLabel
 import java.util.Locale
 
 /**
@@ -147,6 +148,22 @@ fun AppDetailScreen(
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                 contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
             )
+        }
+
+        // Uma app parada é uma condição, não um erro: âmbar, como a licença
+        // restritiva, e antes do botão porque muda a decisão de quem vai instalar.
+        // A data é o que torna isto verificável — quem duvidar vai ao repositório.
+        if (row.staleRelease) {
+            releaseDateLabel(app.release?.publishedAt)?.let { since ->
+                Spacer(Modifier.height(Space.lg))
+                AlertBlock(
+                    title = "Sem atualizações desde $since",
+                    text = "O último lançamento tem mais de seis meses. Vê o repositório " +
+                        "para saberes se o projeto continua.",
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+            }
         }
 
         Spacer(Modifier.height(Space.lg))
