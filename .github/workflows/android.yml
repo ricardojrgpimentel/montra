@@ -6,10 +6,14 @@ name: android
 # Build and test the client, and prove that the catalogue shipping inside it still
 # verifies. The unit tests include a real signature check against the real index
 # bytes, so a broken crypto path fails the build instead of reaching a phone.
+#
+# O ícone é gerado, não desenhado à mão no XML: a primeira verificação é que o
+# drawable instalado é o conceito aprovado. Um ícone editado à mão falha aqui.
 on:
   push:
     paths:
       - "app/**"
+      - "design/**"
       - "gradle/**"
       - "build.gradle.kts"
       - "settings.gradle.kts"
@@ -18,6 +22,7 @@ on:
   pull_request:
     paths:
       - "app/**"
+      - "design/**"
       - "gradle/**"
       - "build.gradle.kts"
       - "settings.gradle.kts"
@@ -36,6 +41,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # A verificação mais barata primeiro: não precisa de Java, de SDK nem de
+      # rede, e apanha o caso de alguém ter mexido no ícone à mão.
+      - name: o ícone instalado é o conceito aprovado
+        run: python3 design/verify-drawable.py
 
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:

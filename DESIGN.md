@@ -138,12 +138,16 @@ O desenho não se edita à mão: gera-se, e confirma-se.
 | `design/icons.py` | a geometria — uma só fonte para o SVG e para o VectorDrawable |
 | `design/render.py` | o motor de renderização (chrome-headless-shell) que o ícone e o logo partilham |
 | `design/render-previews.sh` | pré-visualiza com a máscara circular, a 512px e a 48px |
-| `design/verify-drawable.py` | compara o drawable instalado com o conceito, píxel a píxel |
+| `design/verify-drawable.py` | confirma que o drawable instalado é o conceito aprovado — e, localmente, compara os desenhos píxel a píxel |
 | `design/wordmark.py` | o logo: a marca e o nome em contornos, mais os PNG @2x |
 | `design/loja/` | os dois PNG da ficha da loja: o ícone de 512 e o destaque de 1024×500 |
 
 Trocar de conceito é `python3 design/icons.py --android d3`, e a verificação responde
-com o número de píxeis diferentes — que tem de ser zero.
+com o número de píxeis diferentes — que tem de ser zero. A primeira parte dessa
+verificação corre em CI (`android.yml`), antes de tudo o resto: não precisa de Java,
+de SDK nem de browser, e é ela que impede um ícone editado à mão de chegar ao
+telefone. Um logotipo que se gera também se confere — senão a geração é só uma
+maneira mais bonita de o perder.
 
 Para a ficha da loja, `python3 design/icons.py --png d3` escreve um 512×512 da **área
 visível** (os 72dp), centrado na arte. A loja não aplica a máscara do launcher e não
