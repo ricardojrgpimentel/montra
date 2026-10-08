@@ -8,7 +8,7 @@ não cabia e era cortado pelas máscaras circulares.
 
 Uso:  python3 design/icons.py             # escreve design/icon-preview/concepts/*.svg
       python3 design/icons.py --android d1 # escreve o VectorDrawable de um conceito
-      python3 design/icons.py --png d1     # escreve design/montra-icone-loja-512.png (ficha da loja)
+      python3 design/icons.py --png d1     # escreve design/loja/icone-512.png (ficha da loja)
 """
 
 import math
@@ -280,7 +280,7 @@ def main():
         svg_path.write_text(
             svg(CONCEPTS[key], view=(cx - 36, cy - 36, 72, 72), size=512), encoding="utf-8"
         )
-        out = ROOT / "design" / "montra-icone-loja-512.png"
+        out = ROOT / "design" / "loja" / "icone-512.png"
         render_svg(svg_path, out, 512, 512, scale=1, transparent=False)
         print(f"{out} <- {CONCEPTS[key]['nome']} (512x512, área visível)")
         return

@@ -120,7 +120,7 @@ design/
 ├── render-previews.sh         pré-visualiza com a máscara circular, a 512px e a 48px
 ├── verify-drawable.py         o drawable instalado desenha mesmo o conceito aprovado?
 ├── wordmark.py                o logo (marca + nome em contornos) e os PNG @2x
-├── montra-icone-loja-512.png  o ícone de 512x512 da ficha da loja
+├── loja/                      o que vai para a ficha da loja: ícone 512 e destaque 1024x500
 └── wordmark/                  montra-wordmark.svg, o mesmo invertido, e os PNG
 ```
 

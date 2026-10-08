@@ -140,6 +140,7 @@ O desenho não se edita à mão: gera-se, e confirma-se.
 | `design/render-previews.sh` | pré-visualiza com a máscara circular, a 512px e a 48px |
 | `design/verify-drawable.py` | compara o drawable instalado com o conceito, píxel a píxel |
 | `design/wordmark.py` | o logo: a marca e o nome em contornos, mais os PNG @2x |
+| `design/loja/` | os dois PNG da ficha da loja: o ícone de 512 e o destaque de 1024×500 |
 
 Trocar de conceito é `python3 design/icons.py --android d3`, e a verificação responde
 com o número de píxeis diferentes — que tem de ser zero.
@@ -148,6 +149,11 @@ Para a ficha da loja, `python3 design/icons.py --png d3` escreve um 512×512 da 
 visível** (os 72dp), centrado na arte. A loja não aplica a máscara do launcher e não
 herda a subida óptica que o círculo pede: exportar os 108dp inteiros dava uma arte
 pequena num quadrado grande.
+
+O destaque de 1024×500 é o logo sobre a superfície da casa
+(`python3 design/wordmark.py --loja`) — sem slogan inventado e sem uma terceira
+versão da marca. Um gráfico promocional é a única superfície onde apetece inventar
+uma frase; a frase não existe, e um logo sozinho não mente.
 
 ## O wordmark
 

@@ -13,6 +13,7 @@ Precisa de: fontTools (`pip install fontTools`) e chrome-headless-shell para os
 PNG. Uso:
 
     python3 design/wordmark.py                  # escreve design/wordmark/*.svg|*.png
+    python3 design/wordmark.py --loja           # e o gráfico de destaque da loja
     python3 design/wordmark.py --fonte CAMINHO  # outro TTF para o nome
 """
 
@@ -36,10 +37,15 @@ except ImportError:  # pragma: no cover - mensagem para quem clonar o repositór
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "design" / "wordmark"
+STORE = ROOT / "design" / "loja"
 
 GREEN = icons.GREEN
 INK = "#101410"
 WHITE = "#FFFFFF"
+SURFACE = "#FBFDF8"   # a superfície da casa, a mesma que a app usa por baixo do conteúdo
+
+WIDE, WIDE_H = 1024, 500   # medidas que a ficha da loja pede para o destaque
+LOGO_SHARE = 0.56          # quanto da largura o logo ocupa no gráfico
 
 WORD = "Montra"
 WEIGHT = 500
@@ -138,8 +144,12 @@ def shapes_boxes(shape):
     raise ValueError(kind)
 
 
-def lockup(word_color, fonte=None):
-    """SVG do logo (marca + nome) e as suas dimensões."""
+def lockup_body(word_color, fonte=None):
+    """Traços do logo e as dimensões da caixa que ele ocupa.
+
+    Separado do SVG que o embrulha para o mesmo logo poder entrar dentro de outra
+    composição — o gráfico da loja, por exemplo — sem uma segunda geometria.
+    """
     font, fonte = load_font(fonte)
     cap = font["OS/2"].sCapHeight / font["head"].unitsPerEm
     size = PLATE * CAP_RATIO / cap           # o nome fica com a altura pedida
@@ -150,9 +160,6 @@ def lockup(word_color, fonte=None):
     baseline = PAD + PLATE / 2 + PLATE * CAP_RATIO / 2
 
     lines = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width:.2f}" height="{height:.2f}" '
-        f'viewBox="0 0 {width:.2f} {height:.2f}">',
-        "  <title>Montra</title>",
         f'  <g transform="translate({PAD:.2f},{PAD:.2f})">',
         mark_group(PLATE),
         "  </g>",
@@ -166,8 +173,43 @@ def lockup(word_color, fonte=None):
             f'd="{commands}"/>'
         )
     lines.append("  </g>")
-    lines.append("</svg>")
-    return "\n".join(lines) + "\n", width, height, fonte
+    return lines, width, height, fonte
+
+
+def lockup(word_color, fonte=None):
+    """SVG do logo (marca + nome), sozinho."""
+    lines, width, height, fonte = lockup_body(word_color, fonte)
+    svg = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width:.2f}" height="{height:.2f}" '
+        f'viewBox="0 0 {width:.2f} {height:.2f}">',
+        "  <title>Montra</title>",
+        *lines,
+        "</svg>",
+    ]
+    return "\n".join(svg) + "\n", width, height, fonte
+
+
+def store_graphic(fonte=None, width=WIDE, height=WIDE_H, fill=SURFACE, word_color=INK):
+    """Gráfico de destaque da loja: o logo sobre a superfície da casa.
+
+    Sem slogan inventado e sem uma terceira versão da marca: é o mesmo logo, na
+    cor da superfície, que é o que a app já usa por baixo do conteúdo.
+    """
+    lines, logo_w, logo_h, fonte = lockup_body(word_color, fonte)
+    scale = width * LOGO_SHARE / logo_w
+    tx = (width - logo_w * scale) / 2
+    ty = (height - logo_h * scale) / 2
+    svg = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
+        f'viewBox="0 0 {width} {height}">',
+        "  <title>Montra</title>",
+        f'  <rect width="{width}" height="{height}" fill="{fill}"/>',
+        f'  <g transform="translate({tx:.2f},{ty:.2f}) scale({scale:.5f})">',
+        *lines,
+        "  </g>",
+        "</svg>",
+    ]
+    return "\n".join(svg) + "\n", fonte
 
 
 def render(svg_path, png_path, width, height, scale=2):
@@ -179,6 +221,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--fonte", default=None, help="TTF alternativo para o nome")
     parser.add_argument("--escala", type=int, default=2, help="escala dos PNG (predefinição 2)")
+    parser.add_argument("--loja", action="store_true", help="escreve o gráfico de destaque da loja")
     args = parser.parse_args()
 
     OUT.mkdir(parents=True, exist_ok=True)
@@ -191,6 +234,17 @@ def main():
         svg_path.write_text(svg, encoding="utf-8")
         render(svg_path, OUT / f"{name}@{args.escala}x.png", width, height, args.escala)
         print(f"{svg_path.name}: {width:.0f}x{height:.0f} — fonte {fonte.name}")
+
+    if args.loja:
+        STORE.mkdir(parents=True, exist_ok=True)
+        svg, fonte = store_graphic(args.fonte)
+        svg_path = STORE / "grafico-destaque.svg"
+        svg_path.write_text(svg, encoding="utf-8")
+        render_svg(
+            svg_path, STORE / "grafico-destaque-1024x500.png",
+            WIDE, WIDE_H, scale=1, transparent=False,
+        )
+        print(f"{svg_path.name}: {WIDE}x{WIDE_H} — fonte {fonte.name}")
 
 
 if __name__ == "__main__":
