@@ -15,6 +15,19 @@ A app. Descarrega um catálogo, verifica a assinatura, verifica cada APK, instal
 - **Sem Room**: o catálogo inteiro cabe em memória; a persistência é o ficheiro
   verificado em disco mais DataStore para as preferências.
 
+## Capturas
+
+Tiradas num emulador descartável (`./design/capturas.sh`) e não no telemóvel de quem
+as tirou: um emulador não traz notificações nem a lista de aplicações instaladas para
+dentro de uma imagem que vai para um repositório público.
+
+| | | |
+| --- | --- | --- |
+| <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="210"> | <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="210"> | <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="210"> |
+| O catálogo, com a faixa do estado | A ficha: versão, licença, e como foi verificado | Jogos e emuladores, com o aviso de licença restritiva |
+| <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" width="210"> | <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" width="210"> | |
+| Procurar por nome, etiqueta ou pacote | Definições: origem, chave de confiança e verificação | |
+
 ## Compilar
 
 ```bash
@@ -120,8 +133,18 @@ design/
 ├── render-previews.sh         pré-visualiza com a máscara circular, a 512px e a 48px
 ├── verify-drawable.py         o drawable instalado desenha mesmo o conceito aprovado?
 ├── wordmark.py                o logo (marca + nome em contornos) e os PNG @2x
+├── capturas.sh                tira as capturas de ecrã num emulador descartável
 ├── loja/                      o que vai para a ficha da loja: ícone 512 e destaque 1024x500
 └── wordmark/                  montra-wordmark.svg, o mesmo invertido, e os PNG
+```
+
+O texto da ficha — título, descrição curta, descrição completa e changelog — vive em
+`fastlane/metadata/android/`, no formato que a F-Droid lê:
+
+```
+fastlane/metadata/android/
+├── pt-PT/                     a língua da app: título, descrições e changelog
+└── en-US/                     o mesmo em inglês, e as capturas de ecrã
 ```
 
 O porquê das regras (o círculo de segurança de 66dp, o branco plano, a faixa, os

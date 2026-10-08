@@ -1,0 +1,57 @@
+Uma loja de aplicações Android sem servidor.
+
+O catálogo é um ficheiro num repositório git público. Não há servidor para
+manter, nem base de dados para operar, nem conta para criar — e, por isso, não há
+nada que guarde o que instalas.
+
+O QUE A APP FAZ
+
+· Mostra o catálogo em secções: atualizações, aplicações instaladas e o resto. Os
+  jogos e emuladores têm separador próprio.
+· Filtra por fora da Google Play, por licença restritiva e por categoria, e diz
+  quantas aplicações cada filtro apanha antes de o ligares.
+· Instala e atualiza: descarrega o APK, verifica-o e entrega-o ao instalador do
+  sistema. Nada é instalado em silêncio — o diálogo do Android aparece sempre.
+
+COMO SABES QUE O QUE INSTALAS É O QUE FOI PUBLICADO
+
+· O índice é assinado com ECDSA P-256 e a app verifica a assinatura antes de
+  mostrar seja o que for. A chave pública vive dentro do APK, não vem da rede.
+· Cada APK tem o sha256 fixado no índice, verificado durante o download.
+· O certificado de assinatura de cada aplicação está fixado no catálogo: uma
+  atualização assinada com outra chave é recusada.
+· Só HTTPS. O texto simples está desligado.
+
+SEM LIGAÇÃO? O CATÁLOGO ESTÁ LÁ
+
+A app traz um snapshot do catálogo e guarda em cache o que verificou, por isso o
+primeiro arranque e o modo avião continuam a mostrar a lista. Quando a rede volta,
+a verificação é repetida sozinha.
+
+O QUE A APP NÃO FAZ
+
+· Sem contas, sem publicidade, sem rastreio e sem telemetria.
+· Não faz cópias de segurança dos teus dados.
+· Não esconde o que interessa: uma licença que limita e uma característica que
+  retira liberdades aparecem antes de instalares, não depois.
+
+PERMISSÕES, E PORQUÊ
+
+· Internet — para ler o catálogo e descarregar os APKs.
+· Instalar aplicações — é o que a app faz; o sistema pede-te autorização.
+· Ver o estado da rede — só para distinguir "estás sem rede" de "o catálogo foi
+  recusado", antes de escrever a mensagem errada no ecrã.
+· Ver as aplicações instaladas — para responder a "isto já está instalado? que
+  versão?". O catálogo é dinâmico, por isso uma lista fixa de pacotes não serve.
+· Notificações — para mostrar o progresso de um download longo.
+
+REQUISITOS
+
+Android 8.0 ou mais recente. O APK tem cerca de 1,7 MB e a app não usa bibliotecas
+de interface de terceiros.
+
+CÓDIGO ABERTO
+
+AGPL-3.0-or-later. Cliente: github.com/ricardojrgpimentel/montra. Catálogo:
+github.com/ricardojrgpimentel/montra-index — um ficheiro por aplicação, e cada
+alteração é um pull request revisável.

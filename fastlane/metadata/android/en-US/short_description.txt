@@ -1,0 +1,1 @@
+A serverless app store: signed catalogue, verified APKs.

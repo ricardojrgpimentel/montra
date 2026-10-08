@@ -1,0 +1,6 @@
+First release.
+
+· Catalogue in sections: updates, installed, the rest, games and search.
+· Filters by not-on-Google-Play, restrictive licence and category.
+· Verified install: index signature, APK sha256 and pinned certificate.
+· Works offline, with the catalogue snapshot shipped inside the APK.

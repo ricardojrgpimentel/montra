@@ -1,0 +1,6 @@
+Primeira versão.
+
+· Catálogo em secções: atualizações, instaladas, o resto, jogos e procura.
+· Filtros por fora da Google Play, licença restritiva e categoria.
+· Instalação verificada: assinatura do índice, sha256 do APK e certificado fixado.
+· Funciona sem rede, com o snapshot do catálogo incluído no APK.

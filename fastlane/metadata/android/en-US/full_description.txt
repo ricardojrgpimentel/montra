@@ -1,0 +1,58 @@
+An Android app store with no server behind it.
+
+The catalogue is a file in a public git repository. There is no server to run, no
+database to operate and no account to create — and therefore nothing that records
+what you install. The interface is in Portuguese.
+
+WHAT THE APP DOES
+
+· Shows the catalogue in sections: updates, installed apps, and the rest. Games and
+  emulators get their own tab.
+· Filters by "not on Google Play", by restrictive licence and by category, and
+  tells you how many apps each filter catches before you turn it on.
+· Installs and updates: downloads the APK, verifies it, and hands it to the system
+  installer. Nothing installs silently — the Android dialog always appears.
+
+HOW YOU KNOW THAT WHAT YOU INSTALL IS WHAT WAS PUBLISHED
+
+· The index is signed with ECDSA P-256 and the app verifies the signature before
+  showing anything. The public key ships inside the APK; it never comes from the
+  network.
+· Every APK has its sha256 pinned in the index, checked while downloading.
+· Each app's signing certificate is pinned in the catalogue: an update signed with
+  another key is refused.
+· HTTPS only. Cleartext traffic is disabled.
+
+NO NETWORK? THE CATALOGUE IS STILL THERE
+
+The app carries a snapshot of the catalogue and caches what it verified, so the
+first launch and airplane mode still show the list. When the network comes back,
+the check repeats on its own.
+
+WHAT THE APP DOES NOT DO
+
+· No accounts, no ads, no tracking, no telemetry.
+· It does not back up your data.
+· It does not hide what matters: a licence that restricts you and a feature that
+  takes away freedoms appear before you install, not after.
+
+PERMISSIONS, AND WHY
+
+· Internet — to read the catalogue and download APKs.
+· Install apps — that is what the app does; the system asks you first.
+· Network state — only to tell "you are offline" apart from "the catalogue was
+  refused", before writing the wrong message on screen.
+· See installed apps — to answer "is this already installed, and which version?".
+  The catalogue is dynamic, so a fixed package list is not possible.
+· Notifications — to show the progress of a long download.
+
+REQUIREMENTS
+
+Android 8.0 or newer. The APK is about 1.7 MB and the app uses no third-party UI
+libraries.
+
+OPEN SOURCE
+
+AGPL-3.0-or-later. Client: github.com/ricardojrgpimentel/montra. Catalogue:
+github.com/ricardojrgpimentel/montra-index — one file per app, and every change is
+a reviewable pull request.
