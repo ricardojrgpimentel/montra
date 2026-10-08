@@ -54,7 +54,9 @@ open class IndexSource(private val context: Context, private val client: OkHttpC
                 .build(),
         ).execute().use { response ->
             if (response.code == 304) return@withContext null
-            if (!response.isSuccessful) throw IOException("HTTP ${response.code} ao obter o índice")
+            // A resposta HTTP tem tipo próprio: é a única falha em que o servidor
+            // falou, e a app pode dizê-lo em vez de a tratar como rede.
+            if (!response.isSuccessful) throw IndexHttpException(response.code, indexUrl)
             newEtag = response.header("ETag")
             response.body?.bytes() ?: throw IOException("resposta vazia do índice")
         }
@@ -62,7 +64,7 @@ open class IndexSource(private val context: Context, private val client: OkHttpC
         val signature = client.newCall(Request.Builder().url("$indexUrl.sig").build())
             .execute().use { response ->
                 if (!response.isSuccessful) {
-                    throw IOException("assinatura indisponível (HTTP ${response.code})")
+                    throw IndexHttpException(response.code, "$indexUrl.sig")
                 }
                 response.body?.string() ?: throw IOException("assinatura vazia")
             }

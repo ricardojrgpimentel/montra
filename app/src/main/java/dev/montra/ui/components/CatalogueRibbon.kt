@@ -52,6 +52,12 @@ private const val OUTCOME_LINGER_MS = 8_000L
  * confirmado, e passa a vermelho quando a última tentativa falhou. Quando o
  * utilizador entra na lista, a faixa recolhe — perde a cor e o relevo — para deixar
  * de competir com o conteúdo que ele foi ali ver.
+ *
+ * Estar offline não é uma falha — é a razão de ser do catálogo verificado em disco —
+ * e por isso [offline] tem a sua própria cor: o cinzento calmo da faixa recolhida,
+ * com o motivo e um "Tentar de novo" de baixo relevo. O vermelho fica para o que
+ * exige atenção: uma assinatura inválida é um ataque ou uma build quebrada; não ter
+ * rede é terça-feira.
  */
 @Composable
 fun CatalogueRibbon(
@@ -62,17 +68,21 @@ fun CatalogueRibbon(
     outcome: RefreshOutcome,
     outcomeAt: Long,
     error: String?,
+    offline: Boolean,
     onRetry: () -> Unit,
     collapsed: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val now = rememberTickingNow()
     val scheme = MaterialTheme.colorScheme
-    val failed = error != null
+    // `offline` também traz mensagem (é ela que se lê), mas não é uma falha: se ficasse
+    // a contar como tal, a faixa ia para vermelho por não haver rede.
+    val failed = error != null && !offline
 
     val band by animateColorAsState(
         targetValue = when {
             failed -> scheme.errorContainer
+            offline -> scheme.surfaceContainerHigh
             collapsed -> scheme.surfaceContainerLow
             // Misturado com a superfície em vez de `primaryContainer` a todo o gás:
             // uma faixa da largura do ecrã com o contentor primário puro lia-se como
@@ -85,6 +95,7 @@ fun CatalogueRibbon(
     val ink by animateColorAsState(
         targetValue = when {
             failed -> scheme.onErrorContainer
+            offline -> scheme.onSurfaceVariant
             collapsed -> scheme.onSurfaceVariant
             else -> scheme.onPrimaryContainer
         },
@@ -100,49 +111,74 @@ fun CatalogueRibbon(
                 .padding(horizontal = Space.lg, vertical = Space.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (failed) {
-                Text(
-                    text = error.orEmpty(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = ink,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-                TextButton(onClick = onRetry) { Text("Tentar de novo", color = ink) }
-            } else {
-                val accent = scheme.tertiary
-                Text(
-                    text = buildAnnotatedString {
-                        // O âmbar é o "há novidades": a única razão para esta linha
-                        // merecer ser lida duas vezes.
-                        if (updates > 0) {
-                            withStyle(SpanStyle(color = accent, fontWeight = FontWeight.SemiBold)) {
-                                append(if (updates == 1) "1 atualização" else "$updates atualizações")
+            when {
+                failed -> {
+                    Text(
+                        text = error.orEmpty(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ink,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = onRetry) { Text("Tentar de novo", color = ink) }
+                }
+
+                // Sem alarme e sem esconder: o mesmo sítio da faixa, sem a cor de erro,
+                // para se perceber num relance que o catálogo continua a funcionar.
+                offline -> {
+                    Text(
+                        text = OFFLINE_RIBBON,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = ink,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = onRetry) { Text("Tentar de novo", color = ink) }
+                }
+
+                else -> {
+                    val accent = scheme.tertiary
+                    Text(
+                        text = buildAnnotatedString {
+                            // O âmbar é o "há novidades": a única razão para esta linha
+                            // merecer ser lida duas vezes.
+                            if (updates > 0) {
+                                withStyle(SpanStyle(color = accent, fontWeight = FontWeight.SemiBold)) {
+                                    append(if (updates == 1) "1 atualização" else "$updates atualizações")
+                                }
+                                append(" · ")
                             }
-                            append(" · ")
-                        }
-                        append(counts)
-                    },
-                    style = MaterialTheme.typography.labelMedium,
-                    color = ink,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-                Spacer(Modifier.width(Space.md))
-                StatusText(
-                    refreshing = refreshing,
-                    outcome = outcome,
-                    outcomeAt = outcomeAt,
-                    lastCheckedAt = lastCheckedAt,
-                    now = now,
-                    color = if (refreshing) scheme.tertiary else ink,
-                )
+                            append(counts)
+                        },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = ink,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.width(Space.md))
+                    StatusText(
+                        refreshing = refreshing,
+                        outcome = outcome,
+                        outcomeAt = outcomeAt,
+                        lastCheckedAt = lastCheckedAt,
+                        now = now,
+                        color = if (refreshing) scheme.tertiary else ink,
+                    )
+                }
             }
         }
     }
 }
+
+/**
+ * A frase da faixa quando não há rede. Curta de propósito: a faixa tem uma linha e
+ * meio, e a segunda metade — "a mostrar o catálogo verificado" — é a informação que
+ * interessa, porque diz que a app não está avariada.
+ */
+private const val OFFLINE_RIBBON = "Sem ligação à internet · a mostrar o catálogo verificado"
 
 @Composable
 private fun StatusText(

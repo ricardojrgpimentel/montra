@@ -71,6 +71,15 @@ android {
         abortOnError = true
         warningsAsErrors = false
     }
+
+    testOptions {
+        unitTests {
+            // A classificação de falhas é lógica pura, mas constrói a descrição técnica
+            // que aparece no log — e o log passa pelo `BuildConfig`. Sem isto, testar a
+            // mensagem exigia um emulador para verificar uma frase.
+            isReturnDefaultValues = true
+        }
+    }
 }
 
 dependencies {

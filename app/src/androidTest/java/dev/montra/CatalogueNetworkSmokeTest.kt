@@ -5,6 +5,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import dev.montra.data.IndexOrigin
 import dev.montra.data.IndexRepository
 import dev.montra.data.IndexSource
+import dev.montra.data.NetworkStatus
 import dev.montra.data.Settings
 import dev.montra.security.SignatureCheck
 import dev.montra.security.TrustStore
@@ -56,7 +57,7 @@ class CatalogueNetworkSmokeTest {
     fun setUp() {
         source = IndexSource(context, client)
         trust = TrustStore(context)
-        repository = IndexRepository(context, source, Settings(context), trust)
+        repository = IndexRepository(context, source, Settings(context), trust, NetworkStatus(context))
         // Start from a clean slate so "it was written" means something.
         source.cachedIndexFile.delete()
         source.cachedSignatureFile.delete()
@@ -127,7 +128,7 @@ class CatalogueNetworkSmokeTest {
             override suspend fun fetchRemote(indexUrl: String, etag: String?): Payload =
                 Payload(bytes = tampered, signature = good.signature, etag = null, fromNetwork = true)
         }
-        val victim = IndexRepository(context, hostile, Settings(context), trust)
+        val victim = IndexRepository(context, hostile, Settings(context), trust, NetworkStatus(context))
         victim.refresh(force = true)
 
         val state = victim.state.value

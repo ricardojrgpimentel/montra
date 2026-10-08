@@ -149,6 +149,16 @@ motivo e um "Tentar de novo" na própria faixa, em vez de escondidos nas defini�
 âmbar aparece na contagem de atualizações, que é a única parte da linha que pede uma
 decisão.
 
+São **duas** as cores de falha, porque são duas as coisas diferentes que podem correr
+mal. Um índice recusado — assinatura inválida, chave que não bate — é grave e fica a
+vermelho. Estar sem rede é uma condição, não uma avaria: a faixa fica no cinzento da
+faixa recolhida, diz **"Sem ligação à internet · catálogo verificado"** e o "Tentar de
+novo" continua lá. Antes de escrever fosse o que fosse, a app pergunta ao sistema se
+há rede — a mensagem é uma afirmação sobre o telemóvel de quem lê, e não sobre o
+servidor (o ecrã nunca mostrou `UnknownHostException: raw.githubusercontent.com`,
+que fala do sítio errado e não se resolve em lado nenhum). Quando a rede volta, a
+verificação é repetida sozinha: tirar o modo avião resolve a faixa sem se lhe tocar.
+
 Enquanto se verifica, o lado direito passa a "a verificar…" com um indicador; quando
 termina, diz o resultado durante uns segundos ("catálogo atualizado", "já estava
 atualizado") e volta a "verificado há X". Nunca há um estado invisível: foi

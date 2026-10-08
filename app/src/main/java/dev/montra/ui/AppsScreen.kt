@@ -83,6 +83,7 @@ fun AppsScreen(
             outcome = state.index.outcome,
             outcomeAt = state.index.outcomeAt,
             error = state.index.error ?: state.index.rejectedMessage,
+            offline = state.index.offline,
             onRetry = onRefresh,
             collapsed = collapsed,
         )
@@ -190,8 +191,11 @@ private fun catalogueCounts(state: UiState): String = buildString {
 
 @Composable
 private fun EmptyState(state: UiState, onRefresh: () -> Unit, onClear: () -> Unit) {
+    val offline = state.index.offline
     val failed = state.index.error != null
-    val filteredOut = state.filter != null || state.category != null
+    // As duas razões para não haver lista nenhuma: um filtro, ou um catálogo que não
+    // chegou. São ecrãs vazios com saídas diferentes.
+    val filteredOut = state.rows.isNotEmpty() && (state.filter != null || state.category != null)
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -201,16 +205,29 @@ private fun EmptyState(state: UiState, onRefresh: () -> Unit, onClear: () -> Uni
     ) {
         Text(
             text = when {
+                filteredOut -> if (state.category != null) {
+                    "Nada nesta categoria."
+                } else {
+                    "Nada corresponde a este filtro."
+                }
+                // Offline primeiro: é a razão mais provável e a mais fácil de resolver.
+                offline -> "Sem ligação à internet"
                 failed -> state.index.error.orEmpty()
-                state.filter != null -> "Nada corresponde a este filtro."
-                state.category != null -> "Nada nesta categoria."
                 else -> "O catálogo está vazio."
             },
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        if (failed) {
+        if (offline) {
+            Text(
+                text = "A Montra precisa de internet para confirmar o catálogo. " +
+                    "As apps que já instalaste continuam a funcionar.",
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else if (failed) {
             Text(
                 text = "O último catálogo verificado continua a ser usado.",
                 style = MaterialTheme.typography.bodySmall,
@@ -222,7 +239,7 @@ private fun EmptyState(state: UiState, onRefresh: () -> Unit, onClear: () -> Uni
         // Um ecrã vazio sem saída é um beco. Ou se tira o filtro, ou se tenta outra vez.
         if (filteredOut) {
             OutlinedButton(onClick = onClear) { Text("Limpar filtros") }
-        } else if (failed) {
+        } else if (failed || offline) {
             Button(onClick = onRefresh) { Text("Tentar de novo") }
         }
     }

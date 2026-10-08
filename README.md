@@ -95,6 +95,8 @@ app/src/main/java/dev/montra/
 ├── data/
 │   ├── model/Index.kt         modelo serializável + bestAssetFor(abis)
 │   ├── IndexSource.kt         rede com ETag, cache, assets, URLs relativas
+│   ├── NetworkStatus.kt       há internet? perguntado ao sistema, não deduzido do erro
+│   ├── RefreshFailure.kt      traduzir a falha para o que a pessoa pode fazer
 │   ├── IndexRepository.kt     verificar → publicar; política de falha
 │   └── Settings.kt            DataStore
 ├── install/
@@ -175,7 +177,7 @@ O estado de cada app (`Idle`, `Downloading`, `Verifying`, `AwaitingUser`,
 ## Testes
 
 ```bash
-./gradlew :app:testDebugUnitTest                            # 15 testes, JVM, sem rede
+./gradlew :app:testDebugUnitTest                            # 37 testes, JVM, sem rede
 ./gradlew :app:connectedDebugAndroidTest                    # 3 testes num dispositivo/emulador com rede
 ```
 
@@ -184,6 +186,7 @@ O estado de cada app (`Idle`, `Downloading`, `Verifying`, `AwaitingUser`,
 | `security/IndexVerifierTest` | assinatura válida aceite; um byte alterado, outra chave ou base64 malformado recusados; key id estável |
 | `data/RealIndexTest` | **os bytes reais do índice incluído na app verificam com o verificador real**; key id bate certo; bytes adulterados recusados; todas as apps têm release, sha256, certificado e ícone relativo |
 | `data/IndexModelTest` | campos desconhecidos ignorados; fallback de idioma; escolha de ABI |
+| `data/RefreshFailureTest` | **um erro técnico nunca chega ao ecrã**: sem rede a mensagem fala do telemóvel e não do host, sem cópia verificada não promete catálogo, um erro de certificado não se disfarça de offline, e um HTML de portal cativo fica no log |
 | `androidTest/CatalogueNetworkSmokeTest` | **no dispositivo, no processo da app**: descarrega o índice publicado por HTTPS, verifica a assinatura com a chave do APK, guarda em cache, e recusa um índice adulterado (com uma fonte hostil injetada); o `InstallRequest` sobrevive à passagem por Intent sem perder o sha256 nem o certificado; e cancelar a meio de um download para o pipeline, deixa o estado em `Idle` e não deixa ficheiros parciais |
 
 O `RealIndexTest` liga o assinador (Node, `tools/sign-index.mjs`) ao verificador

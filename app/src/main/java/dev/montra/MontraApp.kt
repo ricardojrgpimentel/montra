@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import dev.montra.data.IndexRepository
 import dev.montra.data.IndexSource
+import dev.montra.data.NetworkStatus
 import dev.montra.data.Settings
 import dev.montra.install.ApkDownloader
 import dev.montra.install.InstallManager
@@ -27,8 +28,9 @@ class AppContainer(context: Context) {
 
     val settings = Settings(context)
     val trustStore = TrustStore(context)
+    val networkStatus = NetworkStatus(context)
     val indexSource = IndexSource(context, okHttp)
-    val indexRepository = IndexRepository(context, indexSource, settings, trustStore)
+    val indexRepository = IndexRepository(context, indexSource, settings, trustStore, networkStatus)
     val downloader = ApkDownloader(context, okHttp)
     val imageStore = ImageStore(context, okHttp)
     val installManager = InstallManager(context, downloader)

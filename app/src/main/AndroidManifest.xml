@@ -4,6 +4,10 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Só para poder distinguir "estás offline" de "o servidor falhou" antes de
+         escrever seja o que for no ecrã. Não é usada para nada mais. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <!-- Installing APKs is the whole point of the app. The user still gets the
          system installer dialog: nothing here installs silently. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />

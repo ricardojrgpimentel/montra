@@ -67,6 +67,7 @@ fun GamesScreen(
             outcome = state.index.outcome,
             outcomeAt = state.index.outcomeAt,
             error = state.index.error ?: state.index.rejectedMessage,
+            offline = state.index.offline,
             onRetry = onRefresh,
             collapsed = collapsed,
         )

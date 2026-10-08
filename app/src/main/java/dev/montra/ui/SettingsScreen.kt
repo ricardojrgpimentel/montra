@@ -109,7 +109,16 @@ fun SettingsScreen(
 
             state.index.error?.let {
                 Spacer(Modifier.height(Space.sm))
-                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                // Offline não é vermelho: é a mesma condição calma que a faixa mostra.
+                Text(
+                    text = it,
+                    color = if (state.index.offline) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
             state.index.rejectedMessage?.let {
                 Spacer(Modifier.height(Space.sm))

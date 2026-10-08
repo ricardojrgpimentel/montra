@@ -7,11 +7,14 @@ import dev.montra.data.model.IndexJson
 import dev.montra.security.SignatureCheck
 import dev.montra.util.Log
 import dev.montra.security.TrustStore
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -41,6 +44,11 @@ data class IndexState(
     val refreshing: Boolean = false,
     /** Set when a refresh failed; the previously verified catalogue stays in use. */
     val error: String? = null,
+    /**
+     * A falha foi não haver rede, não o servidor. Fica separado de [error] porque a
+     * faixa o mostra sem alarme — estar offline não é uma avaria, é uma condição.
+     */
+    val offline: Boolean = false,
     /** Set when something *was* served but rejected: always worth showing loudly. */
     val rejectedMessage: String? = null,
     /** Epoch millis of the last round trip that confirmed the catalogue. */
@@ -63,15 +71,34 @@ class IndexRepository(
     private val source: IndexSource,
     private val settings: Settings,
     private val trust: TrustStore,
+    private val network: NetworkStatus,
 ) {
     private val _state = MutableStateFlow(IndexState())
     val state: StateFlow<IndexState> = _state.asStateFlow()
 
     private val refreshMutex = Mutex()
 
+    /**
+     * Só para o que chega de fora do ciclo de vida do ViewModel: o aviso de que a
+     * rede voltou. Uma verificação pendente não deve ser cancelada por a app sair do
+     * ecrã — é barata e o resultado fica em cache.
+     */
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     suspend fun load() {
         val url = settings.currentIndexUrl()
         Log.i("a carregar o catálogo de $url (chave de confiança ${trust.keyId})")
+        network.refresh()
+        // Sem rede não vale a pena esperar por um timeout de 15 segundos para dizer o
+        // que o sistema já sabe. Com rede, o aviso fica armado: quando ela voltar, a
+        // verificação é repetida sozinha — quem tirou o modo avião não deve ter de
+        // tocar em nada.
+        network.watch {
+            Log.i("a rede voltou a meio da sessão; a verificar o catálogo outra vez")
+            if (!_state.value.refreshing && _state.value.offline) {
+                scope.launch { refresh(force = true) }
+            }
+        }
         _state.update {
             it.copy(loading = true, indexUrl = url, lastCheckedAt = settings.currentLastCheckedAt())
         }
@@ -114,7 +141,10 @@ class IndexRepository(
 
     suspend fun refresh(force: Boolean) = refreshMutex.withLock {
         val url = settings.currentIndexUrl()
-        _state.update { it.copy(refreshing = true, error = null, indexUrl = url) }
+        val hadVerifiedCopy = _state.value.apps.isNotEmpty()
+        _state.update {
+            it.copy(refreshing = true, error = null, offline = false, indexUrl = url)
+        }
         try {
             val etag = if (force) null else settings.currentEtag()
             val payload = source.fetchRemote(url, etag)
@@ -137,7 +167,9 @@ class IndexRepository(
                     source.storeVerified(payload)
                     settings.setEtag(payload.etag)
                     publish(check, IndexOrigin.NETWORK, url)
-                    _state.update { it.copy(refreshing = false, loading = false, error = null) }
+                    _state.update {
+                        it.copy(refreshing = false, loading = false, error = null, offline = false)
+                    }
                     confirm(
                         if (previous != null && previous == check.index.generatedAt) {
                             RefreshOutcome.CURRENT
@@ -162,13 +194,20 @@ class IndexRepository(
         } catch (error: Exception) {
             // A causa vai na mensagem, não só no throwable: muitas ROMs limpam o
             // stack trace do buffer, e quem depura fica sem saber o que falhou.
-            val cause = error.message?.takeIf { it.isNotBlank() } ?: "(sem mensagem)"
-            Log.w("falha a atualizar o catálogo de $url — ${error::class.java.simpleName}: $cause", error)
+            val failure = RefreshFailure.classify(
+                error = error,
+                online = network.hasInternet,
+                hasVerifiedCopy = hadVerifiedCopy,
+            )
+            Log.w("falha a atualizar o catálogo de $url — ${failure.reason}", error)
             _state.update {
                 it.copy(
                     refreshing = false,
                     loading = false,
-                    error = error.message ?: error::class.simpleName ?: "falha ao atualizar",
+                    offline = failure is RefreshFailure.Offline,
+                    // Só texto nosso vai para o ecrã. Um `UnknownHostException` ou o
+                    // HTML de um portal cativo ficam no log, onde são úteis.
+                    error = failure.message.takeIf { failure.reportable },
                 )
             }
         }
@@ -192,6 +231,7 @@ class IndexRepository(
                 refreshing = false,
                 loading = false,
                 error = null,
+                offline = false,
                 lastCheckedAt = now,
                 outcome = outcome,
                 outcomeAt = now,
