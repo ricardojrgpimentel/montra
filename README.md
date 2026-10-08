@@ -1,5 +1,7 @@
 # Montra — cliente Android
 
+<img src="design/wordmark/montra-wordmark@2x.png" alt="Montra" width="280">
+
 A app. Descarrega um catálogo, verifica a assinatura, verifica cada APK, instala.
 
 > Visão geral do sistema (porque é que isto funciona sem servidor, modelo de
@@ -108,6 +110,22 @@ app/src/main/assets/
 ├── index.json.sig             assinatura do snapshot
 └── index-signing.pub.pem      chave de confiança (parte da identidade da app)
 ```
+
+O ícone e o logo também são gerados, e não desenhados à mão no XML:
+
+```
+design/
+├── icons.py                   a geometria: uma fonte para o SVG e para o VectorDrawable
+├── render.py                  o motor de renderização que o ícone e o logo partilham
+├── render-previews.sh         pré-visualiza com a máscara circular, a 512px e a 48px
+├── verify-drawable.py         o drawable instalado desenha mesmo o conceito aprovado?
+├── wordmark.py                o logo (marca + nome em contornos) e os PNG @2x
+├── montra-icone-loja-512.png  o ícone de 512x512 da ficha da loja
+└── wordmark/                  montra-wordmark.svg, o mesmo invertido, e os PNG
+```
+
+O porquê das regras (o círculo de segurança de 66dp, o branco plano, a faixa, os
+contornos em vez de texto) está em [DESIGN.md](DESIGN.md#o-ícone-da-montra).
 
 ## Permissões, progresso e notificações
 

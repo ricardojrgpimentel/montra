@@ -1,0 +1,7 @@
+
+# Pré-visualizações geradas (python3 design/icons.py && ./design/render-previews.sh)
+icon-preview/
+
+# Dependências locais do gerador do wordmark
+.deps/
+__pycache__/

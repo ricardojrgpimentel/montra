@@ -116,6 +116,58 @@ primeira secção não leva linha: não há nada acima dela de que se separe.
 com sombra larga — escolhe-se a borda **ou** a sombra. Aqui: sem sombra, a
 superfície define a linha.*
 
+## O ícone da Montra
+
+O ícone é uma montra em dois tempos: **três apps expostas numa prateleira** e, por
+baixo, **a faixa** — a mesma superfície que a app usa para dizer o estado do catálogo.
+Branco plano sobre `#2E6B4F`, sem gradientes, sem sombra e sem cor dinâmica: aqui o
+verde é a Montra e não o papel de parede de quem instalou.
+
+**Toda a arte cabe no círculo de segurança de 66dp** — raio de 33dp a partir do centro
+do viewport de 108dp. A regra é o círculo e não o quadrado, e é isso que a torna fácil
+de falhar: um retângulo de 60dp passa no quadrado e sai do círculo. O ícone anterior
+(aquele círculo com uma haste) subia a 40dp no topo e descia a 36,9dp no canto da barra
+de baixo: as máscaras circulares do launcher cortavam-lhe a cabeça e o símbolo deixava
+de se ler. Não foi um detalhe de gosto — era um ícone partido, e a correção está
+medida, não estimada.
+
+O desenho não se edita à mão: gera-se, e confirma-se.
+
+| Ficheiro | Papel |
+| --- | --- |
+| `design/icons.py` | a geometria — uma só fonte para o SVG e para o VectorDrawable |
+| `design/render.py` | o motor de renderização (chrome-headless-shell) que o ícone e o logo partilham |
+| `design/render-previews.sh` | pré-visualiza com a máscara circular, a 512px e a 48px |
+| `design/verify-drawable.py` | compara o drawable instalado com o conceito, píxel a píxel |
+| `design/wordmark.py` | o logo: a marca e o nome em contornos, mais os PNG @2x |
+
+Trocar de conceito é `python3 design/icons.py --android d3`, e a verificação responde
+com o número de píxeis diferentes — que tem de ser zero.
+
+Para a ficha da loja, `python3 design/icons.py --png d3` escreve um 512×512 da **área
+visível** (os 72dp), centrado na arte. A loja não aplica a máscara do launcher e não
+herda a subida óptica que o círculo pede: exportar os 108dp inteiros dava uma arte
+pequena num quadrado grande.
+
+## O wordmark
+
+O nome **não é texto**: são contornos. Um logo escrito com `font-family` muda de forma
+conforme a fonte que existir na máquina de quem abre o ficheiro, e isso não é um logo,
+é uma sugestão. Os contornos vêm do Roboto Flex no peso 500 — a mesma família da
+interface, para o nome não parecer colado de fora — convertidos uma vez e guardados no
+SVG. O ficheiro abre igual em qualquer lado e não arrasta a fonte atrás.
+
+A marca ao lado do nome é a geometria do ícone, e o quadrado verde vale pela **área
+visível** do ícone adaptativo, os 72dp, e não pelos 108dp: é isso que faz a marca
+ler-se do mesmo tamanho no logo e no ícone. Escalada por 108, a marca saía acanhada ao
+pé do nome — foi o que a primeira versão fez, e é o mesmo erro que o ícone antigo
+cometia ao contrário.
+
+Duas versões, e só duas: [montra-wordmark.svg](design/wordmark/montra-wordmark.svg)
+para fundo claro e
+[montra-wordmark-invertido.svg](design/wordmark/montra-wordmark-invertido.svg) para
+fundo escuro. Uma superfície nova não inventa uma terceira.
+
 ## Ícones de app
 
 Ícones verdadeiros vêm do índice, re-alojados, e são servidos pelo mesmo host do
