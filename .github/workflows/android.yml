@@ -68,7 +68,7 @@ jobs:
         run: ./gradlew :app:assembleDebug --console=plain
 
       - name: APK de release (minificado, sem assinatura de publicação)
-        run: ./gradlew :app:assembleRelease --console=plain
+        run: ./gradlew :app:assembleRelease -PmontraUnsignedRelease=true --console=plain
 
       - name: lint
         run: ./gradlew :app:lintDebug --console=plain

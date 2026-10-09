@@ -1,8 +1,47 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+}
+
+// Secrets stay outside version control. Relative storeFile paths are resolved
+// against the properties file so a backup can be restored on another computer.
+val releasePropertiesFile = rootProject.file(
+    providers.environmentVariable("MONTRA_KEYSTORE_PROPERTIES")
+        .getOrElse("keystore.properties"),
+)
+val releaseProperties = Properties().apply {
+    if (releasePropertiesFile.isFile) {
+        releasePropertiesFile.inputStream().use { load(it) }
+    }
+}
+// CI can still check R8 without having access to the publication key.
+val unsignedRelease = providers.gradleProperty("montraUnsignedRelease")
+    .map { it.toBooleanStrict() }.getOrElse(false)
+val releaseStoreFile = releaseProperties.getProperty("storeFile")
+    ?.takeIf { it.isNotBlank() }
+    ?.let { releasePropertiesFile.parentFile.resolve(it) }
+
+val validateReleaseCredentials = tasks.register("validateReleaseCredentials") {
+    group = "verification"
+    description = "Require complete signing credentials before building a release."
+    doLast {
+        if (!unsignedRelease) {
+            check(releasePropertiesFile.isFile) {
+                "Release signing requires keystore.properties or MONTRA_KEYSTORE_PROPERTIES. See docs/RELEASE.md."
+            }
+            val missing = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+                .filter { releaseProperties.getProperty(it).isNullOrBlank() }
+            check(missing.isEmpty()) { "Missing release signing fields: ${missing.joinToString()}." }
+            check(releaseStoreFile?.isFile == true) { "The release keystore file does not exist." }
+        }
+    }
+}
+tasks.configureEach {
+    if (name == "preReleaseBuild") dependsOn(validateReleaseCredentials)
 }
 
 android {
@@ -32,12 +71,25 @@ android {
         buildConfigField("String", "BUNDLED_INDEX_ASSET", "\"index.json\"")
     }
 
+    signingConfigs {
+        if (!unsignedRelease) {
+            create("release") {
+                storeFile = releaseStoreFile
+                storePassword = releaseProperties.getProperty("storePassword")
+                keyAlias = releaseProperties.getProperty("keyAlias")
+                keyPassword = releaseProperties.getProperty("keyPassword")
+                storeType = "JKS"
+            }
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
         }
         release {
+            if (!unsignedRelease) signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

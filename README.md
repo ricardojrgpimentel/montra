@@ -38,13 +38,16 @@ export ANDROID_HOME="$HOME/Library/Android/sdk"                                 
 ./scripts/sync-index-assets.sh    # índice + chave pública → app/src/main/assets
 ./gradlew :app:testDebugUnitTest  # 15 testes, incluindo a assinatura real do índice
 ./gradlew :app:assembleDebug      # app/build/outputs/apk/debug/app-debug.apk
-./gradlew :app:assembleRelease    # minificado com R8 (sem assinatura de publicação)
+./gradlew :app:assembleRelease    # APK assinado e minificado com R8 (requer keystore)
+./gradlew :app:bundleRelease      # AAB assinado (requer keystore)
 ./gradlew :app:lintDebug
 ```
 
-Para publicar um release é preciso um keystore: cria `keystore.properties` (ignorado
-pelo git) com `storeFile`, `storePassword`, `keyAlias`, `keyPassword` e configura
-`signingConfigs.release` em `app/build.gradle.kts`.
+Para preparar uma release e restaurar a assinatura noutro computador, segue
+[docs/RELEASE.md](docs/RELEASE.md). O Gradle já lê `keystore.properties` (ignorado
+pelo git) ou o ficheiro indicado por `MONTRA_KEYSTORE_PROPERTIES`. Uma release
+normal falha se faltarem as credenciais. A CI verifica R8 com a opção explícita
+`-PmontraUnsignedRelease=true`; esse APK não é para publicação.
 
 ## Estrutura da navegação
 

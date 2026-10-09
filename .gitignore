@@ -1,5 +1,6 @@
 *.iml
 .gradle/
+.kotlin/
 local.properties
 .idea/
 .DS_Store
@@ -11,3 +12,11 @@ release/
 *.keystore
 *.jks
 keystore.properties
+keystore*.properties
+*.p12
+*.pfx
+*.log
+.env
+.env.*
+!.env.example
+BITWARDEN*.txt
