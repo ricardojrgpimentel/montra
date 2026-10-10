@@ -410,3 +410,16 @@ ecrã vazio por causa de uma falha de rede tem um botão que tenta outra vez.
   a data da última confirmada estão sempre na faixa — nunca um ícone que não se sabe
   se está a fazer alguma coisa.
 - Deixar o teclado tapar a barra de navegação: com o IME à frente, o rodapé sai.
+
+## Requisitos de acesso
+
+Root e Shizuku são requisitos, separados das categorias e do filtro de licença.
+A folha de filtros tem Todas, Sem requisitos especiais, Shizuku e Root. As duas
+últimas opções incluem suporte obrigatório e opcional; a primeira inclui apps
+com extras opcionais. O filtro baseia-se no catálogo, não numa deteção do telefone.
+
+As linhas mostram um distintivo próprio, que pode quebrar linha sem truncar o
+requisito. Obrigatório usa âmbar; opcional usa a cor neutra secundária. O texto
+distingue “Requer root”, “Root opcional” e alternativas “Shizuku ou root”. Na ficha,
+a explicação e a ligação oficial de configuração aparecem antes de instalar.
+Não há chip nas apps sem metadados de acesso.

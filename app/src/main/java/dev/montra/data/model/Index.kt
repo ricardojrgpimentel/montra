@@ -35,6 +35,7 @@ data class IndexApp(
     val tags: List<String> = emptyList(),
     val status: String = "active",
     val antiFeatures: List<String> = emptyList(),
+    val accessRequirements: AccessRequirements? = null,
     val links: Map<String, String> = emptyMap(),
     val playStore: PlayStore? = null,
     val addedAt: String? = null,

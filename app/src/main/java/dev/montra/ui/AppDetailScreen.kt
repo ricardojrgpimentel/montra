@@ -168,6 +168,25 @@ fun AppDetailScreen(
             }
         }
 
+        app.accessRequirements?.let { access ->
+            Spacer(Modifier.height(Space.lg))
+            AlertBlock(
+                title = access.label,
+                text = access.noteFor(Locale.getDefault().toLanguageTag())
+                    ?: if (access.isRequired) "Configura o acesso necessário antes de usar esta app."
+                    else "Podes usar esta app sem este acesso; algumas funcionalidades precisam dele.",
+                containerColor = if (access.isRequired) MaterialTheme.colorScheme.tertiaryContainer
+                    else MaterialTheme.colorScheme.surfaceContainerLow,
+                contentColor = if (access.isRequired) MaterialTheme.colorScheme.onTertiaryContainer
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                action = {
+                    access.guideUrl?.takeIf { it.startsWith("https://") }?.let { url ->
+                        TextButton(onClick = { onOpenSource(url) }) { Text("Como configurar") }
+                    }
+                },
+            )
+        }
+
         Spacer(Modifier.height(Space.lg))
         InstallSection(
             row = row,

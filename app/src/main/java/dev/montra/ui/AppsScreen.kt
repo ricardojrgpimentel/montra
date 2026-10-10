@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import dev.montra.data.model.IndexApp
+import dev.montra.data.model.RequirementFilter
 import dev.montra.ui.components.AlertBlock
 import dev.montra.ui.components.CatalogueRibbon
 import dev.montra.ui.components.SearchBar
@@ -47,6 +48,7 @@ fun AppsScreen(
     state: UiState,
     onCategory: (String?) -> Unit,
     onFilter: (AppFilter?) -> Unit,
+    onRequirement: (RequirementFilter?) -> Unit,
     onSort: (SortOrder) -> Unit,
     onRefresh: () -> Unit,
     onOpenSearch: () -> Unit,
@@ -55,14 +57,8 @@ fun AppsScreen(
     onAuthorize: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val filtered = remember(state.rows, state.category, state.filter) {
-        var base = state.rows
-        when (state.filter) {
-            AppFilter.OFF_PLAY -> base = base.filter { it.app.playStore?.present == false }
-            AppFilter.RESTRICTED -> base = base.filter { it.app.hasRestrictedLicense() }
-            null -> Unit
-        }
-        state.category?.let { category -> base.filter { it.app.categories.contains(category) } } ?: base
+    val filtered = remember(state.rows, state.category, state.filter, state.requirement) {
+        state.filteredRows()
     }
 
     val listState = rememberLazyListState()
@@ -104,6 +100,7 @@ fun AppsScreen(
             state = state,
             onSort = onSort,
             onFilter = onFilter,
+            onRequirement = onRequirement,
             onCategory = onCategory,
         )
 
@@ -120,6 +117,7 @@ fun AppsScreen(
                     onClear = {
                         onCategory(null)
                         onFilter(null)
+                        onRequirement(null)
                     },
                 )
 
@@ -195,7 +193,7 @@ private fun EmptyState(state: UiState, onRefresh: () -> Unit, onClear: () -> Uni
     val failed = state.index.error != null
     // As duas razões para não haver lista nenhuma: um filtro, ou um catálogo que não
     // chegou. São ecrãs vazios com saídas diferentes.
-    val filteredOut = state.rows.isNotEmpty() && (state.filter != null || state.category != null)
+    val filteredOut = state.rows.isNotEmpty() && (state.filter != null || state.category != null || state.requirement != null)
     Column(
         modifier = Modifier
             .fillMaxSize()

@@ -8,6 +8,7 @@ import dev.montra.MontraApp
 import dev.montra.data.AutoRefresh
 import dev.montra.data.IndexState
 import dev.montra.data.ThemeMode
+import dev.montra.data.model.RequirementFilter
 import dev.montra.data.model.Asset
 import dev.montra.data.model.IndexApp
 import dev.montra.data.model.isGamesOrEmulators
@@ -90,6 +91,7 @@ data class UiState(
     val category: String? = null,
     val sort: SortOrder = SortOrder.NAME,
     val filter: AppFilter? = null,
+    val requirement: RequirementFilter? = null,
     /** Quantas apps cada filtro apanharia: um filtro sem resultados não se mostra. */
     val filterCounts: Map<AppFilter, Int> = emptyMap(),
     /** Quantas apps cada categoria tem, para a folha de filtros as poder numerar. */
@@ -123,6 +125,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
     private val category = MutableStateFlow<String?>(null)
     private val sort = MutableStateFlow(SortOrder.NAME)
     private val filter = MutableStateFlow<AppFilter?>(null)
+    private val requirement = MutableStateFlow<RequirementFilter?>(null)
     private val hideRestricted = MutableStateFlow(false)
     private val autoRefresh = MutableStateFlow(AutoRefresh.DEFAULT)
 
@@ -143,6 +146,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch { category.collect { rebuild() } }
         viewModelScope.launch { sort.collect { rebuild() } }
         viewModelScope.launch { filter.collect { rebuild() } }
+        viewModelScope.launch { requirement.collect { rebuild() } }
         viewModelScope.launch { autoRefresh.collect { rebuild() } }
         viewModelScope.launch {
             hideRestricted.value = container.settings.currentHideRestricted()
@@ -191,6 +195,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                 app.summary.lowercase().contains(question) ||
                 app.packageName.lowercase().contains(question) ||
                 app.author?.lowercase()?.contains(question) == true ||
+                app.accessRequirements?.methods?.any { it.contains(question) } == true ||
                 app.tags.any { it.contains(question) } ||
                 app.categories.any { it.contains(question) }
         }
@@ -206,6 +211,10 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
 
     fun setFilter(value: AppFilter?) {
         filter.value = if (filter.value == value) null else value
+    }
+
+    fun setRequirement(value: RequirementFilter?) {
+        requirement.value = value
     }
 
     fun setHideRestricted(value: Boolean) {
@@ -401,6 +410,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                 category = selectedCategory,
                 sort = sort.value,
                 filter = filter.value,
+                requirement = requirement.value,
                 filterCounts = mapOf(
                     AppFilter.OFF_PLAY to visible.count { it.playStore?.present == false },
                     AppFilter.RESTRICTED to visible.count { it.hasRestrictedLicense() },

@@ -294,6 +294,7 @@ fun MontraRoot(
                     state = state,
                     onCategory = viewModel::setCategory,
                     onFilter = viewModel::setFilter,
+                    onRequirement = viewModel::setRequirement,
                     onSort = viewModel::setSort,
                     onRefresh = { viewModel.refresh(true) },
                     onOpenSearch = { navController.navigate(Tab.SEARCH.route) },

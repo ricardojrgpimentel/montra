@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import dev.montra.data.model.IndexApp
 import dev.montra.install.InstallManager
 import dev.montra.install.InstallState
+import dev.montra.ui.components.AccessBadge
 import dev.montra.ui.components.AppIcon
 import dev.montra.ui.components.Badge
 import dev.montra.ui.components.SectionTitle
@@ -104,6 +105,10 @@ fun AppRowItem(
                         Spacer(Modifier.width(Space.sm))
                         Badge(badge.first, badge.second)
                     }
+                }
+                row.app.accessRequirements?.let { access ->
+                    Spacer(Modifier.height(Space.sm))
+                    AccessBadge(access)
                 }
                 InstallProgress(row)
             }

@@ -328,3 +328,16 @@ verboso é só em debug.
 - **O URL do índice é configurável** nas Definições e tem de ser HTTPS. Apontar
   para outro índice passa a app a ser uma loja diferente — a chave de confiança,
   essa, não é configurável (vem no APK).
+
+### Shizuku e root
+
+A folha **Filtrar → Requisitos** cruza Todas, Sem requisitos especiais, Shizuku e
+Root com a categoria e os restantes filtros. Root e Shizuku incluem suporte
+opcional; apps com extras opcionais continuam em Sem requisitos especiais.
+
+O catálogo declara `accessRequirements` (modo obrigatório/opcional, métodos
+alternativos, explicação traduzida e guia oficial). A lista mostra chips e a
+ficha explica os requisitos antes de instalar. Não é feita deteção de root ou
+Shizuku no dispositivo. Sem metadados, não há chip; isso significa apenas que o
+catálogo não declarou requisitos especiais. A publicação e classificação estão
+em `montra-index/docs/ADD_APP.md`.
