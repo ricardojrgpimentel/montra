@@ -80,6 +80,11 @@ class RealIndexTest {
 
         val arm64 = listOf("arm64-v8a", "armeabi-v7a")
         for (app in index.apps) {
+            assertEquals("${app.id}: alternativa inglesa", app.summary, app.summaryFor("es"))
+            assertEquals("${app.id}: resumo português", app.summaryTranslations["pt"], app.summaryFor("pt-PT"))
+            assertTrue("${app.id}: sem resumo português", !app.summaryTranslations["pt"].isNullOrBlank())
+            assertEquals("${app.id}: descrição portuguesa", app.description["pt"], app.descriptionFor("pt-PT"))
+            assertEquals("${app.id}: descrição inglesa como alternativa", app.description["en"], app.descriptionFor("fr"))
             assertNotNull("${app.id}: sem release", app.release)
             assertTrue("${app.id}: sem assets", app.release!!.assets.isNotEmpty())
             val asset = app.bestAssetFor(arm64)
@@ -123,14 +128,21 @@ class IndexModelTest {
     }
 
     @Test
-    fun `descricao cai para ingles quando falta o idioma`() {
+    fun `textos do catalogo seguem o idioma e usam ingles como alternativa`() {
         val parsed = app(
-            """{"id":"x","name":"X","summary":"s","packageName":"a.b.c","license":"MIT","sourceCode":"https://e.com","description":{"en":"hello","pt":"olá"}}""",
+            """{"id":"x","name":"X","summary":"English summary","summaryTranslations":{"pt":"Resumo","pt-BR":"Resumo brasileiro","zh-Hant":"繁體"},"packageName":"a.b.c","license":"MIT","sourceCode":"https://e.com","description":{"en":"hello","pt":"olá","fr":" "}}""",
         )
-        assertEquals("olá", parsed.descriptionFor("pt"))
+        assertEquals("Resumo brasileiro", parsed.summaryFor("pt-br"))
+        assertEquals("Resumo", parsed.summaryFor("pt-PT"))
+        assertEquals("繁體", parsed.summaryFor("zh-Hant-HK"))
+        assertEquals("English summary", parsed.summaryFor("es"))
+        assertEquals("English summary", parsed.summaryFor(null))
         assertEquals("olá", parsed.descriptionFor("pt-BR"))
-        assertEquals("hello", parsed.descriptionFor("de"))
+        assertEquals("hello", parsed.descriptionFor("fr"))
         assertEquals("hello", parsed.descriptionFor(null))
+        assertEquals("原文", parsed.copy(description = mapOf("ja" to "原文")).descriptionFor("de"))
+        assertNull(parsed.copy(description = mapOf("en" to "", "pt" to " ")).descriptionFor("pt"))
+        assertEquals("English summary", parsed.copy(summaryTranslations = emptyMap()).summaryFor("pt"))
     }
 
     @Test

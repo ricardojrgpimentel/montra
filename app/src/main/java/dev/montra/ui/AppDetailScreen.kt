@@ -1,5 +1,7 @@
 package dev.montra.ui
 
+import dev.montra.R
+import dev.montra.util.asString
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +21,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import dev.montra.data.model.IndexApp
@@ -38,7 +41,6 @@ import dev.montra.ui.components.SectionTitle
 import dev.montra.ui.theme.Space
 import dev.montra.util.formatBytes
 import dev.montra.util.releaseDateLabel
-import java.util.Locale
 
 /**
  * The app page.
@@ -60,9 +62,11 @@ fun AppDetailScreen(
     onOpenApp: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val strings = LocalContext.current
     val context = LocalContext.current
     val app = row.app
-    val language = Locale.getDefault().language
+    val locale = LocalConfiguration.current.locales[0]
+    val language = locale.toLanguageTag()
 
     Column(
         modifier = modifier
@@ -92,16 +96,16 @@ fun AppDetailScreen(
         }
 
         Spacer(Modifier.height(Space.lg))
-        Text(app.summary, style = MaterialTheme.typography.bodyLarge)
+        Text(app.summaryFor(language), style = MaterialTheme.typography.bodyLarge)
 
         if (app.categories.isNotEmpty() || app.status != "active") {
             Spacer(Modifier.height(Space.md))
             Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
                 app.categories.take(2).forEach { category ->
-                    Badge(categoryLabel(category), MaterialTheme.colorScheme.secondary)
+                    Badge(categoryLabel(category).asString(strings), MaterialTheme.colorScheme.secondary)
                 }
                 if (app.status != "active") {
-                    Badge(statusLabel(app.status), MaterialTheme.colorScheme.tertiary)
+                    Badge(statusLabel(app.status).asString(strings), MaterialTheme.colorScheme.tertiary)
                 }
             }
         }
@@ -118,7 +122,7 @@ fun AppDetailScreen(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Baseado em ${fork.name}",
+                        text = strings.getString(R.string.text_based_on_1_s, fork.name),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     fork.note?.let {
@@ -134,7 +138,7 @@ fun AppDetailScreen(
                         if (fork.appId != null) onOpenApp(fork.appId) else fork.url?.let(onOpenSource)
                     },
                     enabled = fork.appId != null || fork.url != null,
-                ) { Text(if (fork.appId != null) "Ver o original" else "Repositório") }
+                ) { Text(if (fork.appId != null) strings.getString(R.string.text_view_original) else strings.getString(R.string.text_repository)) }
             }
         }
 
@@ -143,9 +147,9 @@ fun AppDetailScreen(
         if (app.hasRestrictedLicense()) {
             Spacer(Modifier.height(Space.lg))
             AlertBlock(
-                title = "Licença restritiva: ${app.license.removePrefix("LicenseRef-")}",
+                title = strings.getString(R.string.text_restricted_licence_1_s, app.license.removePrefix("LicenseRef-")),
                 text = app.licenseNoteFor(language)
-                    ?: "Esta aplicação tem o código público, mas a licença impõe limitações de uso.",
+                    ?: strings.getString(R.string.text_this_app_has_public_source_code_but),
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                 contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
             )
@@ -155,13 +159,11 @@ fun AppDetailScreen(
         // restritiva, e antes do botão porque muda a decisão de quem vai instalar.
         // A data é o que torna isto verificável — quem duvidar vai ao repositório.
         if (row.staleRelease) {
-            releaseDateLabel(app.release?.publishedAt)?.let { since ->
+            releaseDateLabel(app.release?.publishedAt, locale)?.let { since ->
                 Spacer(Modifier.height(Space.lg))
                 AlertBlock(
-                    title = "Sem lançamentos no catálogo desde $since",
-                    text = "O catálogo só vê as releases que o projeto publica no GitHub. " +
-                        "Se ele lançar noutro sítio, isto não dá por isso — vale a pena " +
-                        "confirmar no repositório.",
+                    title = strings.getString(R.string.text_no_catalogue_releases_since_1_s, since),
+                    text = strings.getString(R.string.text_the_catalogue_only_sees_releases_published_on),
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                     contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
@@ -171,17 +173,17 @@ fun AppDetailScreen(
         app.accessRequirements?.let { access ->
             Spacer(Modifier.height(Space.lg))
             AlertBlock(
-                title = access.label,
-                text = access.noteFor(Locale.getDefault().toLanguageTag())
-                    ?: if (access.isRequired) "Configura o acesso necessário antes de usar esta app."
-                    else "Podes usar esta app sem este acesso; algumas funcionalidades precisam dele.",
+                title = access.label.asString(strings),
+                text = access.noteFor(language)
+                    ?: if (access.isRequired) strings.getString(R.string.text_set_up_the_required_access_before_using)
+                    else strings.getString(R.string.text_you_can_use_this_app_without_this),
                 containerColor = if (access.isRequired) MaterialTheme.colorScheme.tertiaryContainer
                     else MaterialTheme.colorScheme.surfaceContainerLow,
                 contentColor = if (access.isRequired) MaterialTheme.colorScheme.onTertiaryContainer
                     else MaterialTheme.colorScheme.onSurfaceVariant,
                 action = {
                     access.guideUrl?.takeIf { it.startsWith("https://") }?.let { url ->
-                        TextButton(onClick = { onOpenSource(url) }) { Text("Como configurar") }
+                        TextButton(onClick = { onOpenSource(url) }) { Text(strings.getString(R.string.text_setup_guide)) }
                     }
                 },
             )
@@ -201,10 +203,8 @@ fun AppDetailScreen(
         if (row.signatureConflict) {
             Spacer(Modifier.height(Space.md))
             AlertBlock(
-                title = "Assinada por outra chave",
-                text = "A versão instalada neste telemóvel foi assinada por uma chave diferente " +
-                    "da que o catálogo fixa, por isso o Android vai recusar a atualização. " +
-                    "Desinstala primeiro e volta a instalar a partir daqui.",
+                title = strings.getString(R.string.text_signed_with_another_key),
+                text = strings.getString(R.string.text_the_installed_version_was_signed_with_a),
                 action = {
                     OutlinedButton(
                         onClick = {
@@ -212,7 +212,7 @@ fun AppDetailScreen(
                                 InstallManager.of(context).uninstallIntent(app.packageName),
                             )
                         },
-                    ) { Text("Desinstalar a versão atual") }
+                    ) { Text(strings.getString(R.string.text_uninstall_current_version)) }
                 },
             )
         }
@@ -223,11 +223,11 @@ fun AppDetailScreen(
         if (otherAntiFeatures.isNotEmpty()) {
             Spacer(Modifier.height(Space.md))
             Block {
-                Text("Avisos", style = MaterialTheme.typography.titleSmall)
+                Text(strings.getString(R.string.text_warnings), style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.height(Space.sm))
                 otherAntiFeatures.forEach { feature ->
                     Text(
-                        text = "• ${antiFeatureLabel(feature)}",
+                        text = "• ${antiFeatureLabel(feature).asString(strings)}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -235,67 +235,66 @@ fun AppDetailScreen(
             }
         }
 
-        SectionTitle("Versão")
+        SectionTitle(strings.getString(R.string.text_version))
         Block {
-            KeyValue("versão", app.release?.versionName ?: "—")
+            KeyValue(strings.getString(R.string.text_version_2), app.release?.versionName ?: "—")
             KeyValue("versionCode", (row.asset?.versionCode ?: app.release?.versionCode)?.toString() ?: "—")
-            KeyValue("tamanho", formatBytes(row.size))
-            KeyValue("arquitetura", row.asset?.abi?.replace("universal", "todas") ?: "—")
-            KeyValue("Android mínimo", row.asset?.minSdk?.let { "API $it" } ?: "não declarado")
-            KeyValue("publicado", app.release?.publishedAt?.take(10) ?: "—")
-            app.downloadCount?.let { KeyValue("descarregamentos", "%,d".format(it)) }
-            KeyValue("licença", app.license)
+            KeyValue(strings.getString(R.string.text_size), formatBytes(row.size))
+            KeyValue(strings.getString(R.string.text_architecture), row.asset?.abi?.replace("universal", strings.getString(R.string.all_architectures)) ?: "—")
+            KeyValue(strings.getString(R.string.text_minimum_android), row.asset?.minSdk?.let { "API $it" } ?: strings.getString(R.string.text_not_declared))
+            KeyValue(strings.getString(R.string.text_published), app.release?.publishedAt?.take(10) ?: "—")
+            app.downloadCount?.let { KeyValue(strings.getString(R.string.text_downloads), "%,d".format(it)) }
+            KeyValue(strings.getString(R.string.text_licence), app.license)
         }
 
-        SectionTitle("Verificação")
+        SectionTitle(strings.getString(R.string.text_verification))
         Block {
             Text(
-                text = "Este APK foi confirmado byte a byte contra o catálogo assinado antes de " +
-                    "ser entregue ao instalador do Android.",
+                text = strings.getString(R.string.text_this_apk_is_checked_byte_for_byte),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(Space.sm))
-            KeyValue("sha256 do APK", row.asset?.sha256?.chunked(32)?.joinToString("\n") ?: "—", mono = true)
+            KeyValue(strings.getString(R.string.text_apk_sha_256), row.asset?.sha256?.chunked(32)?.joinToString("\n") ?: "—", mono = true)
             KeyValue(
-                "certificado",
-                app.signingCertSha256?.chunked(24)?.joinToString("\n") ?: "não fixado",
+                strings.getString(R.string.text_certificate),
+                app.signingCertSha256?.chunked(24)?.joinToString("\n") ?: strings.getString(R.string.text_not_pinned),
                 mono = true,
             )
-            keyId?.let { KeyValue("chave do catálogo", it, mono = true) }
+            keyId?.let { KeyValue(strings.getString(R.string.text_catalogue_key), it, mono = true) }
             row.installed?.certSha256?.let {
-                KeyValue("certificado instalado", it.chunked(24).joinToString("\n"), mono = true)
+                KeyValue(strings.getString(R.string.text_installed_certificate), it.chunked(24).joinToString("\n"), mono = true)
             }
         }
 
         app.descriptionFor(language)?.let { text ->
-            SectionTitle("Sobre")
+            SectionTitle(strings.getString(R.string.text_about))
             Text(text, style = MaterialTheme.typography.bodyMedium)
         }
 
         app.release?.changelog?.takeIf { it.isNotBlank() }?.let { changelog ->
-            SectionTitle("Novidades em ${app.release.versionName}")
+            SectionTitle(strings.getString(R.string.text_whats_new_in_1_s, app.release.versionName))
             Text(stripMarkdown(changelog), style = MaterialTheme.typography.bodyMedium)
         }
 
         if (row.screenshotUrls.isNotEmpty()) {
-            SectionTitle("Imagens")
+            SectionTitle(strings.getString(R.string.text_screenshots))
             ScreenshotRow(row.screenshotUrls)
         }
 
-        SectionTitle("Ligações")
+        SectionTitle(strings.getString(R.string.text_links))
         Column {
-            LinkRow("Código-fonte", app.sourceCode, onOpenSource)
-            app.links["website"]?.let { LinkRow("Site", it, onOpenSource) }
-            app.links["docs"]?.let { LinkRow("Documentação", it, onOpenSource) }
-            app.links["changelog"]?.let { LinkRow("Alterações", it, onOpenSource) }
-            app.links["translate"]?.let { LinkRow("Traduzir", it, onOpenSource) }
-            app.links["donate"]?.let { LinkRow("Doar", it, onOpenSource) }
-            app.playStore?.takeIf { it.present }?.url?.let { LinkRow("Também na Play Store", it, onOpenSource) }
+            LinkRow(strings.getString(R.string.text_source_code), app.sourceCode, onOpenSource)
+            app.links["website"]?.let { LinkRow(strings.getString(R.string.text_website), it, onOpenSource) }
+            app.links["docs"]?.let { LinkRow(strings.getString(R.string.text_documentation), it, onOpenSource) }
+            app.links["changelog"]?.let { LinkRow(strings.getString(R.string.text_changelog), it, onOpenSource) }
+            app.links["translate"]?.let { LinkRow(strings.getString(R.string.text_translate), it, onOpenSource) }
+            app.links["donate"]?.let { LinkRow(strings.getString(R.string.text_donate), it, onOpenSource) }
+            app.playStore?.takeIf { it.present }?.url?.let { LinkRow(strings.getString(R.string.text_also_on_the_play_store), it, onOpenSource) }
         }
 
         if (app.warnings.isNotEmpty()) {
-            SectionTitle("Notas do catálogo")
+            SectionTitle(strings.getString(R.string.text_catalogue_notes))
             Column(verticalArrangement = Arrangement.spacedBy(Space.sm)) {
                 app.warnings.forEach { warning -> AlertBlock(text = warning) }
             }
@@ -313,11 +312,12 @@ private fun InstallSection(
     onClearError: (String) -> Unit,
     onAuthorize: () -> Unit,
 ) {
+    val strings = LocalContext.current
     val context = LocalContext.current
     when (val state = row.installState) {
         is InstallState.Downloading -> Column(Modifier.fillMaxWidth()) {
             Text(
-                text = "A descarregar ${formatBytes(state.bytes)} de ${formatBytes(state.total)}",
+                text = strings.getString(R.string.text_downloading_1_s_of_2_s, formatBytes(state.bytes), formatBytes(state.total)),
                 style = MaterialTheme.typography.bodyMedium,
             )
             Spacer(Modifier.height(Space.sm))
@@ -325,85 +325,84 @@ private fun InstallSection(
         }
 
         is InstallState.Verifying -> Text(
-            text = "A verificar o sha256 e o certificado…",
+            text = strings.getString(R.string.text_verifying_sha_256_and_certificate),
             style = MaterialTheme.typography.bodyMedium,
         )
 
         is InstallState.AwaitingUser -> Column {
             Text(
-                text = "Confirma a instalação no diálogo do sistema.",
+                text = strings.getString(R.string.text_confirm_the_installation_in_the_system_dialog),
                 style = MaterialTheme.typography.bodyMedium,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
                 Button(
                     enabled = state.confirmation != null,
                     onClick = { InstallManager.of(context).confirmInstall(row.app.id) },
-                ) { Text("Confirmar instalação") }
+                ) { Text(strings.getString(R.string.text_confirm_installation)) }
                 TextButton(
                     enabled = state.confirmation != null,
                     onClick = { InstallManager.of(context).cancelPendingInstall(row.app.id) },
-                ) { Text("Cancelar") }
+                ) { Text(strings.getString(R.string.text_cancel)) }
             }
         }
 
         is InstallState.Installed -> Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
             InstallManager.launchIntent(context, row.app.packageName)?.let { intent ->
-                Button(onClick = { context.startActivity(intent) }) { Text("Abrir") }
+                Button(onClick = { context.startActivity(intent) }) { Text(strings.getString(R.string.text_open)) }
             }
-            OutlinedButton(onClick = { onClearError(row.app.id) }) { Text("Concluir") }
+            OutlinedButton(onClick = { onClearError(row.app.id) }) { Text(strings.getString(R.string.text_done)) }
         }
 
         InstallState.NeedsPermission -> AlertBlock(
-            title = "Falta uma autorização",
-            text = "O Android ainda não autorizou a Montra a instalar aplicações. Liga a " +
-                "autorização, volta aqui, e só então o download começa.",
+            title = strings.getString(R.string.text_permission_required),
+            text = strings.getString(R.string.text_android_has_not_authorised_montra_to_install),
             action = {
                 Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
-                    Button(onClick = onAuthorize) { Text("Abrir autorização") }
-                    TextButton(onClick = { onClearError(row.app.id) }) { Text("Dispensar") }
+                    Button(onClick = onAuthorize) { Text(strings.getString(R.string.text_open_permission_settings)) }
+                    TextButton(onClick = { onClearError(row.app.id) }) { Text(strings.getString(R.string.text_dismiss)) }
                 }
             },
         )
 
         is InstallState.Failed -> AlertBlock(
-            title = "Não foi possível",
-            text = state.reason,
+            title = strings.getString(R.string.text_could_not_complete),
+            text = state.reason.asString(strings),
             action = {
                 Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
-                    Button(onClick = { onInstall(row.app) }) { Text("Tentar de novo") }
-                    TextButton(onClick = { onClearError(row.app.id) }) { Text("Dispensar") }
+                    Button(onClick = { onInstall(row.app) }) { Text(strings.getString(R.string.text_try_again)) }
+                    TextButton(onClick = { onClearError(row.app.id) }) { Text(strings.getString(R.string.text_dismiss)) }
                 }
             },
         )
 
         InstallState.Idle -> when {
             row.incompatible != null -> {
-                val reason = row.incompatible ?: ""
-                AlertBlock(title = "Não corre aqui", text = reason)
+                val reason = row.incompatible?.asString(strings).orEmpty()
+                AlertBlock(title = strings.getString(R.string.text_cannot_run_on_this_device), text = reason)
             }
             row.asset == null -> AlertBlock(
-                text = "Esta app não publica um APK para a arquitetura deste dispositivo.",
+                text = strings.getString(R.string.text_this_app_does_not_publish_an_apk),
             )
             !canInstallPackages -> Button(
                 onClick = onAuthorize,
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Autorizar instalação") }
+            ) { Text(strings.getString(R.string.text_allow_installation)) }
             !row.isInstalled -> Button(
                 onClick = { onInstall(row.app) },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Instalar · ${formatBytes(row.size)}") }
+            ) { Text(strings.getString(R.string.install_with_size, formatBytes(row.size))) }
             row.updateAvailable -> Button(
                 onClick = { onInstall(row.app) },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Atualizar para ${row.app.release?.versionName}") }
+            ) { Text(strings.getString(R.string.text_update_to_1_s, row.app.release?.versionName)) }
             else -> Row(
                 horizontalArrangement = Arrangement.spacedBy(Space.sm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 InstallManager.launchIntent(context, row.app.packageName)?.let { intent ->
-                    Button(onClick = { context.startActivity(intent) }) { Text("Abrir") }
+                    Button(onClick = { context.startActivity(intent) }) { Text(strings.getString(R.string.text_open)) }
                 }
-                Badge("versão mais recente", MaterialTheme.colorScheme.primary)
+                Badge(strings.getString(R.string.text_latest_version), MaterialTheme.colorScheme.primary)
             }
         }
     }

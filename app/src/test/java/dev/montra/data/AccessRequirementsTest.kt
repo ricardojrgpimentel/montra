@@ -1,5 +1,6 @@
 package dev.montra.data
 
+import dev.montra.util.ptText
 import dev.montra.data.model.AccessRequirements
 import dev.montra.data.model.IndexApp
 import dev.montra.data.model.IndexJson
@@ -41,12 +42,12 @@ class AccessRequirementsTest {
         val entry = app.copy(accessRequirements = AccessRequirements("optional", listOf("root")))
         assertTrue(RequirementFilter.NONE.matches(entry))
         assertTrue(RequirementFilter.ROOT.matches(entry))
-        assertEquals("Root opcional", entry.accessRequirements!!.label)
+        assertEquals("Root opcional", entry.accessRequirements!!.label.ptText())
     }
 
     @Test fun `alternatives match both filters but label says or`() {
         val entry = app.copy(accessRequirements = AccessRequirements("required", listOf("root", "shizuku")))
-        assertEquals("Requer Shizuku ou root", entry.accessRequirements!!.label)
+        assertEquals("Requer Shizuku ou Root", entry.accessRequirements!!.label.ptText())
         assertTrue(RequirementFilter.ROOT.matches(entry))
         assertTrue(RequirementFilter.SHIZUKU.matches(entry))
         assertFalse(RequirementFilter.NONE.matches(entry))
@@ -74,7 +75,7 @@ class AccessRequirementsTest {
                 "note":{"en":"English","pt":"Português"},
                 "guideUrl":"https://shizuku.rikka.app/guide/setup/","futureField":true}""",
         )
-        assertEquals("Requer Shizuku", access.label)
+        assertEquals("Requer Shizuku", access.label.ptText())
         assertEquals("Português", access.noteFor("pt-PT"))
         assertEquals("English", access.noteFor("fr"))
         assertEquals("https://shizuku.rikka.app/guide/setup/", access.guideUrl)

@@ -1,5 +1,7 @@
 package dev.montra.ui
 
+import dev.montra.util.UiText
+import dev.montra.R
 import android.app.Application
 import android.os.Build
 import androidx.lifecycle.AndroidViewModel
@@ -40,16 +42,16 @@ import kotlinx.coroutines.withContext
  * nada — ninguém escolhe uma app por ser fork; escolhe-a por substituir outra, e
  * isso é o que a linha "Baseado em" mostra na ficha.
  */
-enum class AppFilter(val label: String) {
-    OFF_PLAY("Fora da Play Store"),
-    RESTRICTED("Licença restritiva"),
+enum class AppFilter(val labelRes: Int) {
+    OFF_PLAY(R.string.text_outside_the_play_store),
+    RESTRICTED(R.string.text_restricted_licence_2),
 }
 
-enum class SortOrder(val label: String) {
-    NAME("Nome"),
-    RECENT("Atualizadas"),
-    POPULAR("Populares"),
-    SIZE("Tamanho"),
+enum class SortOrder(val labelRes: Int) {
+    NAME(R.string.text_name),
+    RECENT(R.string.updated_sort),
+    POPULAR(R.string.text_popular),
+    SIZE(R.string.text_size_2),
 }
 
 data class InstalledInfo(
@@ -70,7 +72,7 @@ data class AppRow(
     val screenshotUrls: List<String>,
     val size: Long,
     /** Set when this device cannot run the app at all (minSdk above this device). */
-    val incompatible: String? = null,
+    val incompatible: UiText? = null,
     /**
      * O catálogo não vê um lançamento deste projeto há mais de seis meses. Sai da
      * data que o índice publica, e não de uma bandeira gravada: uma data não
@@ -193,6 +195,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
             val app = row.app
             app.name.lowercase().contains(question) ||
                 app.summary.lowercase().contains(question) ||
+                app.summaryTranslations.values.any { it.lowercase().contains(question) } ||
                 app.packageName.lowercase().contains(question) ||
                 app.author?.lowercase()?.contains(question) == true ||
                 app.accessRequirements?.methods?.any { it.contains(question) } == true ||
@@ -291,7 +294,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
         val asset = app.bestAssetFor(deviceAbis) ?: run {
             container.installManager.setState(
                 app.id,
-                InstallState.Failed("esta app não publica um APK para a arquitetura deste dispositivo"),
+                InstallState.Failed(UiText.Resource(R.string.text_this_app_does_not_publish_an_apk_2)),
             )
             return
         }
@@ -378,7 +381,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                     iconUrl = app.icon?.let { container.indexRepository.mediaUrl(it) },
                     screenshotUrls = app.screenshots.map { container.indexRepository.mediaUrl(it) },
                     incompatible = asset?.takeIf { it.isIncompatibleWith(Build.VERSION.SDK_INT) }?.let {
-                        "Precisa de Android API ${it.minSdk}; este dispositivo tem ${Build.VERSION.SDK_INT}"
+                        UiText.Resource(R.string.text_requires_android_api_1_s_this_device, listOf(it.minSdk ?: 0, Build.VERSION.SDK_INT))
                     },
                     size = asset?.size ?: app.artifact?.size ?: 0L,
                     staleRelease = isStaleRelease(app.release?.publishedAt, now),

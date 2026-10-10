@@ -7,7 +7,9 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
+import dev.montra.data.AppLanguage
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -77,7 +79,7 @@ import dev.montra.ui.theme.Space
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private val viewModel: MontraViewModel by viewModels()
 
@@ -133,14 +135,14 @@ class MainActivity : ComponentActivity() {
  */
 private enum class Tab(
     val route: String,
-    val label: String,
+    val labelRes: Int,
     val icon: ImageVector,
     val selectedIcon: ImageVector,
 ) {
-    APPS("apps", "Apps", Icons.Outlined.Apps, Icons.Filled.Apps),
-    GAMES("games", "Jogos", Icons.Outlined.SportsEsports, Icons.Filled.SportsEsports),
-    SEARCH("search", "Procurar", Icons.Outlined.Search, Icons.Filled.Search),
-    SETTINGS("settings", "Definições", Icons.Outlined.Settings, Icons.Filled.Settings),
+    APPS("apps", R.string.text_apps_2, Icons.Outlined.Apps, Icons.Filled.Apps),
+    GAMES("games", R.string.games, Icons.Outlined.SportsEsports, Icons.Filled.SportsEsports),
+    SEARCH("search", R.string.search, Icons.Outlined.Search, Icons.Filled.Search),
+    SETTINGS("settings", R.string.text_settings, Icons.Outlined.Settings, Icons.Filled.Settings),
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -151,6 +153,7 @@ fun MontraRoot(
     pendingAppId: StateFlow<String?> = MutableStateFlow(null),
     onAppIdConsumed: () -> Unit = {},
 ) {
+    val strings = LocalContext.current
     val state by viewModel.ui.collectAsState()
     val requestedAppId by pendingAppId.collectAsState()
     val navController = rememberNavController()
@@ -184,19 +187,19 @@ fun MontraRoot(
 
     // Asked when it becomes useful: the notification is how progress stays visible
     // after leaving the app. Denying it does not block the install.
-    var pendingInstall by remember { mutableStateOf<IndexApp?>(null) }
+    var pendingInstallId by rememberSaveable { mutableStateOf<String?>(null) }
     val notificationPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) {
-        pendingInstall?.let(viewModel::install)
-        pendingInstall = null
+        state.rows.firstOrNull { it.app.id == pendingInstallId }?.app?.let(viewModel::install)
+        pendingInstallId = null
     }
     val startInstall: (IndexApp) -> Unit = { app ->
         val needsNotificationPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
             PackageManager.PERMISSION_GRANTED
         if (needsNotificationPermission) {
-            pendingInstall = app
+            pendingInstallId = app.id
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
             viewModel.install(app)
@@ -215,9 +218,9 @@ fun MontraRoot(
                         } else {
                             Text(
                                 when {
-                                    isDetail -> detailedApp?.app?.name ?: "Detalhes"
-                                    route == Tab.SETTINGS.route -> "Definições"
-                                    route == Tab.GAMES.route -> "Jogos e emuladores"
+                                    isDetail -> detailedApp?.app?.name ?: strings.getString(R.string.details)
+                                    route == Tab.SETTINGS.route -> strings.getString(R.string.text_settings)
+                                    route == Tab.GAMES.route -> strings.getString(R.string.text_games_and_emulators_2)
                                     else -> "Montra"
                                 },
                             )
@@ -231,7 +234,7 @@ fun MontraRoot(
                             IconButton(onClick = { navController.popBackStack() }) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Voltar",
+                                    contentDescription = strings.getString(R.string.back),
                                 )
                             }
                         }
@@ -271,7 +274,7 @@ fun MontraRoot(
                                     contentDescription = null,
                                 )
                             },
-                            label = { Text(tab.label) },
+                            label = { Text(strings.getString(tab.labelRes)) },
                         )
                     }
                 }
@@ -336,6 +339,8 @@ fun MontraRoot(
                     onHideRestricted = viewModel::setHideRestricted,
                     onAutoRefresh = viewModel::setAutoRefresh,
                     onThemeMode = viewModel::setThemeMode,
+                    language = AppLanguage.current(),
+                    onLanguage = { it.apply() },
                     onOpenUrl = { url -> openUrl(context, url) },
                 )
             }
@@ -354,7 +359,7 @@ fun MontraRoot(
                 val row = state.rows.firstOrNull { it.app.id == id }
                 if (row == null) {
                     Column(modifier = Modifier.fillMaxSize().padding(Space.xl)) {
-                        Text("Esta app já não está no catálogo.")
+                        Text(strings.getString(R.string.text_this_app_is_no_longer_in_the))
                     }
                 } else {
                     AppDetailScreen(

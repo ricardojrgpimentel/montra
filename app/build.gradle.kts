@@ -107,6 +107,10 @@ android {
         }
     }
 
+    androidResources {
+        localeFilters += listOf("en", "pt", "es", "fr")
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true
@@ -135,6 +139,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

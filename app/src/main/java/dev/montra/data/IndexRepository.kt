@@ -1,5 +1,9 @@
 package dev.montra.data
 
+import androidx.core.content.ContextCompat
+import dev.montra.util.asString
+import dev.montra.R
+import dev.montra.util.UiText
 import android.content.Context
 import dev.montra.data.model.IndexApp
 import dev.montra.data.model.IndexFile
@@ -43,14 +47,14 @@ data class IndexState(
     val indexUrl: String = "",
     val refreshing: Boolean = false,
     /** Set when a refresh failed; the previously verified catalogue stays in use. */
-    val error: String? = null,
+    val error: UiText? = null,
     /**
      * A falha foi não haver rede, não o servidor. Fica separado de [error] porque a
      * faixa o mostra sem alarme — estar offline não é uma avaria, é uma condição.
      */
     val offline: Boolean = false,
     /** Set when something *was* served but rejected: always worth showing loudly. */
-    val rejectedMessage: String? = null,
+    val rejectedMessage: UiText? = null,
     /** Epoch millis of the last round trip that confirmed the catalogue. */
     val lastCheckedAt: Long? = null,
     val outcome: RefreshOutcome = RefreshOutcome.NONE,
@@ -114,7 +118,7 @@ class IndexRepository(
                 }
                 is Check.Rejected -> {
                     // The cache does not verify any more: drop it rather than use it.
-                    Log.e("cache em disco recusada: ${check.message}")
+                    Log.e("cache em disco recusada: ${check.message.asString(ContextCompat.getContextForLanguage(context))}")
                     source.cachedIndexFile.delete()
                     source.cachedSignatureFile.delete()
                     _state.update { it.copy(rejectedMessage = check.message) }
@@ -127,7 +131,7 @@ class IndexRepository(
             when (val check = accept(source.bundled())) {
                 is Check.Accepted -> publish(check, IndexOrigin.BUNDLED, url)
                 is Check.Rejected -> {
-                    Log.e("snapshot incluído na app recusado: ${check.message}")
+                    Log.e("snapshot incluído na app recusado: ${check.message.asString(ContextCompat.getContextForLanguage(context))}")
                     _state.update { it.copy(rejectedMessage = check.message) }
                 }
             }
@@ -179,14 +183,14 @@ class IndexRepository(
                     )
                 }
                 is Check.Rejected -> {
-                    Log.e("índice recebido RECUSADO: ${check.message}")
+                    Log.e("índice recebido RECUSADO: ${check.message.asString(ContextCompat.getContextForLanguage(context))}")
                     // Keep serving what we have. Tell the user exactly why.
                     _state.update {
                         it.copy(
                             refreshing = false,
                             loading = false,
                             rejectedMessage = check.message,
-                            error = "O índice recebido foi recusado. A mostrar a última versão verificada.",
+                            error = UiText.Resource(R.string.index_rejected),
                         )
                     }
                 }
@@ -215,7 +219,7 @@ class IndexRepository(
 
     private sealed interface Check {
         data class Accepted(val index: IndexFile, val keyId: String) : Check
-        data class Rejected(val message: String) : Check
+        data class Rejected(val message: UiText) : Check
     }
 
     /**
@@ -247,16 +251,19 @@ class IndexRepository(
             null
         }
         return when (val check = trust.verify(payload.bytes, payload.signature, declaredKeyId)) {
-            is SignatureCheck.Invalid -> Check.Rejected("assinatura do índice inválida — ${check.reason}")
+            is SignatureCheck.Invalid -> {
+                Log.e("assinatura do índice inválida: ${check.reason}")
+                Check.Rejected(UiText.Resource(R.string.index_signature_invalid))
+            }
             is SignatureCheck.KeyMismatch -> Check.Rejected(
-                "o índice foi assinado por uma chave diferente da que esta app conhece " +
-                    "(índice: ${check.declared}, app: ${check.bundled}). Atualiza a app antes de confiar neste índice.",
+                UiText.Resource(R.string.index_key_mismatch, listOf(check.declared, check.bundled)),
             )
             is SignatureCheck.Valid -> {
                 val index = try {
                     IndexJson.decodeFromString(IndexFile.serializer(), payload.bytes.decodeToString())
                 } catch (error: Exception) {
-                    return Check.Rejected("índice ilegível depois de verificado: ${error.message}")
+                    Log.e("índice ilegível depois de verificado", error)
+                    return Check.Rejected(UiText.Resource(R.string.index_unreadable))
                 }
                 Check.Accepted(index, check.keyId)
             }

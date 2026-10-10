@@ -1,5 +1,7 @@
 package dev.montra.data
 
+import dev.montra.R
+import dev.montra.util.UiText
 import dev.montra.BuildConfig
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.io.IOException
@@ -27,7 +29,7 @@ import javax.net.ssl.SSLException
 sealed interface RefreshFailure {
 
     /** O que se pode dizer a quem está a ler. */
-    val message: String
+    val message: UiText
 
     /** Como registar a falha no log, com a causa técnica. */
     val reason: String
@@ -40,17 +42,17 @@ sealed interface RefreshFailure {
         override val reason: String,
         val hasVerifiedCopy: Boolean,
     ) : RefreshFailure {
-        override val message: String = if (hasVerifiedCopy) {
-            "Sem ligação à internet · a mostrar o catálogo verificado"
+        override val message: UiText = if (hasVerifiedCopy) {
+            UiText.Resource(R.string.text_no_internet_connection_showing_verified_catalogue)
         } else {
-            "Sem ligação à internet"
+            UiText.Resource(R.string.text_no_internet_connection)
         }
         override val reportable: Boolean = true
     }
 
     /** O servidor respondeu, e a resposta não serve. */
     data class Server(
-        override val message: String,
+        override val message: UiText,
         override val reason: String,
     ) : RefreshFailure {
         override val reportable: Boolean = true
@@ -58,7 +60,7 @@ sealed interface RefreshFailure {
 
     /** A URL do índice não serve — dito ao utilizador, porque é ele que a escreveu. */
     data class InvalidIndexUrl(override val reason: String) : RefreshFailure {
-        override val message: String = "O endereço do catálogo não é válido (tem de ser HTTPS)"
+        override val message: UiText = UiText.Resource(R.string.text_the_catalogue_address_is_invalid_https_required)
         override val reportable: Boolean = true
     }
 
@@ -69,13 +71,13 @@ sealed interface RefreshFailure {
      * o problema no sítio errado.
      */
     data class Tls(override val reason: String) : RefreshFailure {
-        override val message: String = "Não foi possível estabelecer uma ligação segura ao servidor"
+        override val message: UiText = UiText.Resource(R.string.text_could_not_establish_a_secure_connection_to)
         override val reportable: Boolean = true
     }
 
     /** Nada que se possa afirmar com verdade: só o log fica a saber o que se passou. */
     data class Unexplained(override val reason: String) : RefreshFailure {
-        override val message: String = "Não foi possível verificar o catálogo"
+        override val message: UiText = UiText.Resource(R.string.text_could_not_verify_the_catalogue)
         override val reportable: Boolean = false
     }
 
@@ -107,7 +109,7 @@ sealed interface RefreshFailure {
                 isReachability(error) -> when (online) {
                     false -> Offline(reason, hasVerifiedCopy)
                     true -> Server(
-                        message = "O servidor do catálogo não respondeu",
+                        message = UiText.Resource(R.string.text_the_catalogue_server_did_not_respond),
                         reason = reason,
                     )
                     null -> Unexplained(reason)
@@ -144,14 +146,14 @@ sealed interface RefreshFailure {
             return if (BuildConfig.DEBUG) "$line\n${error.stackTraceToString()}" else line
         }
 
-        private fun Int.describe(): String = when (this) {
+        private fun Int.describe(): UiText = when (this) {
             // Os códigos que merecem uma frase. O resto é só o número: é honesto e
             // diz mais a quem depura do que "houve um erro".
-            404 -> "O catálogo não existe no endereço configurado"
-            403 -> "O servidor recusou o pedido do catálogo"
-            429 -> "O servidor está a limitar os pedidos. Tenta dentro de pouco"
-            in 500..599 -> "O servidor do catálogo está com problemas"
-            else -> "O servidor respondeu $this ao pedido do catálogo"
+            404 -> UiText.Resource(R.string.text_the_catalogue_does_not_exist_at_the)
+            403 -> UiText.Resource(R.string.text_the_server_refused_the_catalogue_request)
+            429 -> UiText.Resource(R.string.text_the_server_is_limiting_requests_try_again)
+            in 500..599 -> UiText.Resource(R.string.text_the_catalogue_server_is_having_problems)
+            else -> UiText.Resource(R.string.text_the_server_returned_1_s_for_the, listOf(this))
         }
     }
 }

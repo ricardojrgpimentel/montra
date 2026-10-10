@@ -1,9 +1,11 @@
 package dev.montra.util
 
+import dev.montra.util.ptText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.Locale
 import java.time.OffsetDateTime
 
 /**
@@ -19,61 +21,61 @@ class TimeTest {
 
     @Test
     fun `sem verificacao diz nunca`() {
-        assertEquals("nunca", elapsedLabel(null, 1_000_000L))
-        assertEquals("nunca verificado", verifiedLabel(null, 1_000_000L))
-        assertEquals("nunca", elapsedLabel(0L, 1_000_000L))
+        assertEquals("nunca", elapsedLabel(null, 1_000_000L).ptText())
+        assertEquals("nunca verificado", verifiedLabel(null, 1_000_000L).ptText())
+        assertEquals("nunca", elapsedLabel(0L, 1_000_000L).ptText())
     }
 
     @Test
     fun `nos primeiros segundos e agora mesmo`() {
         val now = 1_700_000_000_000L
-        assertEquals("agora mesmo", elapsedLabel(now - 5_000L, now))
-        assertEquals("agora mesmo", elapsedLabel(now - 44_000L, now))
+        assertEquals("agora mesmo", elapsedLabel(now - 5_000L, now).ptText())
+        assertEquals("agora mesmo", elapsedLabel(now - 44_000L, now).ptText())
     }
 
     @Test
     fun `um minuto so no singular`() {
         val now = 1_700_000_000_000L
-        assertEquals("há 1 minuto", elapsedLabel(now - 60_000L, now))
-        assertEquals("há 2 minutos", elapsedLabel(now - 2 * minute, now))
-        assertEquals("há 59 minutos", elapsedLabel(now - 59 * minute, now))
+        assertEquals("há 1 minuto", elapsedLabel(now - 60_000L, now).ptText())
+        assertEquals("há 2 minutos", elapsedLabel(now - 2 * minute, now).ptText())
+        assertEquals("há 59 minutos", elapsedLabel(now - 59 * minute, now).ptText())
     }
 
     @Test
     fun `horas e dias passam a singular na primeira unidade`() {
         val now = 1_700_000_000_000L
-        assertEquals("há 1 hora", elapsedLabel(now - hour, now))
-        assertEquals("há 5 horas", elapsedLabel(now - 5 * hour, now))
-        assertEquals("há 1 dia", elapsedLabel(now - day, now))
-        assertEquals("há 3 dias", elapsedLabel(now - 3 * day, now))
+        assertEquals("há 1 hora", elapsedLabel(now - hour, now).ptText())
+        assertEquals("há 5 horas", elapsedLabel(now - 5 * hour, now).ptText())
+        assertEquals("há 1 dia", elapsedLabel(now - day, now).ptText())
+        assertEquals("há 3 dias", elapsedLabel(now - 3 * day, now).ptText())
     }
 
     @Test
     fun `verificado prefixa o tempo`() {
         val now = 1_700_000_000_000L
-        assertEquals("verificado há 1 hora", verifiedLabel(now - hour, now))
+        assertEquals("verificado há 1 hora", verifiedLabel(now - hour, now).ptText())
     }
 
     @Test
     fun `relogio adiantado nao da tempo negativo`() {
         // O instante pode vir de disco e o relógio do sistema andar para trás.
         val now = 1_700_000_000_000L
-        assertEquals("agora mesmo", elapsedLabel(now + hour, now))
+        assertEquals("agora mesmo", elapsedLabel(now + hour, now).ptText())
     }
 
     @Test
     fun `a data do lancamento sai em palavras`() {
-        assertEquals("23 de fevereiro de 2026", releaseDateLabel("2026-02-23T14:05:11Z"))
-        assertEquals("1 de janeiro de 2025", releaseDateLabel("2025-01-01T00:00:00Z"))
+        assertEquals("23 de fevereiro de 2026", releaseDateLabel("2026-02-23T14:05:11Z", Locale.forLanguageTag("pt-PT")))
+        assertEquals("1 de janeiro de 2025", releaseDateLabel("2025-01-01T00:00:00Z", Locale.forLanguageTag("pt-PT")))
     }
 
     @Test
     fun `sem data nao ha data para mostrar`() {
         // Não se inventa uma data, e "null" nunca chega ao ecrã.
-        assertEquals(null, releaseDateLabel(null))
-        assertEquals(null, releaseDateLabel(""))
-        assertEquals(null, releaseDateLabel("ontem"))
-        assertEquals(null, releaseDateLabel("2026-02-31T00:00:00Z"))
+        assertEquals(null, releaseDateLabel(null, Locale.forLanguageTag("pt-PT")))
+        assertEquals(null, releaseDateLabel("", Locale.forLanguageTag("pt-PT")))
+        assertEquals(null, releaseDateLabel("ontem", Locale.forLanguageTag("pt-PT")))
+        assertEquals(null, releaseDateLabel("2026-02-31T00:00:00Z", Locale.forLanguageTag("pt-PT")))
     }
 
     @Test

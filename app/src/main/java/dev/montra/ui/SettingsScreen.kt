@@ -1,5 +1,8 @@
 package dev.montra.ui
 
+import android.content.Context
+import dev.montra.R
+import dev.montra.util.asString
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -30,10 +33,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import dev.montra.BuildConfig
+import dev.montra.data.AppLanguage
 import dev.montra.data.AutoRefresh
 import dev.montra.data.IndexOrigin
 import dev.montra.data.ThemeMode
-import dev.montra.install.InstallManager
 import dev.montra.ui.components.Block
 import dev.montra.ui.components.KeyValue
 import dev.montra.ui.components.LinkRow
@@ -47,6 +50,8 @@ import dev.montra.util.verifiedLabel
 fun SettingsScreen(
     state: UiState,
     themeMode: ThemeMode,
+    language: AppLanguage,
+    onLanguage: (AppLanguage) -> Unit,
     onRefresh: () -> Unit,
     onSetIndexUrl: (String) -> Unit,
     onAuthorize: () -> Unit,
@@ -56,7 +61,7 @@ fun SettingsScreen(
     onOpenUrl: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
+    val strings = LocalContext.current
     var draft by remember(state.index.indexUrl) { mutableStateOf(state.index.indexUrl) }
     val now = remember(state.index.lastCheckedAt) { System.currentTimeMillis() }
 
@@ -66,10 +71,29 @@ fun SettingsScreen(
             .verticalScroll(rememberScrollState()),
     ) {
         Column(modifier = Modifier.padding(horizontal = Space.lg)) {
-            SectionTitle("Aspeto", divider = false)
+            SectionTitle(strings.getString(R.string.language), divider = false)
             Text(
-                text = "A paleta é sempre a da Montra — o que se escolhe aqui é só se ela " +
-                    "aparece clara ou escura. «Sistema» segue o que o telemóvel estiver a usar.",
+                strings.getString(R.string.language_help),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(Space.sm))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(Space.sm),
+                verticalArrangement = Arrangement.spacedBy(Space.xs),
+            ) {
+                AppLanguage.entries.forEach { option ->
+                    FilterChip(
+                        selected = language == option,
+                        onClick = { onLanguage(option) },
+                        label = { Text(if (option == AppLanguage.SYSTEM) strings.getString(R.string.language_system) else option.nativeName) },
+                    )
+                }
+            }
+
+            SectionTitle(strings.getString(R.string.appearance))
+            Text(
+                text = strings.getString(R.string.text_choose_a_light_or_dark_appearance_system),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -83,22 +107,22 @@ fun SettingsScreen(
                     FilterChip(
                         selected = themeMode == option,
                         onClick = { onThemeMode(option) },
-                        label = { Text(option.label) },
+                        label = { Text(strings.getString(option.labelRes)) },
                     )
                 }
             }
 
-            SectionTitle("Catálogo")
+            SectionTitle(strings.getString(R.string.text_catalogue))
             Block {
-                KeyValue("origem", originLabel(state.index.origin))
-                KeyValue("verificado", verifiedLabel(state.index.lastCheckedAt, now))
-                KeyValue("gerado em", state.index.generatedAt?.take(19)?.replace('T', ' ') ?: "—")
-                KeyValue("apps", state.index.apps.size.toString())
-                KeyValue("instaladas daqui", state.installedCount.toString())
-                KeyValue("atualizações", state.updateCount.toString())
+                KeyValue(strings.getString(R.string.text_origin), originLabel(state.index.origin, strings))
+                KeyValue(strings.getString(R.string.text_verified), verifiedLabel(state.index.lastCheckedAt, now).asString(strings))
+                KeyValue(strings.getString(R.string.text_generated_on), state.index.generatedAt?.take(19)?.replace('T', ' ') ?: "—")
+                KeyValue(strings.getString(R.string.text_apps), state.index.apps.size.toString())
+                KeyValue(strings.getString(R.string.text_installed_from_here), state.installedCount.toString())
+                KeyValue(strings.getString(R.string.text_updates), state.updateCount.toString())
                 KeyValue(
-                    label = "assinatura",
-                    value = if (state.index.signatureValid) "válida" else "recusada",
+                    label = strings.getString(R.string.text_signature),
+                    value = if (state.index.signatureValid) strings.getString(R.string.text_valid) else strings.getString(R.string.refused),
                     // O estado é do valor, não do rótulo: a linha inteira a vermelho
                     // faria da chave de confiança um erro também.
                     valueColor = if (state.index.signatureValid) {
@@ -107,16 +131,16 @@ fun SettingsScreen(
                         MaterialTheme.colorScheme.error
                     },
                 )
-                KeyValue("chave de confiança", state.index.keyId ?: "—", mono = true)
+                KeyValue(strings.getString(R.string.text_trusted_key), state.index.keyId ?: "—", mono = true)
             }
 
             Spacer(Modifier.height(Space.sm))
             Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
                 Button(onClick = onRefresh, enabled = !state.index.refreshing) {
-                    Text(if (state.index.refreshing) "A atualizar…" else "Atualizar agora")
+                    Text(if (state.index.refreshing) strings.getString(R.string.text_updating) else strings.getString(R.string.text_refresh_now))
                 }
                 OutlinedButton(onClick = { onSetIndexUrl(BuildConfig.DEFAULT_INDEX_URL) }) {
-                    Text("Repor URL")
+                    Text(strings.getString(R.string.text_reset_url))
                 }
             }
 
@@ -124,7 +148,7 @@ fun SettingsScreen(
                 Spacer(Modifier.height(Space.sm))
                 // Offline não é vermelho: é a mesma condição calma que a faixa mostra.
                 Text(
-                    text = it,
+                    text = it.asString(strings),
                     color = if (state.index.offline) {
                         MaterialTheme.colorScheme.onSurfaceVariant
                     } else {
@@ -136,23 +160,22 @@ fun SettingsScreen(
             state.index.rejectedMessage?.let {
                 Spacer(Modifier.height(Space.sm))
                 Text(
-                    "Índice recusado: $it",
+                    strings.getString(R.string.text_index_rejected_1_s, it.asString(strings)),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
 
-            SectionTitle("Fonte do catálogo")
+            SectionTitle(strings.getString(R.string.text_catalogue_source))
             OutlinedTextField(
                 value = draft,
                 onValueChange = { draft = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("URL do index.json") },
+                label = { Text(strings.getString(R.string.text_index_json_url)) },
                 singleLine = false,
                 supportingText = {
                     Text(
-                        "Tem de ser HTTPS, e o index.json.sig tem de estar ao lado: um " +
-                            "índice sem assinatura que a app reconheça é recusado.",
+                        strings.getString(R.string.text_https_is_required_with_index_json_sig),
                         style = MaterialTheme.typography.labelSmall,
                     )
                 },
@@ -161,20 +184,17 @@ fun SettingsScreen(
             Button(
                 onClick = { onSetIndexUrl(draft.trim()) },
                 enabled = draft.trim().startsWith("https://") && draft.trim() != state.index.indexUrl,
-            ) { Text("Usar este catálogo") }
+            ) { Text(strings.getString(R.string.text_use_this_catalogue)) }
             Spacer(Modifier.height(Space.sm))
             Text(
-                text = "Qualquer URL serve: um fork do catálogo é uma loja nova, com a sua " +
-                    "própria chave de confiança.",
+                text = strings.getString(R.string.text_a_catalogue_fork_can_become_a_new),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            SectionTitle("Verificação automática")
+            SectionTitle(strings.getString(R.string.text_automatic_checks))
             Text(
-                text = "O catálogo é um ficheiro num repositório: não há servidor para nos " +
-                    "avisar quando sai uma versão nova. A app pergunta sozinha, com a lista " +
-                    "aberta, e usa o ETag — quando nada mudou, custa uma resposta de uns bytes.",
+                text = strings.getString(R.string.text_the_catalogue_is_a_repository_file_while),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -188,30 +208,28 @@ fun SettingsScreen(
                     FilterChip(
                         selected = state.autoRefresh == option,
                         onClick = { onAutoRefresh(option) },
-                        label = { Text(option.label) },
+                        label = { Text(strings.getString(option.labelRes)) },
                     )
                 }
             }
 
-            SectionTitle("Instalação")
+            SectionTitle(strings.getString(R.string.text_installation))
             Block {
                 Text(
                     if (state.canInstallPackages) {
-                        "A Montra está autorizada a instalar aplicações. Cada instalação " +
-                            "continua a passar pelo diálogo do Android."
+                        strings.getString(R.string.text_montra_is_allowed_to_install_apps_each)
                     } else {
-                        "O Android ainda não autorizou a Montra a instalar aplicações " +
-                            "desconhecidas. Sem isto, nenhum download começa."
+                        strings.getString(R.string.text_android_has_not_authorised_montra_to_install_4)
                     },
                     style = MaterialTheme.typography.bodySmall,
                 )
                 if (!state.canInstallPackages) {
                     Spacer(Modifier.height(Space.sm))
-                    OutlinedButton(onClick = onAuthorize) { Text("Abrir permissões") }
+                    OutlinedButton(onClick = onAuthorize) { Text(strings.getString(R.string.text_open_permissions)) }
                 }
             }
 
-            SectionTitle("Licenças")
+            SectionTitle(strings.getString(R.string.text_licences))
             Block {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -220,13 +238,11 @@ fun SettingsScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Esconder apps com licença restritiva",
+                            text = strings.getString(R.string.text_hide_apps_with_restricted_licences),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         Text(
-                            text = "${state.filterCounts[AppFilter.RESTRICTED] ?: 0} no catálogo. Código " +
-                                "público, mas com limitações de uso — nunca são apresentadas como " +
-                                "software livre.",
+                            text = strings.getString(R.string.text_1_s_in_the_catalogue_public_source, state.filterCounts[AppFilter.RESTRICTED] ?: 0),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -235,58 +251,51 @@ fun SettingsScreen(
                 }
             }
 
-            SectionTitle("Como funciona")
+            SectionTitle(strings.getString(R.string.text_how_it_works))
             Text(
-                "Este catálogo não tem servidor. A app descarrega um ficheiro JSON de um repositório git, " +
-                    "verifica a assinatura digital com a chave pública incluída na app, e a seguir verifica " +
-                    "cada APK por SHA-256 e pelo certificado de assinatura antes de o entregar ao instalador " +
-                    "do Android. Se qualquer verificação falhar, nada é instalado.",
+                strings.getString(R.string.text_montra_downloads_a_json_file_from_a),
                 style = MaterialTheme.typography.bodySmall,
             )
 
-            SectionTitle("Sobre")
+            SectionTitle(strings.getString(R.string.text_about))
             Block {
                 MontraBrand()
                 Spacer(Modifier.height(Space.xs))
                 // A versão e o código ficam juntos porque é isto que se lê em voz alta
                 // quando se reporta um problema, e é a única coisa nesta app que o
                 // utilizador não consegue ver sem vir aqui.
-                KeyValue("versão", BuildConfig.VERSION_NAME)
+                KeyValue(strings.getString(R.string.text_version_2), BuildConfig.VERSION_NAME)
                 KeyValue("versionCode", BuildConfig.VERSION_CODE.toString())
-                KeyValue("licença", "AGPL-3.0-or-later")
+                KeyValue(strings.getString(R.string.text_licence), "AGPL-3.0-or-later")
                 Spacer(Modifier.height(Space.sm))
                 Text(
-                    text = "Código aberto. O catálogo é dados em git: contribuir é abrir um " +
-                        "pull request.",
+                    text = strings.getString(R.string.text_open_source_the_catalogue_is_data_in),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             Spacer(Modifier.height(Space.sm))
-            LinkRow("Site", "https://ricardopimen.tel", onOpenUrl)
-            LinkRow("Código", "https://github.com/ricardojrgpimentel/montra", onOpenUrl)
-            LinkRow("Catálogo", "https://github.com/ricardojrgpimentel/montra-index", onOpenUrl)
+            LinkRow(strings.getString(R.string.text_website), "https://ricardopimen.tel", onOpenUrl)
+            LinkRow(strings.getString(R.string.text_code), "https://github.com/ricardojrgpimentel/montra", onOpenUrl)
+            LinkRow(strings.getString(R.string.text_catalogue), "https://github.com/ricardojrgpimentel/montra-index", onOpenUrl)
 
-            SectionTitle("Créditos")
+            SectionTitle(strings.getString(R.string.text_credits))
             Block {
-                Text("Feito por Ricardo Pimentel.", style = MaterialTheme.typography.bodyMedium)
+                Text(strings.getString(R.string.text_made_by_ricardo_pimentel), style = MaterialTheme.typography.bodyMedium)
                 Spacer(Modifier.height(Space.sm))
                 Text(
-                    text = "Interfaces com Jetpack Compose e Material 3, do Android Open " +
-                        "Source Project; rede com OkHttp, da Square. Tudo sob Apache-2.0.",
+                    text = strings.getString(R.string.text_interface_with_jetpack_compose_and_material_3),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(Space.sm))
                 Text(
-                    text = "Cada aplicação do catálogo pertence a quem a faz: os ícones e as " +
-                        "capturas são re-alojados a partir do repositório dela, e a ficha liga " +
-                        "lá. As regras de desenho partiram do catálogo Impeccable.",
+                    text = strings.getString(R.string.text_catalogue_apps_belong_to_their_creators_icons),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                LinkRow("Regras de desenho", "https://impeccable.style/slop", onOpenUrl)
+                LinkRow(strings.getString(R.string.text_design_rules), "https://impeccable.style/slop", onOpenUrl)
             }
 
             Spacer(Modifier.height(Space.xl))
@@ -294,9 +303,9 @@ fun SettingsScreen(
     }
 }
 
-private fun originLabel(origin: IndexOrigin?): String = when (origin) {
-    IndexOrigin.NETWORK -> "descarregado agora"
-    IndexOrigin.CACHED -> "cópia verificada em disco"
-    IndexOrigin.BUNDLED -> "snapshot incluído na app"
+private fun originLabel(origin: IndexOrigin?, strings: Context): String = when (origin) {
+    IndexOrigin.NETWORK -> strings.getString(R.string.text_just_downloaded)
+    IndexOrigin.CACHED -> strings.getString(R.string.text_verified_copy_on_disk)
+    IndexOrigin.BUNDLED -> strings.getString(R.string.text_bundled_snapshot)
     null -> "—"
 }

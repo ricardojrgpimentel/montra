@@ -1,5 +1,6 @@
 package dev.montra.install
 
+import dev.montra.util.asString
 import android.Manifest
 import android.app.Notification
 import android.app.Service
@@ -125,7 +126,7 @@ class InstallService : Service() {
                 getString(R.string.notification_needs_permission),
             )
             is InstallState.Installed -> InstallNotifications.installed(this, request)
-            is InstallState.Failed -> InstallNotifications.failed(this, request, state.reason)
+            is InstallState.Failed -> InstallNotifications.failed(this, request, state.reason.asString(ContextCompat.getContextForLanguage(this)))
             InstallState.Idle -> return
         }
         post(notification)

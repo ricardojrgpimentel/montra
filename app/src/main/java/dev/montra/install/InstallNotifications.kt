@@ -1,5 +1,6 @@
 package dev.montra.install
 
+import dev.montra.util.asString
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -31,16 +32,15 @@ object InstallNotifications {
 
     fun ensureChannel(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
-        if (manager.getNotificationChannel(CHANNEL_DOWNLOADS) != null) return
         manager.createNotificationChannel(
             NotificationChannel(
                 CHANNEL_DOWNLOADS,
-                context.getString(R.string.channel_downloads),
+                ContextCompat.getContextForLanguage(context).getString(R.string.channel_downloads),
                 // LOW: a download is expected work the user started. It must be
                 // visible and updatable, but it must never make a sound.
                 NotificationManager.IMPORTANCE_LOW,
             ).apply {
-                description = context.getString(R.string.channel_downloads_description)
+                description = ContextCompat.getContextForLanguage(context).getString(R.string.channel_downloads_description)
                 setShowBadge(false)
             },
         )
@@ -55,20 +55,20 @@ object InstallNotifications {
         val percent = if (total > 0) ((bytes * 100) / total).toInt().coerceIn(0, 100) else 0
         val indeterminate = total <= 0
         return base(context, request)
-            .setContentTitle(context.getString(R.string.notification_downloading, request.appName))
+            .setContentTitle(ContextCompat.getContextForLanguage(context).getString(R.string.notification_downloading, request.appName))
             .setContentText(
                 if (indeterminate) formatBytes(bytes) else "${formatBytes(bytes)} / ${formatBytes(total)}",
             )
             .setProgress(100, percent, indeterminate)
             .setOngoing(true)
-            .addAction(0, context.getString(R.string.action_cancel), cancelIntent(context, request))
+            .addAction(0, ContextCompat.getContextForLanguage(context).getString(R.string.action_cancel), cancelIntent(context, request))
             .build()
     }
 
     fun verifying(context: Context, request: InstallRequest): Notification =
         base(context, request)
-            .setContentTitle(context.getString(R.string.notification_verifying, request.appName))
-            .setContentText(context.getString(R.string.notification_verifying_detail))
+            .setContentTitle(ContextCompat.getContextForLanguage(context).getString(R.string.notification_verifying, request.appName))
+            .setContentText(ContextCompat.getContextForLanguage(context).getString(R.string.notification_verifying_detail))
             .setProgress(0, 0, true)
             .setOngoing(true)
             .build()
@@ -80,12 +80,12 @@ object InstallNotifications {
     ): Notification =
         base(context, request)
             .setContentIntent(confirmation)
-            .setContentTitle(context.getString(R.string.notification_confirm, request.appName))
-            .setContentText(context.getString(R.string.notification_confirm_detail))
+            .setContentTitle(ContextCompat.getContextForLanguage(context).getString(R.string.notification_confirm, request.appName))
+            .setContentText(ContextCompat.getContextForLanguage(context).getString(R.string.notification_confirm_detail))
             .setProgress(0, 0, false)
             .setOngoing(true)
             .setAutoCancel(false)
-            .addAction(0, context.getString(R.string.action_cancel), cancelIntent(context, request))
+            .addAction(0, ContextCompat.getContextForLanguage(context).getString(R.string.action_cancel), cancelIntent(context, request))
             .build()
 
     fun dismiss(context: Context, appId: String) {
@@ -97,8 +97,8 @@ object InstallNotifications {
         val notification = when (state) {
             is InstallState.AwaitingUser -> awaitingUser(context, request, state.confirmation ?: return)
             is InstallState.Installed -> installed(context, request)
-            is InstallState.Failed -> failed(context, request, state.reason)
-            InstallState.NeedsPermission -> failed(context, request, context.getString(R.string.notification_needs_permission))
+            is InstallState.Failed -> failed(context, request, state.reason.asString(ContextCompat.getContextForLanguage(context)))
+            InstallState.NeedsPermission -> failed(context, request, ContextCompat.getContextForLanguage(context).getString(R.string.notification_needs_permission))
             else -> {
                 dismiss(context, request.appId)
                 return
@@ -117,8 +117,8 @@ object InstallNotifications {
 
     fun installed(context: Context, request: InstallRequest): Notification =
         base(context, request)
-            .setContentTitle(context.getString(R.string.notification_installed, request.appName))
-            .setContentText(context.getString(R.string.notification_installed_detail))
+            .setContentTitle(ContextCompat.getContextForLanguage(context).getString(R.string.notification_installed, request.appName))
+            .setContentText(ContextCompat.getContextForLanguage(context).getString(R.string.notification_installed_detail))
             .setProgress(0, 0, false)
             .setOngoing(false)
             .setAutoCancel(true)
@@ -126,7 +126,7 @@ object InstallNotifications {
 
     fun failed(context: Context, request: InstallRequest, reason: String): Notification =
         base(context, request)
-            .setContentTitle(context.getString(R.string.notification_failed, request.appName))
+            .setContentTitle(ContextCompat.getContextForLanguage(context).getString(R.string.notification_failed, request.appName))
             .setContentText(reason.lineSequence().first())
             .setStyle(NotificationCompat.BigTextStyle().bigText(reason))
             .setProgress(0, 0, false)

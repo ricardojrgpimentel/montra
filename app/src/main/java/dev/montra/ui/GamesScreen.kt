@@ -1,5 +1,8 @@
 package dev.montra.ui
 
+import androidx.compose.ui.platform.LocalContext
+import dev.montra.R
+import dev.montra.util.asString
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,6 +48,7 @@ fun GamesScreen(
     onAuthorize: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val strings = LocalContext.current
     val games = state.games
     val listState = rememberLazyListState()
     val collapsed by remember(listState) {
@@ -57,16 +61,18 @@ fun GamesScreen(
     Column(modifier = modifier.fillMaxSize()) {
         CatalogueRibbon(
             counts = buildString {
-                append(games.size)
-                append(if (games.size == 1) " jogo ou emulador" else " jogos e emuladores")
-                if (installedGames > 0) append(" · $installedGames instalados")
+                append(strings.resources.getQuantityString(R.plurals.game_count, games.size, games.size))
+                if (installedGames > 0) {
+                    append(" · ")
+                    append(strings.resources.getQuantityString(R.plurals.installed_count, installedGames, installedGames))
+                }
             },
             updates = games.count { it.updateAvailable },
             refreshing = state.index.refreshing,
             lastCheckedAt = state.index.lastCheckedAt,
             outcome = state.index.outcome,
             outcomeAt = state.index.outcomeAt,
-            error = state.index.error ?: state.index.rejectedMessage,
+            error = state.index.error?.asString(strings) ?: state.index.rejectedMessage?.asString(strings),
             offline = state.index.offline,
             onRetry = onRefresh,
             collapsed = collapsed,
@@ -74,10 +80,10 @@ fun GamesScreen(
 
         if (!state.canInstallPackages) {
             AlertBlock(
-                title = "Falta uma autorização",
-                text = "O Android ainda não autorizou a Montra a instalar aplicações.",
+                title = strings.getString(R.string.text_permission_required),
+                text = strings.getString(R.string.text_android_has_not_authorised_montra_to_install_3),
                 action = {
-                    Button(onClick = onAuthorize) { Text("Autorizar") }
+                    Button(onClick = onAuthorize) { Text(strings.getString(R.string.text_allow)) }
                 },
                 modifier = Modifier.padding(horizontal = Space.lg, vertical = Space.sm),
             )
@@ -98,15 +104,12 @@ fun GamesScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
-                        text = "Ainda não há jogos nem emuladores no catálogo.",
+                        text = strings.getString(R.string.text_there_are_no_games_or_emulators_in),
                         style = MaterialTheme.typography.titleSmall,
                         textAlign = TextAlign.Center,
                     )
                     Text(
-                        text = "O catálogo é um repositório de ficheiros JSON: qualquer pessoa " +
-                            "pode propor um jogo ou um emulador abrindo um pull request. As " +
-                            "candidatas passam as mesmas verificações que as restantes apps — " +
-                            "licença livre, APK publicado, sha256 e certificado fixados.",
+                        text = strings.getString(R.string.text_anyone_can_propose_a_game_or_emulator),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -128,7 +131,7 @@ fun GamesScreen(
                         item(key = "search") {
                             SearchBar(
                                 onClick = onOpenSearch,
-                                placeholder = "Procurar jogos e emuladores",
+                                placeholder = strings.getString(R.string.text_search_games_and_emulators),
                                 modifier = Modifier.padding(horizontal = Space.lg),
                             )
                         }
@@ -140,13 +143,13 @@ fun GamesScreen(
                         appSections(
                             sections = buildList {
                                 if (updates.isNotEmpty()) {
-                                    add(AppSectionSpec("Atualizações disponíveis", updates, accent = true))
+                                    add(AppSectionSpec(strings.getString(R.string.text_updates_available), updates, accent = true))
                                 }
                                 if (installed.isNotEmpty()) {
-                                    add(AppSectionSpec("Instalados", installed))
+                                    add(AppSectionSpec(strings.getString(R.string.text_installed_games), installed))
                                 }
                                 if (rest.isNotEmpty()) {
-                                    add(AppSectionSpec("Jogos e emuladores", rest))
+                                    add(AppSectionSpec(strings.getString(R.string.text_games_and_emulators_2), rest))
                                 }
                             },
                             needsPermission = !state.canInstallPackages,

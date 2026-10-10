@@ -1,5 +1,9 @@
 package dev.montra.ui.components
 
+import androidx.compose.ui.platform.LocalContext
+import dev.montra.R
+import dev.montra.util.UiText
+import dev.montra.util.asString
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -73,6 +77,7 @@ fun CatalogueRibbon(
     collapsed: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val strings = LocalContext.current
     val now = rememberTickingNow()
     val scheme = MaterialTheme.colorScheme
     // `offline` também traz mensagem (é ela que se lê), mas não é uma falha: se ficasse
@@ -121,21 +126,21 @@ fun CatalogueRibbon(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
-                    TextButton(onClick = onRetry) { Text("Tentar de novo", color = ink) }
+                    TextButton(onClick = onRetry) { Text(strings.getString(R.string.text_try_again), color = ink) }
                 }
 
                 // Sem alarme e sem esconder: o mesmo sítio da faixa, sem a cor de erro,
                 // para se perceber num relance que o catálogo continua a funcionar.
                 offline -> {
                     Text(
-                        text = OFFLINE_RIBBON,
+                        text = OFFLINE_RIBBON.asString(strings),
                         style = MaterialTheme.typography.labelMedium,
                         color = ink,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
-                    TextButton(onClick = onRetry) { Text("Tentar de novo", color = ink) }
+                    TextButton(onClick = onRetry) { Text(strings.getString(R.string.text_try_again), color = ink) }
                 }
 
                 else -> {
@@ -146,7 +151,7 @@ fun CatalogueRibbon(
                             // merecer ser lida duas vezes.
                             if (updates > 0) {
                                 withStyle(SpanStyle(color = accent, fontWeight = FontWeight.SemiBold)) {
-                                    append(if (updates == 1) "1 atualização" else "$updates atualizações")
+                                    append(strings.resources.getQuantityString(R.plurals.update_count, updates, updates))
                                 }
                                 append(" · ")
                             }
@@ -178,7 +183,7 @@ fun CatalogueRibbon(
  * meio, e a segunda metade — "a mostrar o catálogo verificado" — é a informação que
  * interessa, porque diz que a app não está avariada.
  */
-private const val OFFLINE_RIBBON = "Sem ligação à internet · a mostrar o catálogo verificado"
+private val OFFLINE_RIBBON = UiText.Resource(R.string.text_no_internet_connection_showing_verified_catalogue)
 
 @Composable
 private fun StatusText(
@@ -189,6 +194,7 @@ private fun StatusText(
     now: Long,
     color: Color,
 ) {
+    val strings = LocalContext.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (refreshing) {
             CircularProgressIndicator(
@@ -202,10 +208,10 @@ private fun StatusText(
         // segundos volta a ser só "quando é que isto foi confirmado".
         val fresh = outcomeAt > 0 && now - outcomeAt < OUTCOME_LINGER_MS
         val text = when {
-            refreshing -> "a verificar…"
-            fresh && outcome == RefreshOutcome.UPDATED -> "catálogo atualizado"
-            fresh && outcome == RefreshOutcome.CURRENT -> "já estava atualizado"
-            else -> verifiedLabel(lastCheckedAt, now)
+            refreshing -> strings.getString(R.string.text_checking)
+            fresh && outcome == RefreshOutcome.UPDATED -> strings.getString(R.string.text_catalogue_updated)
+            fresh && outcome == RefreshOutcome.CURRENT -> strings.getString(R.string.text_already_up_to_date)
+            else -> verifiedLabel(lastCheckedAt, now).asString(strings)
         }
         Text(
             text = text,

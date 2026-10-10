@@ -1,5 +1,9 @@
 package dev.montra.ui
 
+import androidx.compose.ui.platform.LocalContext
+import android.content.Context
+import dev.montra.R
+import dev.montra.util.asString
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,6 +61,7 @@ fun AppsScreen(
     onAuthorize: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val strings = LocalContext.current
     val filtered = remember(state.rows, state.category, state.filter, state.requirement) {
         state.filteredRows()
     }
@@ -72,13 +77,13 @@ fun AppsScreen(
 
     Column(modifier = modifier.fillMaxSize()) {
         CatalogueRibbon(
-            counts = catalogueCounts(state),
+            counts = catalogueCounts(state, strings),
             updates = state.updateCount,
             refreshing = state.index.refreshing,
             lastCheckedAt = state.index.lastCheckedAt,
             outcome = state.index.outcome,
             outcomeAt = state.index.outcomeAt,
-            error = state.index.error ?: state.index.rejectedMessage,
+            error = state.index.error?.asString(strings) ?: state.index.rejectedMessage?.asString(strings),
             offline = state.index.offline,
             onRetry = onRefresh,
             collapsed = collapsed,
@@ -86,11 +91,10 @@ fun AppsScreen(
 
         if (!state.canInstallPackages) {
             AlertBlock(
-                title = "Falta uma autorização",
-                text = "O Android ainda não autorizou a Montra a instalar aplicações. " +
-                    "É uma autorização por app, dada nas definições do sistema.",
+                title = strings.getString(R.string.text_permission_required),
+                text = strings.getString(R.string.text_android_has_not_authorised_montra_to_install_2),
                 action = {
-                    Button(onClick = onAuthorize) { Text("Autorizar instalação") }
+                    Button(onClick = onAuthorize) { Text(strings.getString(R.string.text_allow_installation)) }
                 },
                 modifier = Modifier.padding(horizontal = Space.lg, vertical = Space.sm),
             )
@@ -138,7 +142,7 @@ fun AppsScreen(
                         item(key = "search") {
                             SearchBar(
                                 onClick = onOpenSearch,
-                                placeholder = "Procurar por nome, etiqueta ou pacote",
+                                placeholder = strings.getString(R.string.text_search_by_name_tag_or_package),
                                 modifier = Modifier.padding(horizontal = Space.lg),
                             )
                         }
@@ -150,15 +154,15 @@ fun AppsScreen(
                         appSections(
                             sections = buildList {
                                 if (updates.isNotEmpty()) {
-                                    add(AppSectionSpec("Atualizações disponíveis", updates, accent = true))
+                                    add(AppSectionSpec(strings.getString(R.string.text_updates_available), updates, accent = true))
                                 }
                                 if (installed.isNotEmpty()) {
-                                    add(AppSectionSpec("Instaladas", installed))
+                                    add(AppSectionSpec(strings.getString(R.string.text_installed), installed))
                                 }
                                 if (rest.isNotEmpty()) {
                                     add(
                                         AppSectionSpec(
-                                            if (updates.isEmpty() && installed.isEmpty()) "Tudo" else "Descobrir",
+                                            if (updates.isEmpty() && installed.isEmpty()) strings.getString(R.string.text_all) else strings.getString(R.string.text_discover),
                                             rest,
                                         ),
                                     )
@@ -177,18 +181,17 @@ fun AppsScreen(
 }
 
 /** "42 apps · 6 instaladas" — o que este catálogo tem, dito em números. */
-private fun catalogueCounts(state: UiState): String = buildString {
-    append(state.rows.size)
-    append(if (state.rows.size == 1) " app" else " apps")
+private fun catalogueCounts(state: UiState, strings: Context): String = buildString {
+    append(strings.resources.getQuantityString(R.plurals.app_count, state.rows.size, state.rows.size))
     if (state.installedCount > 0) {
         append(" · ")
-        append(state.installedCount)
-        append(if (state.installedCount == 1) " instalada" else " instaladas")
+        append(strings.resources.getQuantityString(R.plurals.installed_count, state.installedCount, state.installedCount))
     }
 }
 
 @Composable
 private fun EmptyState(state: UiState, onRefresh: () -> Unit, onClear: () -> Unit) {
+    val strings = LocalContext.current
     val offline = state.index.offline
     val failed = state.index.error != null
     // As duas razões para não haver lista nenhuma: um filtro, ou um catálogo que não
@@ -204,14 +207,14 @@ private fun EmptyState(state: UiState, onRefresh: () -> Unit, onClear: () -> Uni
         Text(
             text = when {
                 filteredOut -> if (state.category != null) {
-                    "Nada nesta categoria."
+                    strings.getString(R.string.text_nothing_in_this_category)
                 } else {
-                    "Nada corresponde a este filtro."
+                    strings.getString(R.string.text_nothing_matches_this_filter)
                 }
                 // Offline primeiro: é a razão mais provável e a mais fácil de resolver.
-                offline -> "Sem ligação à internet"
-                failed -> state.index.error.orEmpty()
-                else -> "O catálogo está vazio."
+                offline -> strings.getString(R.string.text_no_internet_connection)
+                failed -> state.index.error?.asString(strings).orEmpty()
+                else -> strings.getString(R.string.text_the_catalogue_is_empty)
             },
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
@@ -219,15 +222,14 @@ private fun EmptyState(state: UiState, onRefresh: () -> Unit, onClear: () -> Uni
         )
         if (offline) {
             Text(
-                text = "A Montra precisa de internet para confirmar o catálogo. " +
-                    "As apps que já instalaste continuam a funcionar.",
+                text = strings.getString(R.string.text_montra_needs_internet_to_check_the_catalogue),
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else if (failed) {
             Text(
-                text = "O último catálogo verificado continua a ser usado.",
+                text = strings.getString(R.string.text_the_last_verified_catalogue_is_still_being),
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -236,9 +238,9 @@ private fun EmptyState(state: UiState, onRefresh: () -> Unit, onClear: () -> Uni
         Spacer(Modifier.height(Space.lg))
         // Um ecrã vazio sem saída é um beco. Ou se tira o filtro, ou se tenta outra vez.
         if (filteredOut) {
-            OutlinedButton(onClick = onClear) { Text("Limpar filtros") }
+            OutlinedButton(onClick = onClear) { Text(strings.getString(R.string.text_clear_filters)) }
         } else if (failed || offline) {
-            Button(onClick = onRefresh) { Text("Tentar de novo") }
+            Button(onClick = onRefresh) { Text(strings.getString(R.string.text_try_again)) }
         }
     }
 }

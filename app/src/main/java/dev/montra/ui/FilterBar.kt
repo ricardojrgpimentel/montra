@@ -1,5 +1,8 @@
 package dev.montra.ui
 
+import androidx.compose.ui.platform.LocalContext
+import dev.montra.R
+import dev.montra.util.asString
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -82,6 +85,7 @@ fun FilterBar(
     onCategory: (String?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val strings = LocalContext.current
     var sortOpen by remember { mutableStateOf(false) }
     var filterOpen by remember { mutableStateOf(false) }
 
@@ -102,10 +106,10 @@ fun FilterBar(
                     modifier = Modifier.size(16.dp),
                 )
                 Spacer(Modifier.width(Space.sm))
-                Text(state.sort.label, maxLines = 1)
+                Text(strings.getString(state.sort.labelRes), maxLines = 1)
                 Icon(
                     imageVector = Icons.Filled.ArrowDropDown,
-                    contentDescription = "Mudar a ordenação",
+                    contentDescription = strings.getString(R.string.text_change_sorting),
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -116,13 +120,13 @@ fun FilterBar(
                 FilledTonalButton(onClick = { filterOpen = true }) {
                     Icon(Icons.Filled.Tune, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(Space.sm))
-                    Text("Filtrar · $activeFilters")
+                    Text("${strings.getString(R.string.text_filter)} · $activeFilters")
                 }
             } else {
                 OutlinedButton(onClick = { filterOpen = true }) {
                     Icon(Icons.Filled.Tune, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(Space.sm))
-                    Text("Filtrar")
+                    Text(strings.getString(R.string.text_filter))
                 }
             }
         }
@@ -169,6 +173,7 @@ private fun ActiveFilters(
     onRequirement: (RequirementFilter?) -> Unit,
     onCategory: (String?) -> Unit,
 ) {
+    val strings = LocalContext.current
     val visible = state.category != null || state.filter != null || state.requirement != null
     AnimatedVisibility(
         visible = visible,
@@ -184,21 +189,22 @@ private fun ActiveFilters(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             state.category?.let { category ->
-                ActiveChip(label = categoryLabel(category)) { onCategory(null) }
+                ActiveChip(label = categoryLabel(category).asString(strings)) { onCategory(null) }
             }
             state.filter?.let { filter ->
-                ActiveChip(label = filter.label) { onFilter(null) }
+                ActiveChip(label = strings.getString(filter.labelRes)) { onFilter(null) }
             }
             state.requirement?.let { requirement ->
-                ActiveChip(label = requirement.label) { onRequirement(null) }
+                ActiveChip(label = strings.getString(requirement.labelRes)) { onRequirement(null) }
             }
-            TextButton(onClick = { onCategory(null); onFilter(null); onRequirement(null) }) { Text("Limpar") }
+            TextButton(onClick = { onCategory(null); onFilter(null); onRequirement(null) }) { Text(strings.getString(R.string.text_clear)) }
         }
     }
 }
 
 @Composable
 private fun ActiveChip(label: String, onRemove: () -> Unit) {
+    val strings = LocalContext.current
     FilterChip(
         selected = true,
         onClick = onRemove,
@@ -208,7 +214,7 @@ private fun ActiveChip(label: String, onRemove: () -> Unit) {
         trailingIcon = {
             Icon(
                 imageVector = Icons.Filled.Close,
-                contentDescription = "Tirar o filtro $label",
+                contentDescription = strings.getString(R.string.text_remove_filter_1_s, label),
                 modifier = Modifier.size(16.dp),
             )
         },
@@ -218,11 +224,12 @@ private fun ActiveChip(label: String, onRemove: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SortSheet(current: SortOrder, onPick: (SortOrder) -> Unit, onDismiss: () -> Unit) {
+    val strings = LocalContext.current
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        SheetHeading("Ordenar por", "A ordem da lista. Não esconde nada.")
+        SheetHeading(strings.getString(R.string.text_sort_by), strings.getString(R.string.text_changes_list_order_does_not_hide_apps))
         SortOrder.entries.forEach { order ->
             ChoiceRow(
-                label = order.label,
+                label = strings.getString(order.labelRes),
                 selected = current == order,
                 onClick = {
                     onPick(order)
@@ -244,6 +251,7 @@ private fun FilterSheet(
     onClear: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val strings = LocalContext.current
     // Quantas apps sobram com o que está escolhido neste momento: o botão de fechar
     // é a resposta, em vez de obrigar a fechar para contar.
     val remaining = remember(state.rows, state.category, state.filter, state.requirement) {
@@ -257,25 +265,25 @@ private fun FilterSheet(
         Column(modifier = Modifier.heightIn(max = 540.dp)) {
             // Keep the result count and clear action reachable while filters scroll.
             Column(modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
-                SheetHeading("Filtrar", "Combina requisitos, categoria e origem das apps.")
+                SheetHeading(strings.getString(R.string.text_filter), strings.getString(R.string.text_combine_requirements_category_and_app_origin))
 
-                SectionTitle("Requisitos", divider = false, modifier = Modifier.padding(horizontal = Space.lg))
+                SectionTitle(strings.getString(R.string.text_requirements), divider = false, modifier = Modifier.padding(horizontal = Space.lg))
                 Text(
-                    "Segundo o catálogo. Shizuku e Root incluem funcionalidades opcionais.",
+                    strings.getString(R.string.text_according_to_the_catalogue_shizuku_and_root),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = Space.lg),
                 )
                 Column(modifier = Modifier.padding(horizontal = Space.lg)) {
                     ChoiceRow(
-                        label = "Todas",
+                        label = strings.getString(R.string.text_all_apps),
                         selected = state.requirement == null,
                         onClick = { onRequirement(null) },
                         padding = false,
                     )
                     RequirementFilter.entries.forEach { requirement ->
                         ChoiceRow(
-                            label = requirement.label,
+                            label = strings.getString(requirement.labelRes),
                             detail = "${state.rows.count { it.app.matchesCatalogueFilters(state.category, state.filter, requirement) }}",
                             selected = state.requirement == requirement,
                             onClick = { onRequirement(if (state.requirement == requirement) null else requirement) },
@@ -284,7 +292,7 @@ private fun FilterSheet(
                     }
                 }
 
-                SectionTitle("Categorias", modifier = Modifier.padding(horizontal = Space.lg))
+                SectionTitle(strings.getString(R.string.text_categories), modifier = Modifier.padding(horizontal = Space.lg))
                 FlowRow(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -295,7 +303,7 @@ private fun FilterSheet(
                     FilterChip(
                         selected = state.category == null,
                         onClick = { onCategory(null) },
-                        label = { Text("Todas") },
+                        label = { Text(strings.getString(R.string.text_all_apps)) },
                     )
                     state.categories.forEach { category ->
                         FilterChip(
@@ -306,16 +314,16 @@ private fun FilterSheet(
                                 onCategory(if (state.category == category) null else category)
                             },
                             label = {
-                                Text("${categoryLabel(category)} ${state.categoryCounts[category] ?: 0}")
+                                Text("${categoryLabel(category).asString(strings)} ${state.categoryCounts[category] ?: 0}")
                             },
                         )
                     }
                 }
 
-                SectionTitle("Mostrar", modifier = Modifier.padding(horizontal = Space.lg))
+                SectionTitle(strings.getString(R.string.text_show), modifier = Modifier.padding(horizontal = Space.lg))
                 Column(modifier = Modifier.padding(horizontal = Space.lg)) {
                     ChoiceRow(
-                        label = "Tudo",
+                        label = strings.getString(R.string.text_all),
                         detail = "${state.rows.size}",
                         selected = state.filter == null,
                         onClick = { onFilter(null) },
@@ -325,7 +333,7 @@ private fun FilterSheet(
                         .filter { (state.filterCounts[it] ?: 0) > 0 }
                         .forEach { entry ->
                             ChoiceRow(
-                                label = entry.label,
+                                label = strings.getString(entry.labelRes),
                                 detail = "${state.filterCounts[entry] ?: 0}",
                                 selected = state.filter == entry,
                                 onClick = { onFilter(if (state.filter == entry) null else entry) },
@@ -345,10 +353,10 @@ private fun FilterSheet(
                 OutlinedButton(
                     onClick = onClear,
                     enabled = state.category != null || state.filter != null || state.requirement != null,
-                ) { Text("Limpar") }
+                ) { Text(strings.getString(R.string.text_clear)) }
                 Spacer(Modifier.weight(1f))
                 Button(onClick = onDismiss) {
-                    Text(if (remaining == 1) "Ver 1 app" else "Ver $remaining apps")
+                    Text(strings.resources.getQuantityString(R.plurals.view_app_count, remaining, remaining))
                 }
             }
             Spacer(Modifier.height(Space.xl))

@@ -1,5 +1,8 @@
 package dev.montra.install
 
+import dev.montra.util.asString
+import dev.montra.R
+import dev.montra.util.UiText
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -41,7 +44,7 @@ sealed interface InstallState {
     /** Keep the system action so leaving its dialog does not strand the install. */
     data class AwaitingUser(val confirmation: PendingIntent? = null) : InstallState
     data class Installed(val versionName: String?) : InstallState
-    data class Failed(val reason: String) : InstallState
+    data class Failed(val reason: UiText) : InstallState
 }
 
 /**
@@ -99,7 +102,7 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
         val confirmation = state.confirmation ?: return
         runCatching { confirmation.send() }.onFailure {
             cancelPendingInstall(appId)
-            setState(appId, InstallState.Failed("Não foi possível abrir o instalador. Tenta de novo."))
+            setState(appId, InstallState.Failed(UiText.Resource(R.string.installer_unavailable)))
         }
     }
 
@@ -151,7 +154,7 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
                 }
             ) {
                 is ApkVerifier.Result.Rejected -> {
-                    Log.e("${request.appId}: verificação falhou — ${result.reason}")
+                    Log.e("${request.appId}: verificação falhou — ${result.reason.asString(context)}")
                     downloaded.file.delete()
                     setState(request.appId, InstallState.Failed(result.reason))
                     return
@@ -177,7 +180,7 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
             Log.e("${request.appId}: instalação falhou", error)
             setState(
                 request.appId,
-                InstallState.Failed(error.message ?: error::class.simpleName ?: "falha desconhecida"),
+                InstallState.Failed(UiText.Resource(R.string.install_unknown)),
             )
         }
     }
@@ -216,7 +219,7 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
             Log.e("${request.appId}: o sistema recusou a sessão de instalação", error)
             setState(
                 request.appId,
-                InstallState.Failed(error.message ?: "o sistema recusou a sessão de instalação"),
+                InstallState.Failed(UiText.Resource(R.string.install_unknown)),
             )
         } finally {
             apk.delete()
@@ -252,9 +255,9 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
                     InstallState.AwaitingUser(action)
                 } else {
                     runCatching { context.packageManager.packageInstaller.abandonSession(sessionId) }
-                    InstallState.Failed("Não foi possível abrir o instalador. Tenta de novo.")
+                    InstallState.Failed(UiText.Resource(R.string.installer_unavailable))
                 }
-                else -> InstallState.Failed(message ?: "instalação recusada pelo sistema (código $status)")
+                else -> InstallState.Failed(UiText.Resource(R.string.install_system_rejected, listOf(status)))
             },
         )
         return true

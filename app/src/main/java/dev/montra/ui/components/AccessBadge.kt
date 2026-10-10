@@ -1,5 +1,7 @@
 package dev.montra.ui.components
 
+import androidx.compose.ui.platform.LocalContext
+import dev.montra.util.asString
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -20,6 +22,7 @@ import dev.montra.ui.theme.Space
 
 @Composable
 fun AccessBadge(access: AccessRequirements) {
+    val strings = LocalContext.current
     val color = if (access.isRequired) MaterialTheme.colorScheme.tertiary
         else MaterialTheme.colorScheme.onSurfaceVariant
     Surface(color = color.copy(alpha = 0.10f), shape = RoundedCornerShape(Space.xs)) {
@@ -29,7 +32,7 @@ fun AccessBadge(access: AccessRequirements) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(Icons.Filled.Key, contentDescription = null, tint = color, modifier = Modifier.size(14.dp))
-            Text(access.label, style = MaterialTheme.typography.labelMedium, color = color)
+            Text(access.label.asString(strings), style = MaterialTheme.typography.labelMedium, color = color)
         }
     }
 }

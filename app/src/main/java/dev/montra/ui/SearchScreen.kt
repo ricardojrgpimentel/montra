@@ -1,5 +1,8 @@
 package dev.montra.ui
 
+import androidx.compose.ui.platform.LocalContext
+import dev.montra.R
+import dev.montra.util.asString
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,6 +55,7 @@ fun SearchScreen(
     onAuthorize: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val strings = LocalContext.current
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
 
@@ -73,7 +77,7 @@ fun SearchScreen(
                 .fillMaxWidth()
                 .padding(horizontal = Space.lg, vertical = Space.md)
                 .focusRequester(focusRequester),
-            placeholder = { Text("Nome, etiqueta ou pacote") },
+            placeholder = { Text(strings.getString(R.string.text_name_tag_or_package)) },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             trailingIcon = {
                 if (query.isNotEmpty()) {
@@ -81,7 +85,7 @@ fun SearchScreen(
                         onClear()
                         keyboard?.hide()
                     }) {
-                        Icon(Icons.Filled.Close, contentDescription = "Limpar")
+                        Icon(Icons.Filled.Close, contentDescription = strings.getString(R.string.text_clear))
                     }
                 }
             },
@@ -91,7 +95,7 @@ fun SearchScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             when {
                 query.isBlank() -> Results(
-                    title = "Mais descarregadas",
+                    title = strings.getString(R.string.text_most_downloaded),
                     rows = suggestions,
                     state = state,
                     onRefresh = onRefresh,
@@ -108,13 +112,12 @@ fun SearchScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
-                        text = "Nada encontrado para \"$query\".",
+                        text = strings.getString(R.string.text_nothing_found_for_1_s, query),
                         style = MaterialTheme.typography.titleSmall,
                         textAlign = TextAlign.Center,
                     )
                     Text(
-                        text = "Procura por nome, resumo, autor, etiqueta ou nome do pacote — " +
-                            "por exemplo \"emulador\" ou \"org.fdroid\".",
+                        text = strings.getString(R.string.text_search_by_name_summary_author_tag_or),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -123,7 +126,7 @@ fun SearchScreen(
                 }
 
                 else -> Results(
-                    title = if (results.size == 1) "1 resultado" else "${results.size} resultados",
+                    title = strings.resources.getQuantityString(R.plurals.result_count, results.size, results.size),
                     rows = results,
                     state = state,
                     onRefresh = onRefresh,

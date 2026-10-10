@@ -1,5 +1,6 @@
 package dev.montra.data
 
+import dev.montra.R
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -21,12 +22,12 @@ private val Context.dataStore by preferencesDataStore(name = "montra")
  * de saber que saiu uma versão nova era abrir a app e puxar a lista. A verificação
  * usa o ETag, portanto quando nada mudou custa um 304 e uns bytes.
  */
-enum class AutoRefresh(val minutes: Int, val label: String) {
-    OFF(0, "Desligado"),
-    QUARTER(15, "A cada 15 minutos"),
-    HOUR(60, "A cada hora"),
-    THREE_HOURS(180, "A cada 3 horas"),
-    DAILY(1440, "Uma vez por dia"),
+enum class AutoRefresh(val minutes: Int, val labelRes: Int) {
+    OFF(0, R.string.off),
+    QUARTER(15, R.string.text_every_15_minutes),
+    HOUR(60, R.string.text_every_hour),
+    THREE_HOURS(180, R.string.text_every_3_hours),
+    DAILY(1440, R.string.text_once_a_day),
     ;
 
     val enabled: Boolean get() = minutes > 0
@@ -44,10 +45,10 @@ enum class AutoRefresh(val minutes: Int, val label: String) {
  * dela e não do papel de parede. Claro e escuro são outra coisa: é a luz da sala
  * onde o telemóvel está, e sobre isso quem manda é quem está a segurar nele.
  */
-enum class ThemeMode(val label: String) {
-    SYSTEM("Sistema"),
-    LIGHT("Claro"),
-    DARK("Escuro"),
+enum class ThemeMode(val labelRes: Int) {
+    SYSTEM(R.string.text_system),
+    LIGHT(R.string.text_light),
+    DARK(R.string.text_dark),
     ;
 
     /** Traduz a escolha num "usar o tema escuro?", dado o que o sistema diz. */

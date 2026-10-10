@@ -1,5 +1,7 @@
 package dev.montra.data.model
 
+import dev.montra.R
+import dev.montra.util.UiText
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -22,6 +24,7 @@ data class IndexApp(
     val id: String,
     val name: String,
     val summary: String,
+    val summaryTranslations: Map<String, String> = emptyMap(),
     val description: Map<String, String> = emptyMap(),
     val packageName: String,
     val license: String,
@@ -65,14 +68,11 @@ data class IndexApp(
         return licenseNote["en"] ?: licenseNote.values.firstOrNull()
     }
 
-    fun descriptionFor(languageTag: String?): String? {
-        if (languageTag != null) {
-            description[languageTag]?.let { return it }
-            val base = languageTag.substringBefore('-')
-            description[base]?.let { return it }
-        }
-        return description["en"] ?: description.values.firstOrNull()
-    }
+    /** Exact locale, less specific tags, English, then legacy text. */
+    fun summaryFor(languageTag: String?): String = summaryTranslations.localized(languageTag) { summary }
+        ?: summary
+
+    fun descriptionFor(languageTag: String?): String? = description.localized(languageTag)
 
     /**
      * Pick the asset that matches this device.
@@ -94,6 +94,18 @@ data class IndexApp(
         }
         return assets.firstOrNull { it.abi == "universal" }
     }
+}
+
+private fun Map<String, String>.localized(languageTag: String?, englishFallback: () -> String? = { null }): String? {
+    fun text(tag: String): String? = entries.firstOrNull { it.key.equals(tag, ignoreCase = true) }
+        ?.value?.takeIf { it.isNotBlank() }
+    var tag = languageTag?.replace('_', '-')
+    while (!tag.isNullOrEmpty()) {
+        text(tag)?.let { return it }
+        tag = if ('-' in tag) tag.substringBeforeLast('-') else null
+    }
+    return text("en") ?: englishFallback()?.takeIf { it.isNotBlank() }
+        ?: values.firstOrNull { it.isNotBlank() }
 }
 
 @Serializable
@@ -170,56 +182,56 @@ val IndexJson: Json = Json {
 }
 
 /** Human-readable explanation for the anti-feature codes the index can carry. */
-fun antiFeatureLabel(code: String): String = when (code) {
-    "nonFreeNet" -> "Depende de um serviço de rede não livre"
-    "nonFreeAssets" -> "Inclui recursos não livres"
-    "nonFreeAdd" -> "Recomenda extras não livres"
-    "tracking" -> "Rastreia o utilizador"
-    "ads" -> "Contém publicidade"
-    "knownVuln" -> "Reduz a segurança do dispositivo"
-    "noSourceSince" -> "Deixou de publicar código-fonte"
-    "disabledAlgorithm" -> "Assinado com algoritmo descontinuado"
-    "upstreamNonFree" -> "Deriva de software não livre"
-    "restrictedLicense" -> "Licença restritiva: código público, mas com limitações de uso"
-    else -> code
+fun antiFeatureLabel(code: String): UiText = when (code) {
+    "nonFreeNet" -> UiText.Resource(R.string.text_depends_on_a_non_free_network_service)
+    "nonFreeAssets" -> UiText.Resource(R.string.text_includes_non_free_assets)
+    "nonFreeAdd" -> UiText.Resource(R.string.text_recommends_non_free_extras)
+    "tracking" -> UiText.Resource(R.string.text_tracks_users)
+    "ads" -> UiText.Resource(R.string.text_contains_advertising)
+    "knownVuln" -> UiText.Resource(R.string.text_reduces_device_security)
+    "noSourceSince" -> UiText.Resource(R.string.text_no_longer_publishes_source_code)
+    "disabledAlgorithm" -> UiText.Resource(R.string.text_signed_with_a_deprecated_algorithm)
+    "upstreamNonFree" -> UiText.Resource(R.string.text_based_on_non_free_software)
+    "restrictedLicense" -> UiText.Resource(R.string.text_restricted_licence_public_source_code_with_usage)
+    else -> UiText.Literal(code)
 }
 
-/** Portuguese labels for the fixed category taxonomy the index uses. */
-fun categoryLabel(code: String): String = when (code) {
-    "ai" -> "IA"
-    "browser" -> "Navegador"
-    "communication" -> "Comunicação"
-    "development" -> "Desenvolvimento"
-    "education" -> "Educação"
-    "emulators" -> "Emuladores"
-    "finance" -> "Finanças"
-    "games" -> "Jogos"
-    "graphics" -> "Imagem"
-    "health" -> "Saúde"
-    "maps" -> "Mapas"
-    "media" -> "Média"
-    "multimedia" -> "Multimédia"
-    "navigation" -> "Navegação"
-    "notes" -> "Notas"
-    "privacy" -> "Privacidade"
-    "productivity" -> "Produtividade"
-    "reading" -> "Leitura"
-    "security" -> "Segurança"
-    "store" -> "Lojas"
-    "system" -> "Sistema"
-    "tools" -> "Ferramentas"
-    "utilities" -> "Utilidades"
-    "weather" -> "Meteorologia"
-    else -> code
+/** Localized labels for the fixed category taxonomy the index uses. */
+fun categoryLabel(code: String): UiText = when (code) {
+    "ai" -> UiText.Resource(R.string.ai)
+    "browser" -> UiText.Resource(R.string.browser)
+    "communication" -> UiText.Resource(R.string.text_communication)
+    "development" -> UiText.Resource(R.string.development)
+    "education" -> UiText.Resource(R.string.text_education)
+    "emulators" -> UiText.Resource(R.string.emulators)
+    "finance" -> UiText.Resource(R.string.text_finance)
+    "games" -> UiText.Resource(R.string.games)
+    "graphics" -> UiText.Resource(R.string.graphics)
+    "health" -> UiText.Resource(R.string.text_health)
+    "maps" -> UiText.Resource(R.string.maps)
+    "media" -> UiText.Resource(R.string.text_media)
+    "multimedia" -> UiText.Resource(R.string.text_multimedia)
+    "navigation" -> UiText.Resource(R.string.text_navigation)
+    "notes" -> UiText.Resource(R.string.notes)
+    "privacy" -> UiText.Resource(R.string.privacy)
+    "productivity" -> UiText.Resource(R.string.productivity)
+    "reading" -> UiText.Resource(R.string.reading)
+    "security" -> UiText.Resource(R.string.text_security)
+    "store" -> UiText.Resource(R.string.store)
+    "system" -> UiText.Resource(R.string.text_system)
+    "tools" -> UiText.Resource(R.string.tools)
+    "utilities" -> UiText.Resource(R.string.utilities)
+    "weather" -> UiText.Resource(R.string.weather)
+    else -> UiText.Literal(code)
 }
 
 /** Human label for the app's lifecycle status. */
-fun statusLabel(status: String): String = when (status) {
-    "active" -> "mantida"
-    "unmaintained" -> "sem manutenção"
-    "archived" -> "arquivada"
-    "deprecated" -> "descontinuada"
-    else -> status
+fun statusLabel(status: String): UiText = when (status) {
+    "active" -> UiText.Resource(R.string.maintained)
+    "unmaintained" -> UiText.Resource(R.string.text_unmaintained)
+    "archived" -> UiText.Resource(R.string.archived)
+    "deprecated" -> UiText.Resource(R.string.deprecated)
+    else -> UiText.Literal(status)
 }
 
 /**

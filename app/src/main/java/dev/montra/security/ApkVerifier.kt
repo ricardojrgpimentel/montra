@@ -1,5 +1,7 @@
 package dev.montra.security
 
+import dev.montra.R
+import dev.montra.util.UiText
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -34,7 +36,7 @@ object ApkVerifier {
 
     sealed interface Result {
         data class Verified(val sha256: String, val certSha256: String?) : Result
-        data class Rejected(val reason: String) : Result
+        data class Rejected(val reason: UiText) : Result
     }
 
     /**
@@ -60,23 +62,21 @@ object ApkVerifier {
         expectedSha256: String,
         expectedCertFingerprint: String?,
     ): Result {
-        if (!file.isFile || file.length() == 0L) return Result.Rejected("ficheiro vazio ou inexistente")
+        if (!file.isFile || file.length() == 0L) return Result.Rejected(UiText.Resource(R.string.apk_empty))
 
         val actualSha = sha256(file)
         if (!actualSha.equals(expectedSha256, ignoreCase = true)) {
             return Result.Rejected(
-                "O SHA-256 do ficheiro não corresponde ao índice.\n" +
-                    "esperado: $expectedSha256\nobtido:   $actualSha",
+                UiText.Resource(R.string.apk_hash_mismatch, listOf(expectedSha256, actualSha)),
             )
         }
 
         val certSha = signingCertificateSha256(context, file)
-            ?: return Result.Rejected("não foi possível ler o certificado de assinatura do APK")
+            ?: return Result.Rejected(UiText.Resource(R.string.apk_certificate_unreadable))
 
         if (expectedCertFingerprint != null && !fingerprintsMatch(expectedCertFingerprint, certSha)) {
             return Result.Rejected(
-                "O APK está assinado por uma chave diferente da fixada no índice.\n" +
-                    "índice:  ${expectedCertFingerprint.hexToColon()}\nno APK:  ${certSha.hexToColon()}",
+                UiText.Resource(R.string.apk_certificate_mismatch, listOf(expectedCertFingerprint.hexToColon(), certSha.hexToColon())),
             )
         }
 

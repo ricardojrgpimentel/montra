@@ -1,5 +1,6 @@
 package dev.montra.data
 
+import dev.montra.util.ptText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -30,12 +31,12 @@ class RefreshFailureTest {
         val failure = classify(UnknownHostException("raw.githubusercontent.com"), online = false)
 
         assertTrue(failure is RefreshFailure.Offline)
-        assertTrue(failure.message.startsWith("Sem ligação à internet"))
+        assertTrue(failure.message.ptText().startsWith("Sem ligação à internet"))
         assertTrue(failure.reportable)
         // A mensagem é sobre o estado do dispositivo, não sobre o host: o nome do
         // host não pode aparecer, senão estamos outra vez a acusar o GitHub.
-        assertFalse(failure.message.contains("raw.githubusercontent.com"))
-        assertFalse(failure.message.contains("nodename"))
+        assertFalse(failure.message.ptText().contains("raw.githubusercontent.com"))
+        assertFalse(failure.message.ptText().contains("nodename"))
     }
 
     @Test
@@ -43,10 +44,10 @@ class RefreshFailureTest {
         val comCopia = classify(UnknownHostException("x"), online = false, copy = true)
         val semCopia = classify(UnknownHostException("x"), online = false, copy = false)
 
-        assertTrue(comCopia.message.contains("catálogo verificado"))
+        assertTrue(comCopia.message.ptText().contains("catálogo verificado"))
         assertFalse(
             "não há catálogo nenhum para mostrar: prometê-lo seria falso",
-            semCopia.message.contains("catálogo verificado"),
+            semCopia.message.ptText().contains("catálogo verificado"),
         )
     }
 
@@ -55,7 +56,7 @@ class RefreshFailureTest {
         val failure = classify(ConnectException("failed to connect"), online = true)
 
         assertTrue(failure is RefreshFailure.Server)
-        assertFalse(failure.message.contains("Sem ligação"))
+        assertFalse(failure.message.ptText().contains("Sem ligação"))
         assertTrue(failure.reportable)
     }
 
@@ -73,10 +74,10 @@ class RefreshFailureTest {
         val failure = classify(SSLHandshakeException("chain validation failed"), online = true)
 
         assertTrue(failure is RefreshFailure.Tls)
-        assertFalse(failure.message.contains("Sem ligação"))
+        assertFalse(failure.message.ptText().contains("Sem ligação"))
         assertTrue(failure.reportable)
         // E a causa técnica não fica no ecrã: "chain validation failed" não é uma frase.
-        assertFalse(failure.message.contains("chain"))
+        assertFalse(failure.message.ptText().contains("chain"))
     }
 
     @Test
@@ -86,12 +87,12 @@ class RefreshFailureTest {
         val limite = classify(IndexHttpException(429, "https://exemplo.test/index.json"), online = true)
 
         assertTrue(naoExiste is RefreshFailure.Server)
-        assertEquals("O catálogo não existe no endereço configurado", naoExiste.message)
-        assertEquals("O servidor do catálogo está com problemas", avaria.message)
-        assertTrue(limite.message.contains("limitar"))
+        assertEquals("O catálogo não existe no endereço configurado", naoExiste.message.ptText())
+        assertEquals("O servidor do catálogo está com problemas", avaria.message.ptText())
+        assertTrue(limite.message.ptText().contains("limitar"))
         // O código é informação, não ruído: só os que têm frase própria é que o dispensam.
         val outro = classify(IndexHttpException(418, "https://exemplo.test/index.json"), online = true)
-        assertTrue(outro.message.contains("418"))
+        assertTrue(outro.message.ptText().contains("418"))
     }
 
     @Test
@@ -101,7 +102,7 @@ class RefreshFailureTest {
         val failure = classify(UnknownHostException("x"), online = null)
 
         assertTrue(failure is RefreshFailure.Unexplained)
-        assertFalse(failure.message.contains("Sem ligação"))
+        assertFalse(failure.message.ptText().contains("Sem ligação"))
     }
 
     @Test
@@ -119,7 +120,7 @@ class RefreshFailureTest {
         // Quem depura a partir de um log de release precisa do tipo e da mensagem.
         assertTrue(failure.reason.contains("UnknownHostException"))
         assertTrue(failure.reason.contains("raw.githubusercontent.com"))
-        assertNotEquals(failure.reason, failure.message)
+        assertNotEquals(failure.reason, failure.message.ptText())
     }
 
     @Test
@@ -130,6 +131,6 @@ class RefreshFailureTest {
         )
 
         assertTrue(failure is RefreshFailure.InvalidIndexUrl)
-        assertEquals("O endereço do catálogo não é válido (tem de ser HTTPS)", failure.message)
+        assertEquals("O endereço do catálogo não é válido (tem de ser HTTPS)", failure.message.ptText())
     }
 }

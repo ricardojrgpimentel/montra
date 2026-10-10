@@ -1,5 +1,8 @@
 package dev.montra.ui
 
+import android.content.Context
+import dev.montra.R
+import dev.montra.util.asString
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -25,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import dev.montra.data.model.IndexApp
@@ -54,6 +58,8 @@ fun AppRowItem(
     onAuthorize: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val strings = LocalContext.current
+    val language = LocalConfiguration.current.locales[0].toLanguageTag()
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -78,7 +84,7 @@ fun AppRowItem(
                 )
                 Spacer(Modifier.height(Space.xs))
                 Text(
-                    text = row.app.summary,
+                    text = row.app.summaryFor(language),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
@@ -100,7 +106,7 @@ fun AppRowItem(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
                     )
-                    val badge = statusBadge(row)
+                    val badge = statusBadge(row, strings)
                     if (badge != null) {
                         Spacer(Modifier.width(Space.sm))
                         Badge(badge.first, badge.second)
@@ -131,22 +137,23 @@ fun AppRowItem(
  * dos cinco que quem entra nesta loja já sabe — e os filtros continuam a
  * respondê-lo. O que não se sabe, e muda a decisão, é que a app parou.
  */
-private fun statusBadge(row: AppRow): Pair<String, androidx.compose.ui.graphics.Color>? = when {
-    row.incompatible != null -> "não corre aqui" to androidx.compose.ui.graphics.Color(0xFFBA1A1A)
-    row.signatureConflict -> "assinatura diferente" to androidx.compose.ui.graphics.Color(0xFFBA1A1A)
+private fun statusBadge(row: AppRow, strings: Context): Pair<String, androidx.compose.ui.graphics.Color>? = when {
+    row.incompatible != null -> strings.getString(R.string.text_incompatible_device) to androidx.compose.ui.graphics.Color(0xFFBA1A1A)
+    row.signatureConflict -> strings.getString(R.string.text_different_signature) to androidx.compose.ui.graphics.Color(0xFFBA1A1A)
     // Uma licença restritiva é mais importante de saber do que a ausência na Play Store.
-    row.app.hasRestrictedLicense() -> "licença restritiva" to androidx.compose.ui.graphics.Color(0xFF8A5A00)
+    row.app.hasRestrictedLicense() -> strings.getString(R.string.text_restricted_licence) to androidx.compose.ui.graphics.Color(0xFF8A5A00)
     // "no catálogo", e não "sem atualizações": o catálogo só vê o GitHub, e uma app
     // que publique noutro sítio não deixa de ser atualizada por isso.
-    row.staleRelease -> "sem lançamentos" to androidx.compose.ui.graphics.Color(0xFF8A5A00)
+    row.staleRelease -> strings.getString(R.string.text_no_recent_releases) to androidx.compose.ui.graphics.Color(0xFF8A5A00)
     // Só o que o botão não consegue dizer. "atualizar" e "instalada" saíam também na
     // ação, à direita, e o mesmo texto repetido no mesmo contentor não acrescenta.
-    row.app.playStore?.present == false -> "fora da Play" to androidx.compose.ui.graphics.Color(0xFF3B6470)
+    row.app.playStore?.present == false -> strings.getString(R.string.text_outside_play) to androidx.compose.ui.graphics.Color(0xFF3B6470)
     else -> null
 }
 
 @Composable
 private fun InstallProgress(row: AppRow) {
+    val strings = LocalContext.current
     when (val state = row.installState) {
         is InstallState.Downloading -> {
             Spacer(Modifier.height(Space.sm))
@@ -158,7 +165,7 @@ private fun InstallProgress(row: AppRow) {
         is InstallState.Failed -> {
             Spacer(Modifier.height(Space.xs))
             Text(
-                text = state.reason.lineSequence().first(),
+                text = state.reason.asString(strings).lineSequence().first(),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.error,
                 maxLines = 2,
@@ -176,13 +183,14 @@ private fun InstallAction(
     onInstall: () -> Unit,
     onAuthorize: () -> Unit,
 ) {
+    val strings = LocalContext.current
     if (row.incompatible != null) {
         // Nada a fazer aqui: dizer "Instalar" seria mentir.
         return
     }
     if (needsPermission && row.installState is InstallState.Idle) {
         // O botão passa a ser a solução, não um caminho para um erro.
-        TextButton(onClick = onAuthorize) { Text("Autorizar") }
+        TextButton(onClick = onAuthorize) { Text(strings.getString(R.string.text_allow)) }
         return
     }
     when (row.installState) {
@@ -193,13 +201,13 @@ private fun InstallAction(
             CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
         }
         // O instalador do sistema está a pedir confirmação: a ação já não é nossa.
-        is InstallState.AwaitingUser -> Badge("no instalador", MaterialTheme.colorScheme.tertiary)
-        InstallState.NeedsPermission -> TextButton(onClick = onAuthorize) { Text("Autorizar") }
-        is InstallState.Installed -> Badge("instalada", MaterialTheme.colorScheme.primary)
-        is InstallState.Failed -> TextButton(onClick = onInstall) { Text("Repetir") }
+        is InstallState.AwaitingUser -> Badge(strings.getString(R.string.text_in_installer), MaterialTheme.colorScheme.tertiary)
+        InstallState.NeedsPermission -> TextButton(onClick = onAuthorize) { Text(strings.getString(R.string.text_allow)) }
+        is InstallState.Installed -> Badge(strings.getString(R.string.installed_badge), MaterialTheme.colorScheme.primary)
+        is InstallState.Failed -> TextButton(onClick = onInstall) { Text(strings.getString(R.string.text_retry)) }
         InstallState.Idle -> when {
-            !row.isInstalled -> TextButton(onClick = onInstall, enabled = row.canInstall) { Text("Instalar") }
-            row.updateAvailable -> TextButton(onClick = onInstall, enabled = row.canInstall) { Text("Atualizar") }
+            !row.isInstalled -> TextButton(onClick = onInstall, enabled = row.canInstall) { Text(strings.getString(R.string.text_install)) }
+            row.updateAvailable -> TextButton(onClick = onInstall, enabled = row.canInstall) { Text(strings.getString(R.string.text_update)) }
             // Instalada e atual: a ação útil é abri-la, não repetir um distintivo.
             else -> {
                 val context = LocalContext.current
@@ -208,7 +216,7 @@ private fun InstallAction(
                         InstallManager.launchIntent(context, row.app.packageName)
                             ?.let { intent -> runCatching { context.startActivity(intent) } }
                     },
-                ) { Text("Abrir") }
+                ) { Text(strings.getString(R.string.text_open)) }
             }
         }
     }

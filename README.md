@@ -281,7 +281,7 @@ O estado de cada app (`Idle`, `Downloading`, `Verifying`, `AwaitingUser`,
 | --- | --- |
 | `security/IndexVerifierTest` | assinatura válida aceite; um byte alterado, outra chave ou base64 malformado recusados; key id estável |
 | `data/RealIndexTest` | **os bytes reais do índice incluído na app verificam com o verificador real**; key id bate certo; bytes adulterados recusados; todas as apps têm release, sha256, certificado e ícone relativo |
-| `data/IndexModelTest` | campos desconhecidos ignorados; fallback de idioma; escolha de ABI |
+| `data/IndexModelTest` | campos desconhecidos ignorados; descrição original; escolha de ABI |
 | `data/RefreshFailureTest` | **um erro técnico nunca chega ao ecrã**: sem rede a mensagem fala do telemóvel e não do host, sem cópia verificada não promete catálogo, um erro de certificado não se disfarça de offline, e um HTML de portal cativo fica no log |
 | `androidTest/CatalogueNetworkSmokeTest` | **no dispositivo, no processo da app**: descarrega o índice publicado por HTTPS, verifica a assinatura com a chave do APK, guarda em cache, e recusa um índice adulterado (com uma fonte hostil injetada); o `InstallRequest` sobrevive à passagem por Intent sem perder o sha256 nem o certificado; e cancelar a meio de um download para o pipeline, deixa o estado em `Idle` e não deixa ficheiros parciais |
 | `androidTest/InstallLifecycleTest` | sessões e notificações reais, sem instalar apps: cancelar permite repetir, callbacks antigos são ignorados, a notificação conserva a confirmação, cancelar abandona a sessão, um Intent ausente dá uma falha recuperável e o sucesso substitui a notificação pendente |
@@ -341,3 +341,23 @@ ficha explica os requisitos antes de instalar. Não é feita deteção de root o
 Shizuku no dispositivo. Sem metadados, não há chip; isso significa apenas que o
 catálogo não declarou requisitos especiais. A publicação e classificação estão
 em `montra-index/docs/ADD_APP.md`.
+
+## Idiomas
+
+A interface está disponível em português, inglês, espanhol e francês. Por omissão
+segue as preferências de idioma do sistema, com inglês como alternativa. Em
+**Definições → Idioma**, escolhe uma língua ou volta a **Idioma do sistema**.
+A escolha fica guardada pelo AppCompat; no Android 13+ também aparece nas
+definições de idioma por aplicação do Android.
+
+Os textos da interface vivem em `app/src/main/res/values*/strings.xml`. Mensagens
+guardadas em estado usam `UiText`, para serem resolvidas no idioma atual ao serem
+mostradas, incluindo depois de trocar de língua durante uma transferência.
+
+O catálogo exige um resumo inglês em `summary` e uma descrição inglesa em
+`description.en`. A língua nativa é preservada quando difere do inglês; outras
+traduções podem ser acrescentadas por PR em `summaryTranslations` e `description`,
+com etiquetas BCP-47, por exemplo `pt` ou `pt-BR`. A lista e a ficha escolhem a
+tradução do idioma atual, depois a língua base e finalmente inglês. Índices antigos
+continuam compatíveis. A pesquisa também encontra os resumos traduzidos.
+Changelogs mantêm o texto publicado pelo projeto de origem.
