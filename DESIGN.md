@@ -129,6 +129,12 @@ adaptativo de 108dp, e o símbolo fica dentro do círculo de segurança de 66dp.
 e localmente. A marca aparece no cabeçalho Apps e no Sobre, acompanhada pelo
 nome em texto nativo, com a cor do tema.
 
+A variante debug chama-se **Montra Debug** e usa fundo azul com um distintivo
+**DBG** abaixo da prateleira, dentro do círculo de segurança, como no ACCA.
+A versão monocromática inclui o mesmo distintivo em recorte, para continuar
+identificável com ícones temáticos. Os recursos ficam em `app/src/debug/res` e
+são gerados pelo mesmo `design/stitch.py`; a release conserva a identidade final.
+
 ### Identidade anterior (referência)
 
 O ícone é uma montra em dois tempos: **três apps expostas numa prateleira** e, por

@@ -4,10 +4,14 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.content.pm.PackageManager
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import dev.montra.MainActivity
 import dev.montra.R
 import dev.montra.util.formatBytes
@@ -69,14 +73,47 @@ object InstallNotifications {
             .setOngoing(true)
             .build()
 
-    fun awaitingUser(context: Context, request: InstallRequest): Notification =
+    fun awaitingUser(
+        context: Context,
+        request: InstallRequest,
+        confirmation: PendingIntent,
+    ): Notification =
         base(context, request)
+            .setContentIntent(confirmation)
             .setContentTitle(context.getString(R.string.notification_confirm, request.appName))
             .setContentText(context.getString(R.string.notification_confirm_detail))
             .setProgress(0, 0, false)
             .setOngoing(true)
             .setAutoCancel(false)
+            .addAction(0, context.getString(R.string.action_cancel), cancelIntent(context, request))
             .build()
+
+    fun dismiss(context: Context, appId: String) {
+        NotificationManagerCompat.from(context).cancel(appId, NOTIFICATION_ID)
+    }
+
+    /** The receiver owns updates after the download service has stopped. */
+    fun showResult(context: Context, request: InstallRequest, state: InstallState) {
+        val notification = when (state) {
+            is InstallState.AwaitingUser -> awaitingUser(context, request, state.confirmation ?: return)
+            is InstallState.Installed -> installed(context, request)
+            is InstallState.Failed -> failed(context, request, state.reason)
+            InstallState.NeedsPermission -> failed(context, request, context.getString(R.string.notification_needs_permission))
+            else -> {
+                dismiss(context, request.appId)
+                return
+            }
+        }
+        ensureChannel(context)
+        val allowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        if (allowed) {
+            runCatching {
+                NotificationManagerCompat.from(context).notify(request.appId, NOTIFICATION_ID, notification)
+            }
+        }
+    }
 
     fun installed(context: Context, request: InstallRequest): Notification =
         base(context, request)

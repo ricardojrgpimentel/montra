@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.os.SystemClock
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
@@ -36,15 +37,22 @@ import kotlinx.coroutines.launch
  */
 class InstallService : Service() {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var job: Job? = null
     private var current: InstallRequest? = null
+    private var lastProgressNotification = 0L
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_CANCEL) {
-            cancelCurrent()
+            val appId = intent.getStringExtra(InstallRequest.EXTRA_APP_ID)
+            if (appId != null && current?.appId == appId) {
+                cancelCurrent()
+            } else if (appId != null) {
+                InstallManager.of(this).cancelPendingInstall(appId)
+                if (current == null) stopSelf(startId)
+            }
             return START_NOT_STICKY
         }
 
@@ -55,8 +63,13 @@ class InstallService : Service() {
             return START_NOT_STICKY
         }
 
+        // The downloader is shared: do not let two pipelines cancel or overwrite each other.
+        if (current != null) return START_NOT_STICKY
+
         InstallNotifications.ensureChannel(this)
+        InstallNotifications.dismiss(this, request.appId)
         current = request
+        lastProgressNotification = SystemClock.elapsedRealtime()
 
         // Must happen fast after startForegroundService, so this notification is
         // built synchronously and shows "0 bytes" until the first progress event.
@@ -94,11 +107,18 @@ class InstallService : Service() {
     }
 
     private fun notify(request: InstallRequest, state: InstallState) {
+        // A fast download can emit hundreds of chunks per second. Android drops
+        // notification updates above its rate limit, including the final action.
+        if (state is InstallState.Downloading) {
+            val now = SystemClock.elapsedRealtime()
+            if (now - lastProgressNotification < 500) return
+            lastProgressNotification = now
+        }
         val notification = when (state) {
             is InstallState.Downloading ->
                 InstallNotifications.progress(this, request, state.bytes, state.total)
             is InstallState.Verifying -> InstallNotifications.verifying(this, request)
-            is InstallState.AwaitingUser -> InstallNotifications.awaitingUser(this, request)
+            is InstallState.AwaitingUser -> return // The result receiver posts the actionable notification.
             is InstallState.NeedsPermission -> InstallNotifications.failed(
                 this,
                 request,
@@ -130,26 +150,12 @@ class InstallService : Service() {
 
     private fun finish(request: InstallRequest) {
         val state = InstallManager.of(this).stateOf(request.appId)
-        val final = when (state) {
-            is InstallState.Installed -> InstallNotifications.installed(this, request)
-            is InstallState.Failed -> InstallNotifications.failed(this, request, state.reason)
-            is InstallState.NeedsPermission -> InstallNotifications.failed(
-                this,
-                request,
-                getString(R.string.notification_needs_permission),
-            )
-            // Left waiting for the user to confirm in the system installer: keep the
-            // notification, the system will dismiss it with the session.
-            is InstallState.AwaitingUser -> InstallNotifications.awaitingUser(this, request)
-            else -> InstallNotifications.failed(
-                this,
-                request,
-                getString(R.string.notification_cancelled),
-            )
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+        // Only the receiver has the actual confirmation action. Posting a placeholder
+        // here can race with its notification and leave a non-actionable one behind.
+        if (state !is InstallState.AwaitingUser) {
+            InstallNotifications.showResult(this, request, state)
         }
-        post(final)
-        // Detach: the final notification stays in the shade, the service does not.
-        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_DETACH)
         current = null
         stopSelf()
     }

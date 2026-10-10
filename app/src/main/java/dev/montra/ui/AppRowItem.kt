@@ -188,7 +188,7 @@ private fun InstallAction(
             CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
         }
         // O instalador do sistema está a pedir confirmação: a ação já não é nossa.
-        InstallState.AwaitingUser -> Badge("no instalador", MaterialTheme.colorScheme.tertiary)
+        is InstallState.AwaitingUser -> Badge("no instalador", MaterialTheme.colorScheme.tertiary)
         InstallState.NeedsPermission -> TextButton(onClick = onAuthorize) { Text("Autorizar") }
         is InstallState.Installed -> Badge("instalada", MaterialTheme.colorScheme.primary)
         is InstallState.Failed -> TextButton(onClick = onInstall) { Text("Repetir") }

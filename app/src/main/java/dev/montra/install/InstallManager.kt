@@ -38,8 +38,8 @@ sealed interface InstallState {
      */
     data object NeedsPermission : InstallState
 
-    /** The system installer is showing its own confirmation dialog. */
-    data object AwaitingUser : InstallState
+    /** Keep the system action so leaving its dialog does not strand the install. */
+    data class AwaitingUser(val confirmation: PendingIntent? = null) : InstallState
     data class Installed(val versionName: String?) : InstallState
     data class Failed(val reason: String) : InstallState
 }
@@ -61,12 +61,17 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
 
     private val _states = MutableStateFlow<Map<String, InstallState>>(emptyMap())
     val states: StateFlow<Map<String, InstallState>> = _states.asStateFlow()
+    private val sessions = context.getSharedPreferences("install_sessions", Context.MODE_PRIVATE)
 
     fun setState(appId: String, state: InstallState) {
         _states.update { it + (appId to state) }
     }
 
     fun stateOf(appId: String): InstallState = _states.value[appId] ?: InstallState.Idle
+
+    internal fun trackSession(appId: String, sessionId: Int) {
+        sessions.edit().putInt(appId, sessionId).commit()
+    }
 
     fun canRequestInstall(): Boolean = context.packageManager.canRequestPackageInstalls()
 
@@ -87,6 +92,26 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
 
     fun cancelDownload() {
         downloader.cancel()
+    }
+
+    fun confirmInstall(appId: String) {
+        val state = stateOf(appId) as? InstallState.AwaitingUser ?: return
+        val confirmation = state.confirmation ?: return
+        runCatching { confirmation.send() }.onFailure {
+            cancelPendingInstall(appId)
+            setState(appId, InstallState.Failed("Não foi possível abrir o instalador. Tenta de novo."))
+        }
+    }
+
+    fun cancelPendingInstall(appId: String) {
+        val sessionId = sessions.getInt(appId, -1)
+        sessions.edit().remove(appId).commit()
+        (stateOf(appId) as? InstallState.AwaitingUser)?.confirmation?.cancel()
+        if (sessionId != -1) {
+            runCatching { context.packageManager.packageInstaller.abandonSession(sessionId) }
+        }
+        setState(appId, InstallState.Idle)
+        InstallNotifications.dismiss(context, appId)
     }
 
     /**
@@ -136,7 +161,7 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
                 )
             }
 
-            setState(request.appId, InstallState.AwaitingUser)
+            setState(request.appId, InstallState.AwaitingUser())
             commit(request, downloaded.file)
         } catch (cancelled: CancellationException) {
             Log.i("${request.appId}: download cancelado")
@@ -159,6 +184,11 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
 
     private suspend fun commit(request: InstallRequest, apk: File) = withContext(Dispatchers.IO) {
         val installer = context.packageManager.packageInstaller
+        sessions.edit().remove(request.appId).commit()
+        // Also recover sessions left by an older process/version which lost its Intent.
+        installer.mySessions.filter { it.appPackageName == request.packageName }.forEach {
+            installer.abandonSession(it.sessionId)
+        }
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
             setAppPackageName(request.packageName)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -166,14 +196,14 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
             }
         }
         val sessionId = installer.createSession(params)
+        trackSession(request.appId, sessionId)
         try {
             installer.openSession(sessionId).use { session ->
                 session.openWrite("base.apk", 0, apk.length()).use { output ->
                     apk.inputStream().use { input -> input.copyTo(output) }
                     session.fsync(output)
                 }
-                val intent = Intent(context, InstallResultReceiver::class.java)
-                    .putExtra(InstallResultReceiver.EXTRA_APP_ID, request.appId)
+                val intent = request.putInto(Intent(context, InstallResultReceiver::class.java))
                     .putExtra(InstallResultReceiver.EXTRA_SESSION_ID, sessionId)
                 val flags = PendingIntent.FLAG_UPDATE_CURRENT or
                     (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0)
@@ -181,6 +211,7 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
                 session.commit(pending.intentSender)
             }
         } catch (error: Exception) {
+            sessions.edit().remove(request.appId).commit()
             runCatching { installer.abandonSession(sessionId) }
             Log.e("${request.appId}: o sistema recusou a sessão de instalação", error)
             setState(
@@ -192,16 +223,41 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
         }
     }
 
-    fun onResult(appId: String, status: Int, message: String?) {
+    fun onResult(
+        appId: String,
+        sessionId: Int,
+        status: Int,
+        message: String?,
+        confirmation: Intent? = null,
+    ): Boolean {
+        // A late/duplicate callback from a cancelled attempt must not reset a retry.
+        if (sessions.getInt(appId, -1) != sessionId || sessionId == -1) return false
         Log.i("$appId: resultado do instalador status=$status mensagem=${message ?: "-"}")
+        val action = confirmation?.let {
+            PendingIntent.getActivity(
+                context, sessionId, it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        }
+        if (status != PackageInstaller.STATUS_PENDING_USER_ACTION || action == null) {
+            sessions.edit().remove(appId).commit()
+            (stateOf(appId) as? InstallState.AwaitingUser)?.confirmation?.cancel()
+        }
         setState(
             appId,
             when (status) {
                 PackageInstaller.STATUS_SUCCESS -> InstallState.Installed(null)
-                PackageInstaller.STATUS_PENDING_USER_ACTION -> InstallState.AwaitingUser
+                PackageInstaller.STATUS_FAILURE_ABORTED -> InstallState.Idle
+                PackageInstaller.STATUS_PENDING_USER_ACTION -> if (action != null) {
+                    InstallState.AwaitingUser(action)
+                } else {
+                    runCatching { context.packageManager.packageInstaller.abandonSession(sessionId) }
+                    InstallState.Failed("Não foi possível abrir o instalador. Tenta de novo.")
+                }
                 else -> InstallState.Failed(message ?: "instalação recusada pelo sistema (código $status)")
             },
         )
+        return true
     }
 
     companion object {
@@ -266,13 +322,19 @@ class InstallResultReceiver : BroadcastReceiver() {
                 "diálogo do sistema=${confirmation != null}",
         )
 
+        val manager = InstallManager.of(context)
+        val sessionId = intent.getIntExtra(EXTRA_SESSION_ID, -1)
+        if (!manager.onResult(appId, sessionId, status, message, confirmation)) return
+        InstallRequest.from(intent)?.let { request ->
+            InstallNotifications.showResult(context, request, manager.stateOf(appId))
+        }
+
         if (confirmation != null) {
             confirmation.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             runCatching { context.startActivity(confirmation) }
                 .onFailure { Log.w("$appId: não consegui abrir o diálogo do instalador", it) }
         }
 
-        InstallManager.of(context).onResult(appId, status, message)
     }
 
     companion object {

@@ -310,10 +310,22 @@ private fun InstallSection(
             style = MaterialTheme.typography.bodyMedium,
         )
 
-        is InstallState.AwaitingUser -> Text(
-            text = "Confirma a instalação no diálogo do sistema.",
-            style = MaterialTheme.typography.bodyMedium,
-        )
+        is InstallState.AwaitingUser -> Column {
+            Text(
+                text = "Confirma a instalação no diálogo do sistema.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
+                Button(
+                    enabled = state.confirmation != null,
+                    onClick = { InstallManager.of(context).confirmInstall(row.app.id) },
+                ) { Text("Confirmar instalação") }
+                TextButton(
+                    enabled = state.confirmation != null,
+                    onClick = { InstallManager.of(context).cancelPendingInstall(row.app.id) },
+                ) { Text("Cancelar") }
+            }
+        }
 
         is InstallState.Installed -> Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
             InstallManager.launchIntent(context, row.app.packageName)?.let { intent ->

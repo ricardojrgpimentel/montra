@@ -95,6 +95,10 @@ def main():
             actual = DRAWABLE.parent / name
             if not actual.is_file() or actual.read_text(encoding="utf-8") != expected:
                 sys.exit(f"{name} diverge da Direção 1: correr python3 design/stitch.py")
+        for name, expected in stitch.debug_outputs().items():
+            actual = stitch.DEBUG_OUT / name
+            if not actual.is_file() or actual.read_text(encoding="utf-8") != expected:
+                sys.exit(f"debug/{name} diverge: correr python3 design/stitch.py")
         adaptive = ET.parse(DRAWABLE.parent.parent / "mipmap-anydpi-v26/ic_launcher.xml").getroot()
         for role in ("background", "foreground", "monochrome"):
             layer = adaptive.find(role)
@@ -102,6 +106,7 @@ def main():
             if layer is None or layer.attrib.get("{http://schemas.android.com/apk/res/android}drawable") != reference:
                 sys.exit(f"o ícone adaptativo tem de referenciar {reference}")
         print("ok: marca, ícone adaptativo, fundo e monocromático correspondem à Direção 1 do Stitch")
+        print("ok: ícones debug incluem o fundo azul e o distintivo DBG")
         return
 
     key = identify(text)

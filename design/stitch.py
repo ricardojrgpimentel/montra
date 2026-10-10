@@ -14,6 +14,7 @@ from icons import rounded_rect
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "design/stitch-concepts/stitch-d1-storefront.svg"
 OUT = ROOT / "app/src/main/res/drawable"
+DEBUG_OUT = ROOT / "app/src/debug/res/drawable"
 
 
 def drawable_paths():
@@ -116,7 +117,43 @@ def outputs():
     }
 
 
+def debug_outputs():
+    """Keep the release mark, with the same safe-circle DBG badge used by ACCA."""
+    generated = outputs()
+    glyphs = {
+        "D": ("11110", "10001", "10001", "10001", "10001", "10001", "11110"),
+        "B": ("11110", "10001", "10001", "11110", "10001", "10001", "11110"),
+        "G": ("01111", "10000", "10000", "10111", "10001", "10001", "01111"),
+    }
+    pixels = []
+    for letter_index, letter in enumerate("DBG"):
+        for row_index, row in enumerate(glyphs[letter]):
+            for column_index, pixel in enumerate(row):
+                if pixel == "1":
+                    x = 43.8 + letter_index * 7.2 + column_index * 1.2
+                    y = 71.3 + row_index * 1.2
+                    pixels.append(f"M{x:g},{y:g}h1.2v1.2h-1.2Z")
+    letters = " ".join(pixels)
+    plate = "M40,69 H68 Q71,69 71,72 V79 Q71,82 68,82 H40 Q37,82 37,79 V72 Q37,69 40,69 Z"
+    badge = (f'    <path android:fillColor="#FBFDF8" android:pathData="{plate}" />\n'
+             f'    <path android:fillColor="#183C68" android:pathData="{letters}" />')
+    mono_badge = (f'    <path android:fillColor="#FFFFFF" android:fillType="evenOdd" '
+                  f'android:pathData="{plate} {letters}" />')
+    return {
+        "ic_launcher_foreground.xml": generated["ic_launcher_foreground.xml"].replace(
+            "</vector>", badge + "\n</vector>"),
+        "ic_launcher_monochrome.xml": generated["ic_launcher_monochrome.xml"].replace(
+            "</vector>", mono_badge + "\n</vector>"),
+        "ic_launcher_background.xml": generated["ic_launcher_background.xml"].replace(
+            "#FF347758", "#FF234F83").replace("#FF24553E", "#FF102642"),
+    }
+
+
 if __name__ == "__main__":
     for name, content in outputs().items():
         (OUT / name).write_text(content, encoding="utf-8")
         print(f"{name} ← {SOURCE.name}")
+    DEBUG_OUT.mkdir(parents=True, exist_ok=True)
+    for name, content in debug_outputs().items():
+        (DEBUG_OUT / name).write_text(content, encoding="utf-8")
+        print(f"debug/{name} ← {SOURCE.name} + DBG")

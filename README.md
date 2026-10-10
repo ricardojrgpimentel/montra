@@ -31,6 +31,11 @@ Estas capturas são anteriores à integração da identidade da Direção 1 do S
 
 ## Compilar
 
+As variantes podem ficar instaladas lado a lado: **Montra** (`dev.montra`) é a
+release com o ícone verde final; **Montra Debug** (`dev.montra.debug`) tem um
+ícone azul com **DBG**, também distinguível com ícones temáticos. O nome e os
+ícones debug vivem em `app/src/debug/res`, sem alterar os recursos da release.
+
 ```bash
 export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"   # JDK 17+
 export ANDROID_HOME="$HOME/Library/Android/sdk"                                  # SDK 36 + build-tools 36.0.0
@@ -214,6 +219,9 @@ pode morrer quando o utilizador sai da app, e é isso que permite a notificaçã
   MainActivity faz o deep link, com `singleTop` para não reiniciar).
 - Traz uma ação **Cancelar** que aborta o `Call` do OkHttp — cancelar a corrotina
   não chega, porque a leitura do socket é uma chamada bloqueante.
+- Se saíres do diálogo do Android, **Confirmar instalação** na ficha ou um toque
+  na notificação reabre a mesma confirmação. **Cancelar** abandona a sessão,
+  remove a notificação e devolve o botão Instalar, sem apresentar um erro.
 - O estado vive num único sítio (`InstallManager`), pelo que o ecrã e a
   notificação não podem discordar.
 
@@ -229,6 +237,11 @@ não dá erro: a instalação fica pendurada à espera de um diálogo que ningu�
 Foi exatamente o que se observou num Android 16, e é por isso que o
 `InstallResultReceiver` lança o Intent sempre que ele venha — e trata também o
 caminho pré-Android 12, onde era obrigatório.
+
+A ação de confirmação fica guardada num `PendingIntent`, usado pela ficha e pela
+notificação. O receiver atualiza ou remove a notificação mesmo depois de o serviço
+de download terminar. Cada resultado é associado à sua sessão: callbacks atrasados
+ou duplicados de uma tentativa cancelada não podem alterar uma tentativa nova.
 
 ## Fluxo de instalação
 
@@ -271,6 +284,7 @@ O estado de cada app (`Idle`, `Downloading`, `Verifying`, `AwaitingUser`,
 | `data/IndexModelTest` | campos desconhecidos ignorados; fallback de idioma; escolha de ABI |
 | `data/RefreshFailureTest` | **um erro técnico nunca chega ao ecrã**: sem rede a mensagem fala do telemóvel e não do host, sem cópia verificada não promete catálogo, um erro de certificado não se disfarça de offline, e um HTML de portal cativo fica no log |
 | `androidTest/CatalogueNetworkSmokeTest` | **no dispositivo, no processo da app**: descarrega o índice publicado por HTTPS, verifica a assinatura com a chave do APK, guarda em cache, e recusa um índice adulterado (com uma fonte hostil injetada); o `InstallRequest` sobrevive à passagem por Intent sem perder o sha256 nem o certificado; e cancelar a meio de um download para o pipeline, deixa o estado em `Idle` e não deixa ficheiros parciais |
+| `androidTest/InstallLifecycleTest` | sessões e notificações reais, sem instalar apps: cancelar permite repetir, callbacks antigos são ignorados, a notificação conserva a confirmação, cancelar abandona a sessão, um Intent ausente dá uma falha recuperável e o sucesso substitui a notificação pendente |
 
 O `RealIndexTest` liga o assinador (Node, `tools/sign-index.mjs`) ao verificador
 (Kotlin): se qualquer dos lados mudar de formato, o build falha. O teste
