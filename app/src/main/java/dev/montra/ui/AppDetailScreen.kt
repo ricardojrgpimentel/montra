@@ -19,6 +19,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -240,6 +241,26 @@ fun AppDetailScreen(
             }
         }
 
+        // As permissões vêm à frente de tudo o resto nos detalhes: são a única coisa
+        // aqui dentro que muda a decisão de instalar. E só se mostram quando o catálogo
+        // as traz — um índice anterior a este campo não as tem, e "não pede nada" seria
+        // uma afirmação que ninguém verificou.
+        if (app.permissions.isNotEmpty()) {
+            val permissions = remember(app.permissions) { Permissions.lines(context, app.permissions) }
+            SectionTitle(strings.getString(R.string.text_permissions))
+            Block {
+                if (permissions.any { it.sensitive }) {
+                    Text(
+                        text = strings.getString(R.string.text_these_reach_personal_data_what),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.tertiary,
+                    )
+                    Spacer(Modifier.height(Space.sm))
+                }
+                permissions.forEach { permission -> PermissionRow(permission) }
+            }
+        }
+
         SectionTitle(strings.getString(R.string.text_version))
         Block {
             KeyValue(strings.getString(R.string.text_version_2), app.release?.versionName ?: "—")
@@ -454,6 +475,33 @@ private fun InstallSection(
                 }
                 Badge(strings.getString(R.string.text_latest_version), MaterialTheme.colorScheme.primary)
             }
+        }
+    }
+}
+
+/**
+ * Uma permissão: o nome que o sistema lhe dá e, quando existe, a frase que o sistema
+ * usa para a explicar. Âmbar é atenção, e é o mesmo âmbar de uma licença que limita —
+ * uma condição que muda a decisão, não um erro.
+ */
+@Composable
+private fun PermissionRow(permission: Permissions.Line) {
+    Column(modifier = Modifier.padding(vertical = Space.xs)) {
+        Text(
+            text = permission.label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (permission.sensitive) {
+                MaterialTheme.colorScheme.tertiary
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
+        )
+        permission.description?.let { description ->
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

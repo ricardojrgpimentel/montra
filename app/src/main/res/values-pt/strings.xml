@@ -16,6 +16,8 @@
     <string name="text_uninstall_current_version">"Desinstalar a versão atual"</string>
     <string name="text_warnings">"Avisos"</string>
     <string name="text_version">"Versão"</string>
+    <string name="text_permissions">"Permissões"</string>
+    <string name="text_these_reach_personal_data_what">"Estas chegam a dados pessoais, ao que está guardado no telemóvel, ou a coisas que se pagam."</string>
     <string name="text_version_2">"versão"</string>
     <string name="text_size">"tamanho"</string>
     <string name="text_architecture">"arquitetura"</string>

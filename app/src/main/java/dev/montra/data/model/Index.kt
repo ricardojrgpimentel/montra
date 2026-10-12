@@ -39,6 +39,15 @@ data class IndexApp(
     val status: String = "active",
     val antiFeatures: List<String> = emptyList(),
     val accessRequirements: AccessRequirements? = null,
+    /**
+     * Nomes completos das permissões que o APK pede (`android.permission.CAMERA`).
+     *
+     * Derivadas no build, a partir do `aapt2 dump badging` — nunca escritas à mão, e
+     * por isso ausentes do `app.schema.json`. Vazio quando o índice é anterior a este
+     * campo, e nesse caso a ficha não diz nada: afirmar que uma app não pede nada
+     * quando não se sabe é pior do que o silêncio.
+     */
+    val permissions: List<String> = emptyList(),
     val links: Map<String, String> = emptyMap(),
     val playStore: PlayStore? = null,
     val addedAt: String? = null,
