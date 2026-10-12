@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dev.montra.BuildConfig
 import kotlinx.coroutines.flow.Flow
@@ -79,6 +80,7 @@ class Settings(private val context: Context) {
     private val lastCheckedKey = longPreferencesKey("last_checked_at")
     private val notifiedUpdatesKey = stringPreferencesKey("notified_updates")
     private val wifiOnlyKey = booleanPreferencesKey("wifi_only")
+    private val savedKey = stringSetPreferencesKey("saved_apps")
 
     val indexUrl: Flow<String> = context.dataStore.data.map { it[indexUrlKey] ?: BuildConfig.DEFAULT_INDEX_URL }
 
@@ -117,6 +119,26 @@ class Settings(private val context: Context) {
 
     suspend fun setWifiOnly(value: Boolean) {
         context.dataStore.edit { prefs -> prefs[wifiOnlyKey] = value }
+    }
+
+    /**
+     * As apps guardadas para depois.
+     *
+     * É a única lista pessoal que uma loja sem backend pode oferecer, e é coerente com
+     * não haver contas: vive no telemóvel, não sai dele, e não há nada para sincronizar
+     * porque não há nada do outro lado.
+     */
+    val saved: Flow<Set<String>> = context.dataStore.data.map { it[savedKey] ?: emptySet() }
+
+    /** Guarda ou tira, conforme o que estava, e devolve o que ficou. */
+    suspend fun toggleSaved(appId: String): Set<String> {
+        var result = emptySet<String>()
+        context.dataStore.edit { prefs ->
+            val current = prefs[savedKey] ?: emptySet()
+            result = if (appId in current) current - appId else current + appId
+            prefs[savedKey] = result
+        }
+        return result
     }
 
     val autoRefresh: Flow<AutoRefresh> = context.dataStore.data.map { prefs ->

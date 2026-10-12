@@ -84,6 +84,10 @@
     <string name="text_you_are_on_mobile_data_these">"You are on mobile data: these downloads will go through it."</string>
     <string name="text_installed">"Installed"</string>
     <string name="text_uninstall">"Uninstall"</string>
+    <string name="text_saved">"Saved"</string>
+    <string name="text_save_for_later">"Save for later"</string>
+    <string name="text_remove_from_saved">"Remove from saved"</string>
+    <string name="text_share">"Share"</string>
     <string name="text_all">"All"</string>
     <string name="text_discover">"Discover"</string>
     <string name="text_nothing_in_this_category">"Nothing in this category."</string>

@@ -16,6 +16,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import android.content.Context
@@ -62,6 +68,8 @@ fun AppDetailScreen(
     onClearError: (String) -> Unit,
     onCancel: (String) -> Unit,
     onInstallAnyway: (IndexApp) -> Unit,
+    onToggleSaved: (String) -> Unit,
+    onShare: (IndexApp) -> Unit,
     onAuthorize: () -> Unit,
     onOpenSource: (String) -> Unit,
     onOpenApp: (String) -> Unit,
@@ -96,6 +104,29 @@ fun AppDetailScreen(
                     text = app.author ?: app.packageName,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            // Guardar para depois e partilhar vivem no cabeçalho, ao lado do nome: são
+            // sobre a app, não sobre a instalação, e não competem com o botão de
+            // instalar lá em baixo.
+            IconButton(onClick = { onToggleSaved(app.id) }) {
+                Icon(
+                    imageVector = if (row.saved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                    contentDescription = strings.getString(
+                        if (row.saved) R.string.text_remove_from_saved else R.string.text_save_for_later,
+                    ),
+                    tint = if (row.saved) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+            }
+            IconButton(onClick = { onShare(app) }) {
+                Icon(
+                    imageVector = Icons.Outlined.Share,
+                    contentDescription = strings.getString(R.string.text_share),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

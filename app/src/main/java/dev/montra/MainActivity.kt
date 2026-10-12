@@ -72,6 +72,7 @@ import dev.montra.ui.GamesScreen
 import dev.montra.ui.MontraViewModel
 import dev.montra.ui.SearchScreen
 import dev.montra.ui.SettingsScreen
+import dev.montra.util.Log
 import dev.montra.work.UpdateNotifications
 import dev.montra.ui.components.MontraBrand
 import dev.montra.ui.theme.MontraTheme
@@ -118,11 +119,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun readIntent(intent: Intent?) {
-        pendingAppId.value = intent?.getStringExtra(InstallRequest.EXTRA_APP_ID)
+        // Duas portas para a ficha de uma app: a notificação, que traz o id num extra, e
+        // um link `montra://app/<id>`. A segunda existe para se poder mandar uma app a
+        // alguém — sem ela, uma loja não tem como circular.
+        pendingAppId.value = intent?.getStringExtra(InstallRequest.EXTRA_APP_ID) ?: appIdFrom(intent?.data)
         if (intent?.getBooleanExtra(UpdateNotifications.EXTRA_OPEN_UPDATES, false) == true) {
             pendingOpenUpdates.value = true
         }
     }
+
+    /**
+     * `montra://app/<id>` — esquema próprio, e não `https`, porque estas fichas não
+     * existem em sítio nenhum: a loja é a app. Quem não tiver a Montra não abre o link,
+     * e é por isso que a partilha também leva o repositório do projeto.
+     */
+    private fun appIdFrom(uri: Uri?): String? = uri
+        ?.takeIf { it.scheme == "montra" && it.host == "app" }
+        ?.pathSegments?.firstOrNull()
+        ?.takeIf { it.isNotBlank() }
+            ?.also { Log.i("link aberto para a app $it") }
 
     override fun onResume() {
         super.onResume()
@@ -405,6 +420,8 @@ fun MontraRoot(
                         // desta app, não uma definição global: quem diz sim uma vez
                         // não fica com a barreira desligada para sempre.
                         onInstallAnyway = { app -> viewModel.install(app, allowMetered = true) },
+                        onToggleSaved = viewModel::toggleSaved,
+                        onShare = { app -> shareApp(context, app) },
                         onAuthorize = authorize,
                         onOpenSource = { url -> openUrl(context, url) },
                         onOpenApp = { otherId -> navController.navigate("detail/$otherId") },
@@ -417,4 +434,26 @@ fun MontraRoot(
 
 fun openUrl(context: Context, url: String) {
     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+}
+
+/**
+ * Partilhar uma app: o link que abre a ficha na Montra, mais o repositório do projeto.
+ *
+ * O link sozinho não serve a quem não tem a app instalada, e é isso que o repositório
+ * resolve — quem não abrir o link fica com o sítio onde a app vive.
+ */
+fun shareApp(context: Context, app: IndexApp) {
+    val text = buildString {
+        append(app.name)
+        append('\n')
+        append("montra://app/${app.id}")
+        append('\n')
+        append(app.sourceCode)
+    }
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+        putExtra(Intent.EXTRA_SUBJECT, app.name)
+    }
+    runCatching { context.startActivity(Intent.createChooser(intent, app.name)) }
 }

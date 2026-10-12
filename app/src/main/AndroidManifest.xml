@@ -61,6 +61,17 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- Abrir a ficha de uma app por link: `montra://app/<id>`.
+                 Esquema próprio e não um endereço https porque estas fichas não existem
+                 em sítio nenhum — a loja é a app. É o que permite mandar uma app a
+                 alguém, que é a única maneira de uma loja sem servidor circular. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="montra" android:host="app" />
+            </intent-filter>
         </activity>
 
         <service

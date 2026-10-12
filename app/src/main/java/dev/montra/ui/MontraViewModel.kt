@@ -51,6 +51,9 @@ enum class AppFilter(val labelRes: Int) {
 
     /** O que já está instalado neste telemóvel. Depende do sistema, não da app. */
     INSTALLED(R.string.text_installed),
+
+    /** O que a pessoa guardou para depois. Depende dela, não da app. */
+    SAVED(R.string.text_saved),
     OFF_PLAY(R.string.text_outside_the_play_store),
     RESTRICTED(R.string.text_restricted_licence_2),
 }
@@ -89,6 +92,8 @@ data class AppRow(
     val staleRelease: Boolean = false,
     /** Entrou no catálogo há pouco. Sai de `addedAt`, não de uma bandeira gravada. */
     val isNew: Boolean = false,
+    /** Guardada para depois. Vive no telemóvel e não sai dele. */
+    val saved: Boolean = false,
 ) {
     val isInstalled: Boolean get() = installed != null
     val canInstall: Boolean get() = asset != null && incompatible == null && !signatureConflict
@@ -150,6 +155,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
     private val requirement = MutableStateFlow<RequirementFilter?>(null)
     private val hideRestricted = MutableStateFlow(false)
     private val wifiOnly = MutableStateFlow(true)
+    private val saved = MutableStateFlow<Set<String>>(emptySet())
     private val autoRefresh = MutableStateFlow(AutoRefresh.DEFAULT)
 
     /** Corre enquanto a app está à frente; pára quando ela sai. Ver [onPause]. */
@@ -181,6 +187,12 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             container.settings.wifiOnly.collect { value ->
                 wifiOnly.value = value
+                rebuild()
+            }
+        }
+        viewModelScope.launch {
+            container.settings.saved.collect { value ->
+                saved.value = value
                 rebuild()
             }
         }
@@ -272,6 +284,11 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
 
     fun setWifiOnly(value: Boolean) {
         viewModelScope.launch { container.settings.setWifiOnly(value) }
+    }
+
+    /** Guardar para depois, ou tirar. O fluxo das preferências trata de reconstruir. */
+    fun toggleSaved(appId: String) {
+        viewModelScope.launch { container.settings.toggleSaved(appId) }
     }
 
     fun setAutoRefresh(value: AutoRefresh) {
@@ -476,6 +493,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                     size = asset?.size ?: app.artifact?.size ?: 0L,
                     staleRelease = isStaleRelease(app.release?.publishedAt, now),
                     isNew = isNewInCatalogue(app.addedAt, now),
+                    saved = app.id in saved.value,
                 )
             }
             .sortedWith(
@@ -508,6 +526,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                 filterCounts = mapOf(
                     AppFilter.NEW to visible.count { isNewInCatalogue(it.addedAt, now) },
                     AppFilter.INSTALLED to visible.count { installedNow.containsKey(it.packageName) },
+                    AppFilter.SAVED to visible.count { it.id in saved.value },
                     AppFilter.OFF_PLAY to visible.count { it.playStore?.present == false },
                     AppFilter.RESTRICTED to visible.count { it.hasRestrictedLicense() },
                 ),
