@@ -134,7 +134,18 @@ fun SettingsScreen(
                         MaterialTheme.colorScheme.error
                     },
                 )
-                KeyValue(strings.getString(R.string.text_trusted_key), state.index.keyId ?: "—", mono = true)
+                KeyValue(strings.getString(R.string.text_trusted_key), state.trustedKeyId.ifEmpty { "—" }, mono = true)
+                // Uma chave que não é a principal é uma rotação a decorrer. Aparece
+                // porque quem tem a app tem o direito de saber por que chave o catálogo
+                // está a ser assinado — e isto só muda durante uma rotação.
+                if (!state.index.keyIsPrimary) {
+                    KeyValue(
+                        label = strings.getString(R.string.text_signed_with),
+                        value = state.index.keyId ?: "—",
+                        mono = true,
+                        valueColor = MaterialTheme.colorScheme.tertiary,
+                    )
+                }
             }
 
             Spacer(Modifier.height(Space.sm))

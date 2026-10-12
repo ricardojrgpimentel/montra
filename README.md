@@ -165,7 +165,8 @@ app/src/main/java/dev/montra/
 app/src/main/assets/
 ├── index.json                 snapshot do catálogo (funciona offline no 1.º arranque)
 ├── index.json.sig             assinatura do snapshot
-└── index-signing.pub.pem      chave de confiança (parte da identidade da app)
+├── index-signing.pub.pem      chave de confiança principal (parte da identidade da app)
+└── index-signing-*.pub.pem    chaves extra, só durante uma rotação (ver docs/SECURITY.md)
 ```
 
 Os assets Android são gerados, e não desenhados à mão no XML. Os geradores da

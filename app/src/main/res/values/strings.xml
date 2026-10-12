@@ -319,7 +319,8 @@
     <string name="apk_certificate_unreadable">"Could not read the APK signing certificate."</string>
     <string name="apk_certificate_mismatch">"The APK was signed with a different key from the one pinned in the catalogue.\ncatalogue: %1$s\nAPK: %2$s"</string>
     <string name="index_signature_invalid">"The catalogue signature is invalid."</string>
-    <string name="index_key_mismatch">"The catalogue uses an unknown key (catalogue: %1$s, app: %2$s). Update Montra before trusting this catalogue."</string>
+    <string name="index_key_mismatch">"The catalogue says it was signed with a key that is not among the ones this app knows (catalogue: %1$s; app: %2$s). Update Montra before trusting this catalogue."</string>
+    <string name="text_signed_with">"signed with"</string>
     <string name="index_unreadable">"The catalogue was verified, but its data is invalid."</string>
     <string name="install_with_size">"Install · %1$s"</string>
     <string name="all_architectures">"all"</string>

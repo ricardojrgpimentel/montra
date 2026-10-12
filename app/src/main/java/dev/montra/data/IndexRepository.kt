@@ -44,6 +44,12 @@ data class IndexState(
     val origin: IndexOrigin? = null,
     val signatureValid: Boolean = false,
     val keyId: String? = null,
+    /**
+     * `false` quando o índice foi assinado por uma chave fidedigna que não é a
+     * principal: uma rotação a decorrer. Não é um erro — é a informação que torna a
+     * rotação possível sem uma janela em que ninguém consegue verificar o catálogo.
+     */
+    val keyIsPrimary: Boolean = true,
     val indexUrl: String = "",
     val refreshing: Boolean = false,
     /** Set when a refresh failed; the previously verified catalogue stays in use. */
@@ -218,7 +224,7 @@ class IndexRepository(
     }
 
     private sealed interface Check {
-        data class Accepted(val index: IndexFile, val keyId: String) : Check
+        data class Accepted(val index: IndexFile, val keyId: String, val primary: Boolean) : Check
         data class Rejected(val message: UiText) : Check
     }
 
@@ -256,7 +262,10 @@ class IndexRepository(
                 Check.Rejected(UiText.Resource(R.string.index_signature_invalid))
             }
             is SignatureCheck.KeyMismatch -> Check.Rejected(
-                UiText.Resource(R.string.index_key_mismatch, listOf(check.declared, check.bundled)),
+                UiText.Resource(
+                    R.string.index_key_mismatch,
+                    listOf(check.declared, check.trusted.joinToString(", ")),
+                ),
             )
             is SignatureCheck.Valid -> {
                 val index = try {
@@ -265,7 +274,7 @@ class IndexRepository(
                     Log.e("índice ilegível depois de verificado", error)
                     return Check.Rejected(UiText.Resource(R.string.index_unreadable))
                 }
-                Check.Accepted(index, check.keyId)
+                Check.Accepted(index, check.keyId, check.primary)
             }
         }
     }
@@ -279,6 +288,7 @@ class IndexRepository(
                 origin = origin,
                 signatureValid = true,
                 keyId = accepted.keyId,
+                keyIsPrimary = accepted.primary,
                 indexUrl = url,
                 rejectedMessage = null,
             )

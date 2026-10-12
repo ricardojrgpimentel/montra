@@ -6,11 +6,16 @@
 # Three files travel together and must always come from the same build:
 #   index.json              the catalogue
 #   index.json.sig          its detached ECDSA signature
-#   index-signing.pub.pem   the key the app will trust forever (until an app update)
+#   index-signing.pub.pem   the key the app trusts, and the one it calls principal
 #
-# The public key is copied into the *source tree* on purpose: it is part of the
-# app's identity, it must be reviewable in a diff, and it must never be fetched
+# The public keys are copied into the *source tree* on purpose: they are part of the
+# app's identity, they must be reviewable in a diff, and they must never be fetched
 # at runtime.
+#
+# Todas as `keys/*.pub.pem` são copiadas, e não só a principal. É isso que torna uma
+# rotação possível: um build que traga as duas chaves aceita o catálogo assinado por
+# qualquer delas, e é o nome do ficheiro que diz qual é a principal — as outras
+# chamam-se `index-signing-<nome>.pub.pem`.
 set -euo pipefail
 
 INDEX_DIR="${1:-../index}"
@@ -25,14 +30,17 @@ done
 mkdir -p "$ASSETS" "$TEST_RES"
 cp "$INDEX_DIR/index.json" "$ASSETS/index.json"
 cp "$INDEX_DIR/index.json.sig" "$ASSETS/index.json.sig"
-cp "$INDEX_DIR/keys/index-signing.pub.pem" "$ASSETS/index-signing.pub.pem"
 
 # Same bytes again under test resources: a unit test verifies the real signature
 # with the real verifier, so a broken crypto path fails the build instead of
 # shipping.
 cp "$INDEX_DIR/index.json" "$TEST_RES/index.json"
 cp "$INDEX_DIR/index.json.sig" "$TEST_RES/index.json.sig"
-cp "$INDEX_DIR/keys/index-signing.pub.pem" "$TEST_RES/index-signing.pub.pem"
+
+for key in "$INDEX_DIR"/keys/*.pub.pem; do
+  cp "$key" "$ASSETS/$(basename "$key")"
+  cp "$key" "$TEST_RES/$(basename "$key")"
+done
 
 key_id="$(cd "$INDEX_DIR" && node tools/keys.mjs show 2>/dev/null | tail -1 | sed 's/.*: //')"
 apps="$(node -e "console.log(JSON.parse(require('fs').readFileSync('$INDEX_DIR/index.json','utf8')).apps.length)")"

@@ -325,7 +325,8 @@
     <string name="apk_certificate_unreadable">"Impossible de lire le certificat de signature de l’APK."</string>
     <string name="apk_certificate_mismatch">"L’APK a été signé avec une clé différente de celle du catalogue.\ncatalogue : %1$s\nAPK : %2$s"</string>
     <string name="index_signature_invalid">"La signature du catalogue est invalide."</string>
-    <string name="index_key_mismatch">"Le catalogue utilise une clé inconnue (catalogue : %1$s, app : %2$s). Mets Montra à jour avant de faire confiance à ce catalogue."</string>
+    <string name="index_key_mismatch">"Le catalogue dit avoir été signé par une clé qui ne fait pas partie de celles que cette app connaît (catalogue : %1$s ; app : %2$s). Mets Montra à jour avant de faire confiance à ce catalogue."</string>
+    <string name="text_signed_with">"signé avec"</string>
     <string name="index_unreadable">"Le catalogue a été vérifié, mais ses données sont invalides."</string>
     <string name="install_with_size">"Installer · %1$s"</string>
     <string name="all_architectures">"toutes"</string>

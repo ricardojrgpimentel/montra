@@ -60,12 +60,21 @@ object IndexVerifier {
     }
 }
 
-/** Result of checking a downloaded catalogue against the bundled key. */
+/** Result of checking a downloaded catalogue against the bundled keys. */
 sealed interface SignatureCheck {
-    data class Valid(val keyId: String) : SignatureCheck
+    /**
+     * @param primary `false` quando quem assinou é uma chave fidedigna que não é a
+     * principal — ou seja, uma rotação a decorrer. É informação, não um alarme: o
+     * índice continua a ser de confiança, e é isso mesmo que a rotação permite.
+     */
+    data class Valid(val keyId: String, val primary: Boolean = true) : SignatureCheck
 
     data class Invalid(val reason: String) : SignatureCheck
 
-    /** The index declares a key id that differs from the bundled key: refuse. */
-    data class KeyMismatch(val declared: String, val bundled: String) : SignatureCheck
+    /**
+     * O índice diz ter sido assinado por uma chave que, ou não é a que assinou, ou não
+     * está entre as fidedignas. Qualquer das duas é uma contradição, e não se escolhe a
+     * versão mais conveniente: recusa-se.
+     */
+    data class KeyMismatch(val declared: String, val trusted: List<String>) : SignatureCheck
 }

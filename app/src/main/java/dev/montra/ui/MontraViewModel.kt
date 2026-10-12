@@ -115,6 +115,8 @@ data class UiState(
     /** Há uma transferência a correr: o cache não se limpa por baixo dela. */
     val transferring: Boolean = false,
     val autoRefresh: AutoRefresh = AutoRefresh.DEFAULT,
+    /** A chave que este build considera principal. Não muda com o índice. */
+    val trustedKeyId: String = "",
 )
 
 class MontraViewModel(application: Application) : AndroidViewModel(application) {
@@ -147,6 +149,9 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
 
     init {
         viewModelScope.launch { container.indexRepository.load() }
+        // A chave principal vem do APK, não do índice: é ela que define em quem se
+        // confia, e por isso é lida uma vez e não a cada verificação.
+        _ui.update { it.copy(trustedKeyId = container.trustStore.keyId) }
         viewModelScope.launch { container.indexRepository.state.collect { rebuild() } }
         viewModelScope.launch {
             container.installManager.states.collect { states ->

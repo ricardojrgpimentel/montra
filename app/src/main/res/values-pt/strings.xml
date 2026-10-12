@@ -325,7 +325,8 @@
     <string name="apk_certificate_unreadable">"Não foi possível ler o certificado de assinatura do APK."</string>
     <string name="apk_certificate_mismatch">"O APK está assinado por uma chave diferente da fixada no catálogo.\ncatálogo: %1$s\nAPK: %2$s"</string>
     <string name="index_signature_invalid">"A assinatura do catálogo é inválida."</string>
-    <string name="index_key_mismatch">"O catálogo usa uma chave desconhecida (catálogo: %1$s, app: %2$s). Atualiza a Montra antes de confiar neste catálogo."</string>
+    <string name="index_key_mismatch">"O catálogo diz ter sido assinado por uma chave que não está entre as que esta app conhece (catálogo: %1$s; app: %2$s). Atualiza a Montra antes de confiar neste catálogo."</string>
+    <string name="text_signed_with">"assinado com"</string>
     <string name="index_unreadable">"O catálogo foi verificado, mas os dados não são válidos."</string>
     <string name="install_with_size">"Instalar · %1$s"</string>
     <string name="all_architectures">"todas"</string>
