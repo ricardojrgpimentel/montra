@@ -55,6 +55,8 @@ class UpdatesNotificationTest {
         )
 
         UpdateNotifications.show(context, 3)
+        // Publicar é um pedido assíncrono ao sistema: espera-se, não se assume.
+        eventually("a notificação das atualizações não apareceu") { active() != null }
         val posted = requireNotNull(active()) { "a notificação das atualizações não apareceu" }
         val title = posted.notification.extras.getString(Notification.EXTRA_TITLE)
         assertEquals(

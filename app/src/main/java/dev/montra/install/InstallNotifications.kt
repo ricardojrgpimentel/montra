@@ -50,17 +50,29 @@ object InstallNotifications {
         request: InstallRequest,
         bytes: Long,
         total: Long,
+        position: Int = 1,
+        queued: Int = 1,
     ): Notification {
         val percent = if (total > 0) ((bytes * 100) / total).toInt().coerceIn(0, 100) else 0
         val indeterminate = total <= 0
+        val strings = ContextCompat.getContextForLanguage(context)
         return base(context, request)
-            .setContentTitle(ContextCompat.getContextForLanguage(context).getString(R.string.notification_downloading, request.appName))
+            // Com mais do que uma à espera, a notificação diz em que ponto da fila vai.
+            // Sem isso, quem enfileirou três transferências vê a barra recomeçar do zero
+            // duas vezes e não percebe se está a andar ou a repetir.
+            .setContentTitle(
+                if (queued > 1) {
+                    strings.getString(R.string.notification_downloading_in_queue, request.appName, position, queued)
+                } else {
+                    strings.getString(R.string.notification_downloading, request.appName)
+                },
+            )
             .setContentText(
                 if (indeterminate) formatBytes(bytes) else "${formatBytes(bytes)} / ${formatBytes(total)}",
             )
             .setProgress(100, percent, indeterminate)
             .setOngoing(true)
-            .addAction(0, ContextCompat.getContextForLanguage(context).getString(R.string.action_cancel), cancelIntent(context, request))
+            .addAction(0, strings.getString(R.string.action_cancel), cancelIntent(context, request))
             .build()
     }
 

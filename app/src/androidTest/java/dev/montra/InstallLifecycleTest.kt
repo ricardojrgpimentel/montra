@@ -1,9 +1,11 @@
 package dev.montra
 
+import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageInstaller
+import android.service.notification.StatusBarNotification
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import dev.montra.data.model.Asset
@@ -61,6 +63,16 @@ class InstallLifecycleTest {
     private fun notification() = context.getSystemService(NotificationManager::class.java)
         .activeNotifications.firstOrNull { it.tag == request.appId }
 
+    /**
+     * A publicação é um pedido assíncrono ao sistema: espera-se por ela em vez de se
+     * assumir que já lá está. Isto falhava só quando a suite estava carregada, que é a
+     * pior altura para um teste decidir.
+     */
+    private fun awaitNotification(): StatusBarNotification {
+        eventually("a notificação não apareceu") { notification() != null }
+        return requireNotNull(notification())
+    }
+
     @After
     fun cleanUp() {
         manager.cancelPendingInstall(request.appId)
@@ -71,7 +83,7 @@ class InstallLifecycleTest {
     fun rejectedConfirmationClearsNotificationAndAllowsRetryWithoutOldCallbacksWinning() {
         val first = session()
         awaitConfirmation(first)
-        assertNotNull(notification())
+        awaitNotification()
         deliver(first, PackageInstaller.STATUS_FAILURE_ABORTED)
         assertEquals(InstallState.Idle, manager.stateOf(request.appId))
         eventually("a notificação não saiu depois de a instalação ser abandonada") { notification() == null }
@@ -81,7 +93,7 @@ class InstallLifecycleTest {
         // Android delivered the abort twice on the Samsung used to report this bug.
         deliver(first, PackageInstaller.STATUS_FAILURE_ABORTED)
         assertEquals(action, (manager.stateOf(request.appId) as InstallState.AwaitingUser).confirmation)
-        assertNotNull(notification())
+        awaitNotification()
     }
 
     @Test
@@ -89,8 +101,9 @@ class InstallLifecycleTest {
         InstallNotifications.showResult(context, request, InstallState.AwaitingUser())
         eventually("não devia haver notificação sem confirmação para mostrar") { notification() == null }
         val action = awaitConfirmation(session())
-        assertEquals(action, notification()!!.notification.contentIntent)
-        assertTrue(notification()!!.notification.actions.isNotEmpty())
+        val posted = awaitNotification()
+        assertEquals(action, posted.notification.contentIntent)
+        assertTrue(posted.notification.actions.isNotEmpty())
     }
 
     @Test
@@ -134,9 +147,14 @@ class InstallLifecycleTest {
         // The real receiver also works after the service has gone away.
         deliver(id, PackageInstaller.STATUS_SUCCESS)
         assertTrue(manager.stateOf(request.appId) is InstallState.Installed)
-        val result = notification()!!.notification
-        assertEquals(0, result.flags and android.app.Notification.FLAG_ONGOING_EVENT)
-        assertEquals(context.getString(R.string.notification_installed, request.appName),
-            result.extras.getString(android.app.Notification.EXTRA_TITLE))
+        // A notificação já existia (a pendente), portanto não basta esperar que exista:
+        // espera-se que seja a nova, senão o teste passava a verificar a antiga.
+        val installedTitle = context.getString(R.string.notification_installed, request.appName)
+        eventually("a notificação de sucesso não substituiu a pendente") {
+            notification()?.notification?.extras?.getString(Notification.EXTRA_TITLE) == installedTitle
+        }
+        val result = requireNotNull(notification()).notification
+        assertEquals(0, result.flags and Notification.FLAG_ONGOING_EVENT)
+        assertEquals(installedTitle, result.extras.getString(Notification.EXTRA_TITLE))
     }
 }

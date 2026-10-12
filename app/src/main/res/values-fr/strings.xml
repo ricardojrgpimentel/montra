@@ -273,6 +273,7 @@
     <string name="notification_updates_detail">"Appuie pour les voir et les mettre à jour"</string>
     <string name="notification_held">"Téléchargement en attente : %1$s"</string>
     <string name="notification_downloading">"Téléchargement de %1$s"</string>
+    <string name="notification_downloading_in_queue">"Téléchargement de %1$s (%2$d sur %3$d)"</string>
     <string name="notification_verifying">"Vérification de %1$s"</string>
     <string name="notification_verifying_detail">"SHA-256 et certificat de signature"</string>
     <string name="notification_confirm">"Confirme l’installation de %1$s"</string>

@@ -48,6 +48,9 @@ class InstallService : Service() {
 
     /** O que ainda não começou, por ordem de chegada. Vive só enquanto o serviço vive. */
     private val queue = ArrayDeque<InstallRequest>()
+
+    /** Quantas já terminaram neste lote, para a notificação poder dizer "2 de 5". */
+    private var completed = 0
     private var lastProgressNotification = 0L
     private var lastStartId = 0
 
@@ -70,6 +73,9 @@ class InstallService : Service() {
 
         // O mesmo pedido duas vezes é a mesma intenção, não duas instalações.
         if (current?.appId == request.appId) return START_NOT_STICKY
+        // Um pedido que chega com o serviço parado começa um lote novo: a contagem
+        // "2 de 5" era do lote anterior e não se herda.
+        if (current == null && queue.isEmpty()) completed = 0
         queue.removeAll { it.appId == request.appId }
         queue.addLast(request)
 
@@ -114,7 +120,14 @@ class InstallService : Service() {
         ServiceCompat.startForeground(
             this,
             InstallNotifications.NOTIFICATION_ID,
-            InstallNotifications.progress(this, request, 0, request.asset.size),
+            InstallNotifications.progress(
+                this,
+                request,
+                0,
+                request.asset.size,
+                position = completed + 1,
+                queued = completed + 1 + queue.size,
+            ),
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
             } else {
@@ -171,7 +184,14 @@ class InstallService : Service() {
         }
         val notification = when (state) {
             is InstallState.Downloading ->
-                InstallNotifications.progress(this, request, state.bytes, state.total)
+                InstallNotifications.progress(
+                    this,
+                    request,
+                    state.bytes,
+                    state.total,
+                    position = completed + 1,
+                    queued = completed + 1 + queue.size,
+                )
             is InstallState.Verifying -> InstallNotifications.verifying(this, request)
             is InstallState.AwaitingUser -> return // The result receiver posts the actionable notification.
             is InstallState.NeedsPermission -> InstallNotifications.failed(
@@ -209,6 +229,7 @@ class InstallService : Service() {
         if (current?.appId != request.appId) return
         val state = InstallManager.of(this).stateOf(request.appId)
         current = null
+        completed += 1
 
         if (queue.isNotEmpty()) {
             // Há mais à espera: o serviço continua em primeiro plano e segue para o

@@ -273,6 +273,7 @@
     <string name="notification_updates_detail">"Tap to see and update them"</string>
     <string name="notification_held">"Download waiting: %1$s"</string>
     <string name="notification_downloading">"Downloading %1$s"</string>
+    <string name="notification_downloading_in_queue">"Downloading %1$s (%2$d of %3$d)"</string>
     <string name="notification_verifying">"Verifying %1$s"</string>
     <string name="notification_verifying_detail">"SHA-256 and signing certificate"</string>
     <string name="notification_confirm">"Confirm installation of %1$s"</string>

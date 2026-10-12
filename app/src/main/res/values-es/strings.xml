@@ -273,6 +273,7 @@
     <string name="notification_updates_detail">"Toca para verlas y actualizarlas"</string>
     <string name="notification_held">"Descarga en espera: %1$s"</string>
     <string name="notification_downloading">"Descargando %1$s"</string>
+    <string name="notification_downloading_in_queue">"Descargando %1$s (%2$d de %3$d)"</string>
     <string name="notification_verifying">"Verificando %1$s"</string>
     <string name="notification_verifying_detail">"SHA-256 y certificado de firma"</string>
     <string name="notification_confirm">"Confirma la instalación de %1$s"</string>
