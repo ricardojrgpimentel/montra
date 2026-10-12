@@ -332,6 +332,7 @@ fun MontraRoot(
                     onOpenSearch = { navController.navigate(Tab.SEARCH.route) },
                     onOpen = { app -> navController.navigate("detail/${app.id}") },
                     onInstall = startInstall,
+                    onUpdateAll = { apps, allowMetered -> viewModel.updateAll(apps, allowMetered) },
                     onAuthorize = authorize,
                 )
             }

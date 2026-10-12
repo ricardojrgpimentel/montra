@@ -76,6 +76,10 @@
     <string name="text_android_has_not_authorised_montra_to_install_2">"Android has not authorised Montra to install apps yet. Grant permission for Montra in system settings."</string>
     <string name="text_search_by_name_tag_or_package">"Search by name, tag or package"</string>
     <string name="text_updates_available">"Updates available"</string>
+    <string name="text_update_all">"Update all"</string>
+    <string name="text_1_s_in_total">"%1$s in total"</string>
+    <string name="text_android_asks_for_each_app_in_turn">"Android asks you to confirm each app in turn. The queue handles the rest."</string>
+    <string name="text_you_are_on_mobile_data_these">"You are on mobile data: these downloads will go through it."</string>
     <string name="text_installed">"Installed"</string>
     <string name="text_all">"All"</string>
     <string name="text_discover">"Discover"</string>

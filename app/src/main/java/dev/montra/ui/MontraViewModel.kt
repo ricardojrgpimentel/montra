@@ -103,6 +103,8 @@ data class UiState(
     val hideRestricted: Boolean = false,
     /** Só transferir por Wi-Fi. A ficha pergunta antes de gastar dados de alguém. */
     val wifiOnly: Boolean = true,
+    /** A rede ativa é medida. A confirmação de "atualizar tudo" di-lo antes de gastar. */
+    val onMeteredNetwork: Boolean = false,
     val restrictedCount: Int = 0,
     val categories: List<String> = emptyList(),
     val canInstallPackages: Boolean = true,
@@ -357,6 +359,18 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
         InstallService.cancel(getApplication(), appId)
     }
 
+    /**
+     * Enfileira todas as atualizações de uma vez.
+     *
+     * O serviço corre-as uma a uma, e cada uma tem o seu diálogo do sistema — não há
+     * instalação silenciosa, e o `DESIGN.md` compromete-se a não a fingir. O que isto
+     * poupa é ter de tocar em cinco linhas: a fila trata do resto, e a notificação diz
+     * em que ponto vai.
+     */
+    fun updateAll(apps: List<IndexApp>, allowMetered: Boolean = false) {
+        apps.forEach { app -> install(app, allowMetered) }
+    }
+
     fun clearInstallError(appId: String) {
         container.installManager.setState(appId, InstallState.Idle)
     }
@@ -483,6 +497,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                 ),
                 hideRestricted = hideRestricted.value,
                 wifiOnly = wifiOnly.value,
+                onMeteredNetwork = container.networkStatus.isMetered(),
                 restrictedCount = index.apps.count { it.hasRestrictedLicense() },
                 categories = categoryCounts.entries.sortedByDescending { e -> e.value }.map { e -> e.key },
                 categoryCounts = categoryCounts,

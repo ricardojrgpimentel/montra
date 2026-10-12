@@ -76,6 +76,10 @@
     <string name="text_android_has_not_authorised_montra_to_install_2">"Android n’a pas encore autorisé Montra à installer des apps. Accorde cette autorisation à Montra dans les paramètres du système."</string>
     <string name="text_search_by_name_tag_or_package">"Rechercher par nom, étiquette ou paquet"</string>
     <string name="text_updates_available">"Mises à jour disponibles"</string>
+    <string name="text_update_all">"Tout mettre à jour"</string>
+    <string name="text_1_s_in_total">"%1$s au total"</string>
+    <string name="text_android_asks_for_each_app_in_turn">"Android demande une confirmation app par app. La file s’occupe du reste."</string>
+    <string name="text_you_are_on_mobile_data_these">"Tu es en données mobiles : ces téléchargements passeront par là."</string>
     <string name="text_installed">"Installées"</string>
     <string name="text_all">"Tout"</string>
     <string name="text_discover">"Découvrir"</string>

@@ -180,6 +180,8 @@ fun SectionTitle(
     trailing: String? = null,
     divider: Boolean = true,
     accent: Boolean = false,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -207,16 +209,33 @@ fun SectionTitle(
                     MaterialTheme.colorScheme.onSurface
                 },
             )
-            if (trailing != null) {
-                Text(
-                    text = trailing,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (accent) {
-                        MaterialTheme.colorScheme.tertiary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                )
+            if (trailing != null || (actionLabel != null && onAction != null)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Space.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // A ação da secção vive no cabeçalho dela: é onde se percebe que é
+                    // sobre todas as linhas abaixo, e não sobre uma.
+                    if (actionLabel != null && onAction != null) {
+                        TextButton(
+                            onClick = onAction,
+                            contentPadding = PaddingValues(horizontal = Space.sm),
+                        ) {
+                            Text(actionLabel, style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                    if (trailing != null) {
+                        Text(
+                            text = trailing,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (accent) {
+                                MaterialTheme.colorScheme.tertiary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                        )
+                    }
+                }
             }
         }
     }

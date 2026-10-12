@@ -15,17 +15,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -35,6 +39,7 @@ import dev.montra.ui.components.AlertBlock
 import dev.montra.ui.components.CatalogueRibbon
 import dev.montra.ui.components.SearchBar
 import dev.montra.ui.theme.Space
+import dev.montra.util.formatBytes
 
 /**
  * The Apps tab: everything in the catalogue, grouped by what the person needs to do
@@ -58,6 +63,7 @@ fun AppsScreen(
     onOpenSearch: () -> Unit,
     onOpen: (IndexApp) -> Unit,
     onInstall: (IndexApp) -> Unit,
+    onUpdateAll: (List<IndexApp>, Boolean) -> Unit,
     onAuthorize: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -65,6 +71,10 @@ fun AppsScreen(
     val filtered = remember(state.rows, state.category, state.filter, state.requirement) {
         state.filteredRows()
     }
+
+    // A confirmação de "atualizar tudo" fica pendente até haver resposta. Guarda as
+    // linhas e não as apps porque é delas que sai o peso total que o diálogo mostra.
+    var confirmingUpdates by remember { mutableStateOf<List<AppRow>?>(null) }
 
     val listState = rememberLazyListState()
     // A faixa recolhe assim que a lista anda: em cima é a assinatura do catálogo, a
@@ -154,7 +164,15 @@ fun AppsScreen(
                         appSections(
                             sections = buildList {
                                 if (updates.isNotEmpty()) {
-                                    add(AppSectionSpec(strings.getString(R.string.text_updates_available), updates, accent = true))
+                                    add(
+                                        AppSectionSpec(
+                                            title = strings.getString(R.string.text_updates_available),
+                                            rows = updates,
+                                            accent = true,
+                                            actionLabel = strings.getString(R.string.text_update_all),
+                                            onAction = { confirmingUpdates = updates },
+                                        ),
+                                    )
                                 }
                                 if (installed.isNotEmpty()) {
                                     add(AppSectionSpec(strings.getString(R.string.text_installed), installed))
@@ -178,6 +196,74 @@ fun AppsScreen(
             }
         }
     }
+
+    confirmingUpdates?.let { pending ->
+        UpdateAllDialog(
+            count = pending.size,
+            totalBytes = pending.sumOf { it.size },
+            onMeteredNetwork = state.onMeteredNetwork,
+            onDismiss = { confirmingUpdates = null },
+            onConfirm = {
+                confirmingUpdates = null
+                // Autorizado aqui, para todas: o diálogo já disse que a rede é medida e
+                // quanto pesa no total. Voltar a perguntar app a app era pedir cinco
+                // vezes a mesma resposta.
+                onUpdateAll(pending.map { it.app }, true)
+            },
+        )
+    }
+}
+
+/**
+ * A confirmação de "atualizar tudo".
+ *
+ * Existe por uma razão concreta: cada instalação abre o seu próprio diálogo do
+ * sistema, e uma fila de cinco diálogos que aparece sem aviso é uma coisa que se faz
+ * a alguém sem lhe dizer. Aqui diz-se o que vai acontecer, quantas são e quanto pesam
+ * — e, se a rede for medida, que vão passar por lá.
+ */
+@Composable
+private fun UpdateAllDialog(
+    count: Int,
+    totalBytes: Long,
+    onMeteredNetwork: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    val strings = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(strings.getString(R.string.text_update_all)) },
+        text = {
+            Column {
+                Text(strings.resources.getQuantityString(R.plurals.update_count, count, count))
+                Spacer(Modifier.height(Space.xs))
+                Text(
+                    text = strings.getString(R.string.text_1_s_in_total, formatBytes(totalBytes)),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (onMeteredNetwork) {
+                    Spacer(Modifier.height(Space.sm))
+                    Text(
+                        text = strings.getString(R.string.text_you_are_on_mobile_data_these),
+                        color = MaterialTheme.colorScheme.tertiary,
+                    )
+                }
+                Spacer(Modifier.height(Space.sm))
+                Text(
+                    text = strings.getString(R.string.text_android_asks_for_each_app_in_turn),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = onConfirm) { Text(strings.getString(R.string.text_update_all)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(strings.getString(R.string.text_cancel)) }
+        },
+    )
 }
 
 /** "42 apps · 6 instaladas" — o que este catálogo tem, dito em números. */

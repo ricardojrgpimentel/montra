@@ -235,6 +235,12 @@ data class AppSectionSpec(
     val rows: List<AppRow>,
     /** Pinta o título com a cor de atenção: só para o que exige uma decisão. */
     val accent: Boolean = false,
+    /**
+     * Ação que se aplica à secção inteira, mostrada no cabeçalho dela — "Atualizar
+     * tudo" nas atualizações. Vive aqui e não numa linha porque é sobre todas.
+     */
+    val actionLabel: String? = null,
+    val onAction: (() -> Unit)? = null,
 )
 
 /**
@@ -261,6 +267,8 @@ fun LazyListScope.appSections(
                 trailing = section.rows.size.toString(),
                 divider = index > 0,
                 accent = section.accent,
+                actionLabel = section.actionLabel,
+                onAction = section.onAction,
                 modifier = Modifier.padding(horizontal = Space.lg),
             )
         }
