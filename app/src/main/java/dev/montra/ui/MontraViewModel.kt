@@ -10,6 +10,7 @@ import dev.montra.MontraApp
 import dev.montra.data.AutoRefresh
 import dev.montra.data.IndexState
 import dev.montra.data.ThemeMode
+import dev.montra.data.UpdateCheck
 import dev.montra.data.model.RequirementFilter
 import dev.montra.data.model.Asset
 import dev.montra.data.model.IndexApp
@@ -22,6 +23,7 @@ import dev.montra.install.InstallState
 import dev.montra.security.ApkVerifier
 import dev.montra.util.fingerprintsMatch
 import dev.montra.util.isStaleRelease
+import dev.montra.work.BackgroundChecks
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -246,7 +248,12 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
 
     fun setAutoRefresh(value: AutoRefresh) {
         autoRefresh.value = value
-        viewModelScope.launch { container.settings.setAutoRefresh(value) }
+        viewModelScope.launch {
+            container.settings.setAutoRefresh(value)
+            // A cadência também é a do trabalho de fundo: mudá-la e não reagendar era
+            // mudá-la só no ecrã.
+            BackgroundChecks.schedule(getApplication(), value)
+        }
         // Escolher uma cadência e não ver nada acontecer é o mesmo que não a ter:
         // se já passou tempo suficiente para a nova cadência, verifica já.
         maybeAutoRefresh()
@@ -405,20 +412,19 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                 val pinnedCert = asset?.signingCertSha256 ?: app.signingCertSha256
                 val conflict = info?.certSha256 != null && pinnedCert != null &&
                     !fingerprintsMatch(pinnedCert, info.certSha256)
-                val targetVersion = asset?.versionCode ?: app.release?.versionCode
-                // Um projeto que publica splits atribui versionCodes diferentes por
-                // ABI (o Obtainium: 2356 no universal, 23563 no arm64). Quem tem o
-                // universal instalado não deve ver "Atualizar" para a mesma versão,
-                // portanto o nome da versão manda quando existe.
-                val targetName = asset?.versionName ?: app.release?.versionName
-                val sameVersionName = info?.versionName != null && targetName != null &&
-                    info.versionName == targetName
                 AppRow(
                     app = app,
                     asset = asset,
                     installed = info,
-                    updateAvailable = info != null && targetVersion != null &&
-                        targetVersion > info.versionCode && !sameVersionName,
+                    // A mesma regra que o trabalho de fundo usa. Estava escrita aqui e
+                    // uma segunda cópia para o serviço era a maneira garantida de a
+                    // notificação dizer "3 atualizações" e a lista mostrar duas.
+                    updateAvailable = UpdateCheck.isUpdateAvailable(
+                        app = app,
+                        asset = asset,
+                        installedVersionCode = info?.versionCode,
+                        installedVersionName = info?.versionName,
+                    ),
                     signatureConflict = conflict,
                     installState = installStates[app.id] ?: InstallState.Idle,
                     iconUrl = app.icon?.let { container.indexRepository.mediaUrl(it) },

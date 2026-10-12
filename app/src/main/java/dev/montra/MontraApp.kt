@@ -10,6 +10,11 @@ import dev.montra.install.ApkDownloader
 import dev.montra.install.InstallManager
 import dev.montra.security.TrustStore
 import dev.montra.ui.ImageStore
+import dev.montra.work.BackgroundChecks
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
@@ -43,5 +48,12 @@ class MontraApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        // Reagenda no arranque: o trabalho sobrevive ao reboot com `setPersisted`, mas
+        // a cadência vive em disco e o sistema pode tê-lo perdido. Reagendar é
+        // idempotente — o mesmo id substitui o trabalho, e o agendador não reinicia o
+        // contador quando o intervalo é o mesmo.
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            BackgroundChecks.schedule(this@MontraApp, container.settings.currentAutoRefresh())
+        }
     }
 }

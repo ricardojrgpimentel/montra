@@ -260,6 +260,9 @@
     <string name="channel_downloads">"Descargas"</string>
     <string name="channel_downloads_detail">"Progreso de instalación"</string>
     <string name="channel_downloads_description">"Muestra el progreso de las descargas e instalaciones."</string>
+    <string name="channel_updates">"Actualizaciones"</string>
+    <string name="channel_updates_description">"Avisa cuando el catálogo tiene versiones más recientes de las apps que tienes instaladas."</string>
+    <string name="notification_updates_detail">"Toca para verlas y actualizarlas"</string>
     <string name="notification_downloading">"Descargando %1$s"</string>
     <string name="notification_verifying">"Verificando %1$s"</string>
     <string name="notification_verifying_detail">"SHA-256 y certificado de firma"</string>
@@ -310,4 +313,8 @@
     <string name="index_unreadable">"El catálogo se verificó, pero sus datos no son válidos."</string>
     <string name="install_with_size">"Instalar · %1$s"</string>
     <string name="all_architectures">"todas"</string>
+    <plurals name="notification_updates">
+        <item quantity="one">"%1$d actualización disponible"</item>
+        <item quantity="other">"%1$d actualizaciones disponibles"</item>
+    </plurals>
 </resources>

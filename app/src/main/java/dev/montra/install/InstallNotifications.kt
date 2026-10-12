@@ -5,16 +5,15 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.content.pm.PackageManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import dev.montra.MainActivity
 import dev.montra.R
+import dev.montra.util.Notifications
 import dev.montra.util.formatBytes
 
 /**
@@ -105,14 +104,8 @@ object InstallNotifications {
             }
         }
         ensureChannel(context)
-        val allowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
-        if (allowed) {
-            runCatching {
-                NotificationManagerCompat.from(context).notify(request.appId, NOTIFICATION_ID, notification)
-            }
-        }
+        // Com tag: o resultado de uma app não pode substituir o progresso de outra.
+        Notifications.post(context, NOTIFICATION_ID, notification, tag = request.appId)
     }
 
     fun installed(context: Context, request: InstallRequest): Notification =

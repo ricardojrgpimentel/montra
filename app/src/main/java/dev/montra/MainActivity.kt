@@ -72,6 +72,7 @@ import dev.montra.ui.GamesScreen
 import dev.montra.ui.MontraViewModel
 import dev.montra.ui.SearchScreen
 import dev.montra.ui.SettingsScreen
+import dev.montra.work.UpdateNotifications
 import dev.montra.ui.components.MontraBrand
 import dev.montra.ui.theme.MontraTheme
 import dev.montra.ui.theme.Motion
@@ -86,10 +87,13 @@ class MainActivity : AppCompatActivity() {
     /** Set when the app was opened from a download notification. */
     private val pendingAppId = MutableStateFlow<String?>(null)
 
+    /** Set when the app was opened from the "updates available" notification. */
+    private val pendingOpenUpdates = MutableStateFlow(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        pendingAppId.value = intent?.getStringExtra(InstallRequest.EXTRA_APP_ID)
+        readIntent(intent)
         setContent {
             val themeMode by viewModel.themeMode.collectAsState()
             MontraTheme(darkTheme = themeMode.isDark(isSystemInDarkTheme())) {
@@ -98,6 +102,8 @@ class MainActivity : AppCompatActivity() {
                     themeMode = themeMode,
                     pendingAppId = pendingAppId,
                     onAppIdConsumed = { pendingAppId.value = null },
+                    pendingOpenUpdates = pendingOpenUpdates,
+                    onOpenUpdatesConsumed = { pendingOpenUpdates.value = false },
                 )
             }
         }
@@ -108,7 +114,14 @@ class MainActivity : AppCompatActivity() {
         setIntent(intent)
         // Tapping the progress notification while the app is already open should take
         // the user to that app, not restart the activity (singleTop).
-        pendingAppId.value = intent.getStringExtra(InstallRequest.EXTRA_APP_ID)
+        readIntent(intent)
+    }
+
+    private fun readIntent(intent: Intent?) {
+        pendingAppId.value = intent?.getStringExtra(InstallRequest.EXTRA_APP_ID)
+        if (intent?.getBooleanExtra(UpdateNotifications.EXTRA_OPEN_UPDATES, false) == true) {
+            pendingOpenUpdates.value = true
+        }
     }
 
     override fun onResume() {
@@ -152,10 +165,13 @@ fun MontraRoot(
     themeMode: ThemeMode = ThemeMode.DEFAULT,
     pendingAppId: StateFlow<String?> = MutableStateFlow(null),
     onAppIdConsumed: () -> Unit = {},
+    pendingOpenUpdates: StateFlow<Boolean> = MutableStateFlow(false),
+    onOpenUpdatesConsumed: () -> Unit = {},
 ) {
     val strings = LocalContext.current
     val state by viewModel.ui.collectAsState()
     val requestedAppId by pendingAppId.collectAsState()
+    val requestedOpenUpdates by pendingOpenUpdates.collectAsState()
     val navController = rememberNavController()
     val context = LocalContext.current
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -173,6 +189,19 @@ fun MontraRoot(
             navController.navigate("detail/$id") { launchSingleTop = true }
             onAppIdConsumed()
         }
+    }
+
+    // A notificação das atualizações abre a app onde elas estão: no separador das
+    // apps, que é o primeiro sítio onde aparecem. Se a app já estiver noutro
+    // separador, isto traz o utilizador para o certo em vez de o deixar onde estava.
+    LaunchedEffect(requestedOpenUpdates) {
+        if (!requestedOpenUpdates) return@LaunchedEffect
+        navController.navigate(Tab.APPS.route) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+        onOpenUpdatesConsumed()
     }
 
     val authorize: () -> Unit = {

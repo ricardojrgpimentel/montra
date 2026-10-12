@@ -77,6 +77,7 @@ class Settings(private val context: Context) {
     private val autoRefreshKey = intPreferencesKey("auto_refresh_minutes")
     private val themeModeKey = stringPreferencesKey("theme_mode")
     private val lastCheckedKey = longPreferencesKey("last_checked_at")
+    private val notifiedUpdatesKey = stringPreferencesKey("notified_updates")
 
     val indexUrl: Flow<String> = context.dataStore.data.map { it[indexUrlKey] ?: BuildConfig.DEFAULT_INDEX_URL }
 
@@ -135,6 +136,24 @@ class Settings(private val context: Context) {
         context.dataStore.edit { prefs -> prefs[lastCheckedKey] = value }
     }
 
+    /**
+     * A impressão digital do último conjunto de atualizações que gerou notificação.
+     *
+     * Existe para a mesma notificação não ser repetida a cada verificação: uma loja
+     * que diz "3 atualizações" de hora a hora é uma loja que se desliga. Muda quando
+     * aparece uma atualização nova ou quando uma é aplicada — que é exactamente
+     * quando vale a pena voltar a falar.
+     */
+    val notifiedUpdates: Flow<String?> = context.dataStore.data.map { it[notifiedUpdatesKey] }
+
+    suspend fun currentNotifiedUpdates(): String? = notifiedUpdates.first()
+
+    suspend fun setNotifiedUpdates(value: String?) {
+        context.dataStore.edit { prefs ->
+            if (value == null) prefs.remove(notifiedUpdatesKey) else prefs[notifiedUpdatesKey] = value
+        }
+    }
+
     suspend fun setIndexUrl(url: String) {
         context.dataStore.edit { prefs ->
             prefs[indexUrlKey] = url.trim()
@@ -142,6 +161,8 @@ class Settings(private val context: Context) {
             prefs.remove(etagKey)
             // E "verificado há 3 minutos" era sobre outro catálogo: deixa de ser verdade.
             prefs.remove(lastCheckedKey)
+            // O conjunto de atualizações era de outro catálogo.
+            prefs.remove(notifiedUpdatesKey)
         }
     }
 
@@ -156,6 +177,7 @@ class Settings(private val context: Context) {
             prefs.remove(indexUrlKey)
             prefs.remove(etagKey)
             prefs.remove(lastCheckedKey)
+            prefs.remove(notifiedUpdatesKey)
         }
     }
 }

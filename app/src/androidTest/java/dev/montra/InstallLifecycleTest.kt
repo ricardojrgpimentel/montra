@@ -98,7 +98,7 @@ class InstallLifecycleTest {
         val id = session()
         awaitConfirmation(id)
         manager.cancelPendingInstall(request.appId)
-        assertNull(installer.getSessionInfo(id))
+        eventually("a sessão não foi abandonada") { installer.getSessionInfo(id) == null }
         assertNull(notification())
         assertEquals(InstallState.Idle, manager.stateOf(request.appId))
         deliver(id, PackageInstaller.STATUS_FAILURE_ABORTED)
@@ -110,7 +110,9 @@ class InstallLifecycleTest {
         val id = session()
         assertTrue(manager.onResult(request.appId, id, PackageInstaller.STATUS_PENDING_USER_ACTION, null))
         assertTrue(manager.stateOf(request.appId) is InstallState.Failed)
-        assertNull(installer.getSessionInfo(id))
+        eventually("a sessão não foi abandonada depois de a confirmação faltar") {
+            installer.getSessionInfo(id) == null
+        }
     }
 
     @Test

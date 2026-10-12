@@ -260,6 +260,9 @@
     <string name="channel_downloads">"Downloads"</string>
     <string name="channel_downloads_detail">"App installation progress"</string>
     <string name="channel_downloads_description">"Shows download and installation progress."</string>
+    <string name="channel_updates">"Updates"</string>
+    <string name="channel_updates_description">"Tells you when the catalogue has newer versions of apps you have installed."</string>
+    <string name="notification_updates_detail">"Tap to see and update them"</string>
     <string name="notification_downloading">"Downloading %1$s"</string>
     <string name="notification_verifying">"Verifying %1$s"</string>
     <string name="notification_verifying_detail">"SHA-256 and signing certificate"</string>
@@ -304,4 +307,8 @@
     <string name="index_unreadable">"The catalogue was verified, but its data is invalid."</string>
     <string name="install_with_size">"Install · %1$s"</string>
     <string name="all_architectures">"all"</string>
+    <plurals name="notification_updates">
+        <item quantity="one">"%1$d update available"</item>
+        <item quantity="other">"%1$d updates available"</item>
+    </plurals>
 </resources>

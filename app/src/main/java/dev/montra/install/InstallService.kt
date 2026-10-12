@@ -1,12 +1,10 @@
 package dev.montra.install
 
 import dev.montra.util.asString
-import android.Manifest
 import android.app.Notification
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
@@ -16,6 +14,7 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import dev.montra.R
 import dev.montra.util.Log
+import dev.montra.util.Notifications
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -191,20 +190,14 @@ class InstallService : Service() {
     }
 
     /**
-     * A user who denied notifications must not lose the download: the app's own
-     * screen shows the same progress. So this is a checked, best-effort post — and
-     * it says so in the log rather than failing silently.
+     * A notificação de progresso é a mesma que este serviço põe em primeiro plano, e
+     * é por isso que não leva tag: o `startForeground` não aceita uma. As de
+     * resultado levam `tag = appId` (ver [InstallNotifications.showResult]), para o
+     * resultado de uma app e o progresso de outra poderem coexistir em vez de uma
+     * substituir a outra. São dois espaços de nomes de propósito.
      */
     private fun post(notification: Notification) {
-        val allowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
-        val manager = NotificationManagerCompat.from(this)
-        if (!allowed || !manager.areNotificationsEnabled()) {
-            Log.d("notificações não autorizadas: o progresso continua visível no ecrã da app")
-            return
-        }
-        runCatching { manager.notify(InstallNotifications.NOTIFICATION_ID, notification) }
+        Notifications.post(this, InstallNotifications.NOTIFICATION_ID, notification)
     }
 
     private fun finish(request: InstallRequest) {

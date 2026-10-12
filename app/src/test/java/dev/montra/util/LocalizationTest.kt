@@ -23,6 +23,21 @@ class LocalizationTest {
         }
     }
 
+    @Test fun `all languages declare the same plurals, and each one has an other`() {
+        val english = resourcePlurals("en")
+        assertTrue("nenhum plural declarado", english.isNotEmpty())
+        for (language in listOf("en", "pt", "es", "fr")) {
+            val plurals = resourcePlurals(language)
+            // As quantidades variam por língua (o francês tem `many`); o que tem de
+            // bater certo são os nomes, senão uma língua fica sem o plural que o
+            // código pede e o Android cai no recurso por omissão sem avisar.
+            assertEquals("$language declares different plurals", english.keys, plurals.keys)
+            for ((name, quantities) in plurals) {
+                assertTrue("$language/$name has no 'other'", "other" in quantities)
+            }
+        }
+    }
+
     @Test fun `state text is resolved again when the language changes`() {
         val text = verifiedLabel(1_000_000L, 1_120_000L)
         assertEquals("verificado há 2 minutos", text.testText("pt"))
