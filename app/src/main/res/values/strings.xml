@@ -83,6 +83,7 @@
     <string name="text_android_asks_for_each_app_in_turn">"Android asks you to confirm each app in turn. The queue handles the rest."</string>
     <string name="text_you_are_on_mobile_data_these">"You are on mobile data: these downloads will go through it."</string>
     <string name="text_installed">"Installed"</string>
+    <string name="text_uninstall">"Uninstall"</string>
     <string name="text_all">"All"</string>
     <string name="text_discover">"Discover"</string>
     <string name="text_nothing_in_this_category">"Nothing in this category."</string>
@@ -111,6 +112,7 @@
     <string name="text_installed_games">"Installed games"</string>
     <string name="text_games_and_emulators_2">"Games and emulators"</string>
     <string name="text_outside_the_play_store">"Outside the Play Store"</string>
+    <string name="text_new_in_the_catalogue">"New in the catalogue"</string>
     <string name="text_restricted_licence_2">"Restricted licence"</string>
     <string name="text_name">"Name"</string>
     <string name="text_popular">"Popular"</string>

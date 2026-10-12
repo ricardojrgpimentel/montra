@@ -284,7 +284,7 @@ private fun FilterSheet(
                     RequirementFilter.entries.forEach { requirement ->
                         ChoiceRow(
                             label = strings.getString(requirement.labelRes),
-                            detail = "${state.rows.count { it.app.matchesCatalogueFilters(state.category, state.filter, requirement) }}",
+                            detail = "${state.rows.count { it.matchesCatalogueFilters(state.category, state.filter, requirement) }}",
                             selected = state.requirement == requirement,
                             onClick = { onRequirement(if (state.requirement == requirement) null else requirement) },
                             padding = false,

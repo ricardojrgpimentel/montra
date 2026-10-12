@@ -106,4 +106,38 @@ class TimeTest {
         // ficha vai atrás — mas tem de ser uma decisão, não um número solto.
         assertEquals(6L, STALE_RELEASE_MONTHS)
     }
+
+    @Test
+    fun `uma entrada recente e novidade e uma antiga nao`() {
+        val agora = OffsetDateTime.parse("2026-10-08T12:00:00Z").toInstant().toEpochMilli()
+        assertTrue(isNewInCatalogue("2026-10-07", agora))
+        // O dia em que faz trinta dias ainda conta: o limiar é "há menos de trinta
+        // dias", e não "há trinta dias ou menos".
+        assertTrue(isNewInCatalogue("2026-09-09", agora))
+        assertFalse(isNewInCatalogue("2026-09-08", agora))
+        assertFalse(isNewInCatalogue("2024-01-01", agora))
+    }
+
+    @Test
+    fun `sem data nao ha novidade para anunciar`() {
+        val agora = OffsetDateTime.parse("2026-10-08T12:00:00Z").toInstant().toEpochMilli()
+        // Pela mesma razão que não se acusa uma app de estar parada sem saber quando
+        // lançou: não se anuncia como nova uma entrada sem data.
+        assertFalse(isNewInCatalogue(null, agora))
+        assertFalse(isNewInCatalogue("", agora))
+        assertFalse(isNewInCatalogue("ontem", agora))
+    }
+
+    @Test
+    fun `uma data com instante completo tambem serve`() {
+        val agora = OffsetDateTime.parse("2026-10-08T12:00:00Z").toInstant().toEpochMilli()
+        // O índice já publicou `addedAt` das duas formas; aceitar as duas é mais barato
+        // do que depender de qual delas está em vigor.
+        assertTrue(isNewInCatalogue("2026-10-07T09:30:00Z", agora))
+    }
+
+    @Test
+    fun `o limiar da novidade esta num sitio so`() {
+        assertEquals(30L, NEW_IN_CATALOGUE_DAYS)
+    }
 }

@@ -22,6 +22,7 @@ import dev.montra.install.InstallService
 import dev.montra.install.InstallState
 import dev.montra.security.ApkVerifier
 import dev.montra.util.fingerprintsMatch
+import dev.montra.util.isNewInCatalogue
 import dev.montra.util.isStaleRelease
 import dev.montra.work.BackgroundChecks
 import kotlinx.coroutines.Dispatchers
@@ -45,6 +46,11 @@ import kotlinx.coroutines.withContext
  * isso é o que a linha "Baseado em" mostra na ficha.
  */
 enum class AppFilter(val labelRes: Int) {
+    /** O que apareceu no catálogo nos últimos dias. Depende do relógio, não da app. */
+    NEW(R.string.text_new_in_the_catalogue),
+
+    /** O que já está instalado neste telemóvel. Depende do sistema, não da app. */
+    INSTALLED(R.string.text_installed),
     OFF_PLAY(R.string.text_outside_the_play_store),
     RESTRICTED(R.string.text_restricted_licence_2),
 }
@@ -81,6 +87,8 @@ data class AppRow(
      * envelhece numa cache.
      */
     val staleRelease: Boolean = false,
+    /** Entrou no catálogo há pouco. Sai de `addedAt`, não de uma bandeira gravada. */
+    val isNew: Boolean = false,
 ) {
     val isInstalled: Boolean get() = installed != null
     val canInstall: Boolean get() = asset != null && incompatible == null && !signatureConflict
@@ -467,6 +475,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                     },
                     size = asset?.size ?: app.artifact?.size ?: 0L,
                     staleRelease = isStaleRelease(app.release?.publishedAt, now),
+                    isNew = isNewInCatalogue(app.addedAt, now),
                 )
             }
             .sortedWith(
@@ -497,6 +506,8 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                 filter = filter.value,
                 requirement = requirement.value,
                 filterCounts = mapOf(
+                    AppFilter.NEW to visible.count { isNewInCatalogue(it.addedAt, now) },
+                    AppFilter.INSTALLED to visible.count { installedNow.containsKey(it.packageName) },
                     AppFilter.OFF_PLAY to visible.count { it.playStore?.present == false },
                     AppFilter.RESTRICTED to visible.count { it.hasRestrictedLicense() },
                 ),

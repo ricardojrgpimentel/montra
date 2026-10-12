@@ -2,6 +2,7 @@ package dev.montra.util
 
 import dev.montra.R
 import java.time.Instant
+import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -10,6 +11,9 @@ import java.util.Locale
 
 /** Meses sem lançamento a partir dos quais a app merece um aviso. */
 const val STALE_RELEASE_MONTHS = 6L
+
+/** Dias desde a entrada no catálogo a partir dos quais ela deixa de ser novidade. */
+const val NEW_IN_CATALOGUE_DAYS = 30L
 
 /**
  * Há quanto tempo, em palavras. Para a faixa do catálogo poder dizer quando é que o
@@ -68,5 +72,36 @@ private fun parseReleaseInstant(publishedAt: String?): Instant? = try {
     publishedAt?.takeIf { it.isNotBlank() }?.let { OffsetDateTime.parse(it).toInstant() }
 } catch (_: DateTimeParseException) {
     null
+}
+
+/**
+ * A app entrou no catálogo há pouco?
+ *
+ * `addedAt` é uma data ("2026-10-07"), não um instante — mas aceita-se também o
+ * instante completo, porque o índice já mudou de forma uma vez e não vale a pena
+ * depender disso. Sem data não há novidade: uma entrada sem data não se anuncia como
+ * nova, pela mesma razão que não se acusa uma app de estar parada sem saber quando
+ * lançou.
+ *
+ * Trinta dias é generoso de propósito: o catálogo cresce por pull requests, e uma
+ * semana era curto para alguém que abre a loja ao fim de semana.
+ */
+fun isNewInCatalogue(addedAt: String?, now: Long, days: Long = NEW_IN_CATALOGUE_DAYS): Boolean {
+    val date = parseCatalogueDate(addedAt) ?: return false
+    val deadline = date.plusDays(days).atStartOfDay(ZoneOffset.UTC).toInstant()
+    return deadline.toEpochMilli() > now
+}
+
+private fun parseCatalogueDate(addedAt: String?): LocalDate? {
+    val text = addedAt?.takeIf { it.isNotBlank() } ?: return null
+    return try {
+        LocalDate.parse(text)
+    } catch (_: DateTimeParseException) {
+        try {
+            OffsetDateTime.parse(text).toLocalDate()
+        } catch (_: DateTimeParseException) {
+            null
+        }
+    }
 }
 

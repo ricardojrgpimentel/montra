@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -417,11 +418,19 @@ private fun InstallSection(
             }
         }
 
-        is InstallState.Installed -> Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
-            InstallManager.launchIntent(context, row.app.packageName)?.let { intent ->
-                Button(onClick = { context.startActivity(intent) }) { Text(strings.getString(R.string.text_open)) }
+        is InstallState.Installed -> Column {
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
+                InstallManager.launchIntent(context, row.app.packageName)?.let { intent ->
+                    Button(onClick = { context.startActivity(intent) }) { Text(strings.getString(R.string.text_open)) }
+                }
+                OutlinedButton(onClick = { onClearError(row.app.id) }) { Text(strings.getString(R.string.text_done)) }
             }
-            OutlinedButton(onClick = { onClearError(row.app.id) }) { Text(strings.getString(R.string.text_done)) }
+            // Desinstalar é a ação que faltava: uma loja que instala e não desinstala
+            // obriga a sair dela para resolver o que ela própria fez. O diálogo é o do
+            // sistema — a app não desinstala nada por si.
+            TextButton(onClick = { uninstall(context, row.app.packageName) }) {
+                Text(strings.getString(R.string.text_uninstall))
+            }
         }
 
         InstallState.NeedsPermission -> AlertBlock(
@@ -474,9 +483,21 @@ private fun InstallSection(
                     Button(onClick = { context.startActivity(intent) }) { Text(strings.getString(R.string.text_open)) }
                 }
                 Badge(strings.getString(R.string.text_latest_version), MaterialTheme.colorScheme.primary)
+                TextButton(onClick = { uninstall(context, row.app.packageName) }) {
+                    Text(strings.getString(R.string.text_uninstall))
+                }
             }
         }
     }
+}
+
+/**
+ * O diálogo de desinstalação é o do sistema (`ACTION_DELETE`): a app pede, quem decide
+ * é quem está a segurar no telemóvel. Não há caminho em que a Montra desinstale algo
+ * sem ser mostrada essa pergunta.
+ */
+private fun uninstall(context: Context, packageName: String) {
+    runCatching { context.startActivity(InstallManager.of(context).uninstallIntent(packageName)) }
 }
 
 /**

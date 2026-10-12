@@ -83,6 +83,7 @@
     <string name="text_android_asks_for_each_app_in_turn">"Android demande une confirmation app par app. La file s’occupe du reste."</string>
     <string name="text_you_are_on_mobile_data_these">"Tu es en données mobiles : ces téléchargements passeront par là."</string>
     <string name="text_installed">"Installées"</string>
+    <string name="text_uninstall">"Désinstaller"</string>
     <string name="text_all">"Tout"</string>
     <string name="text_discover">"Découvrir"</string>
     <string name="text_nothing_in_this_category">"Rien dans cette catégorie."</string>
@@ -111,6 +112,7 @@
     <string name="text_installed_games">"Installés"</string>
     <string name="text_games_and_emulators_2">"Jeux et émulateurs"</string>
     <string name="text_outside_the_play_store">"Hors du Play Store"</string>
+    <string name="text_new_in_the_catalogue">"Nouveautés au catalogue"</string>
     <string name="text_restricted_licence_2">"Licence restrictive"</string>
     <string name="text_name">"Nom"</string>
     <string name="text_popular">"Populaires"</string>
