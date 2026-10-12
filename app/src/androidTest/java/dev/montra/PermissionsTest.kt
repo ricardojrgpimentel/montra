@@ -55,6 +55,17 @@ class PermissionsTest {
     }
 
     @Test
+    fun showingNotificationsIsNotTreatedAsReachingPersonalData() {
+        // O sistema classifica-a como perigosa, e é — mas não chega a dados nenhuns, e
+        // assinalá-la punha a nota âmbar em quase todas as apps. Uma cor que aparece
+        // sempre deixa de dizer o que quer que seja.
+        val line = Permissions.lines(context, listOf("android.permission.POST_NOTIFICATIONS")).single()
+
+        assertFalse("mostrar notificações não é chegar a dados pessoais", line.sensitive)
+        assertTrue("mas continua a ser mostrada", line.label.isNotBlank())
+    }
+
+    @Test
     fun theLabelAndDescriptionComeFromTheSystemInTheReadersLanguage() {
         val camera = Permissions.lines(context, listOf("android.permission.CAMERA")).single()
 

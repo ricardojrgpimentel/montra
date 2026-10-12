@@ -43,9 +43,24 @@ object Permissions {
             label = info?.loadLabel(manager)?.toString()?.takeIf { it.isNotBlank() }
                 ?: name.substringAfterLast('.'),
             description = info?.loadDescription(manager)?.toString()?.takeIf { it.isNotBlank() },
-            sensitive = info != null && isDangerous(info),
+            sensitive = info != null && isAlarming(info, name),
         )
     }
+
+    /**
+     * A única exceção à regra "o sistema é que sabe".
+     *
+     * `POST_NOTIFICATIONS` é mesmo uma permissão de runtime — o sistema chama-lhe
+     * perigosa e não está errado. Mas não chega a dados nenhuns, e assinalá-la punha a
+     * nota âmbar em quase todas as apps: a nota passaria a afirmar de "mostrar
+     * notificações" o mesmo que afirma da câmara, e uma cor que aparece sempre deixa de
+     * dizer o que quer que seja — é o que o `DESIGN.md` diz sobre as secções todas
+     * coloridas. É a única exceção, e é por isso que está escrita em vez de escondida.
+     */
+    private const val NOTIFICATION_PERMISSION = "android.permission.POST_NOTIFICATIONS"
+
+    private fun isAlarming(info: PermissionInfo, name: String): Boolean =
+        name != NOTIFICATION_PERMISSION && isDangerous(info)
 
     /**
      * O nível base da permissão vive em `protectionLevel`, um campo que existe desde a
