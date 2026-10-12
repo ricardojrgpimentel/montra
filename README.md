@@ -283,7 +283,7 @@ O estado de cada app (`Idle`, `Downloading`, `Verifying`, `AwaitingUser`,
 
 ```bash
 ./gradlew :app:testDebugUnitTest                            # 89 testes, JVM, sem rede
-./gradlew :app:connectedDebugAndroidTest                    # 24 testes num dispositivo/emulador com rede
+./gradlew :app:connectedDebugAndroidTest                    # 25 testes num dispositivo/emulador com rede
 ```
 
 | Ficheiro | O que prova |
@@ -309,7 +309,7 @@ O estado de cada app (`Idle`, `Downloading`, `Verifying`, `AwaitingUser`,
 | `androidTest/PermissionsTest` | **no aparelho**: a classificação vem do nível de proteção que o sistema atribui, não de uma lista nossa; uma permissão desconhecida não é acusada de nada |
 | `androidTest/TransferGuardsTest` | as duas barreiras de ponta a ponta: em rede medida a transferência fica à espera e, autorizada, passa; um ficheiro impossível é recusado antes de se tocar na rede |
 | `androidTest/DownloadResumeTest` | **a retoma contra o servidor real**: semeia o `.part` com os primeiros megabytes, e verifica que o primeiro progresso chega depois deles e que o hash final cobre o ficheiro todo |
-| `androidTest/VerifiedApkTest` | um APK pode ser descarregado e verificado sem ser instalado: fica em cache com o sha256 do índice, e nenhuma sessão de instalação é aberta |
+| `androidTest/VerifiedApkTest` | um APK pode ser descarregado e verificado sem ser instalado — pelo caminho do "guardar o APK" e pelo pré-download de fundo: fica em cache com o sha256 do índice, e nenhuma sessão de instalação é aberta |
 
 O `RealIndexTest` liga o assinador (Node, `tools/sign-index.mjs`) ao verificador
 (Kotlin): se qualquer dos lados mudar de formato, o build falha. O teste
