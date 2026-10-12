@@ -205,6 +205,10 @@ private fun InstallAction(
         // À espera da sua vez: o toque fez alguma coisa, e a linha di-lo em vez de
         // continuar a oferecer "Instalar" como se nada tivesse acontecido.
         InstallState.Queued -> Badge(strings.getString(R.string.text_queued), MaterialTheme.colorScheme.secondary)
+        // Segurada antes de começar. O motivo e a saída vivem na ficha, que é onde há
+        // espaço para os explicar; na linha cabe o distintivo, e a linha abre a ficha.
+        InstallState.OnMeteredNetwork -> Badge(strings.getString(R.string.text_wifi_only), MaterialTheme.colorScheme.secondary)
+        is InstallState.NoSpace -> Badge(strings.getString(R.string.text_no_space), MaterialTheme.colorScheme.tertiary)
         InstallState.NeedsPermission -> TextButton(onClick = onAuthorize) { Text(strings.getString(R.string.text_allow)) }
         is InstallState.Installed -> Badge(strings.getString(R.string.installed_badge), MaterialTheme.colorScheme.primary)
         is InstallState.Failed -> TextButton(onClick = onInstall) { Text(strings.getString(R.string.text_retry)) }

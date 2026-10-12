@@ -228,6 +228,11 @@ class CatalogueNetworkSmokeTest {
                 packageName = app.packageName,
                 pinnedCertSha256 = app.signingCertSha256,
                 asset = asset,
+                // Este teste é sobre cancelar uma transferência, não sobre a política
+                // de rede. O aparelho pode estar em dados móveis, e sem esta
+                // autorização o pipeline segura a transferência — corretamente — e o
+                // teste ficava vinte segundos à espera de um download que nunca começa.
+                allowMetered = true,
             ),
         )
 

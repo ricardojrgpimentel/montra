@@ -138,6 +138,14 @@
     <string name="text_automatic_checks">"Verificação automática"</string>
     <string name="text_the_catalogue_is_a_repository_file_while">"O catálogo é um ficheiro num repositório: não há servidor para nos avisar quando sai uma versão nova. A app pergunta sozinha, com a lista aberta, e usa o ETag — quando nada mudou, custa uma resposta de uns bytes."</string>
     <string name="text_installation">"Instalação"</string>
+    <string name="text_only_download_over_wi_fi">"Só transferir por Wi-Fi"</string>
+    <string name="text_the_catalogue_has_apps_of_hundreds">"O catálogo tem apps de centenas de megabytes. Com isto ligado, uma transferência em dados móveis pergunta primeiro; a autorização é dada na ficha da app."</string>
+    <string name="text_wifi_only">"só Wi-Fi"</string>
+    <string name="text_no_space">"sem espaço"</string>
+    <string name="text_mobile_data">"Dados móveis"</string>
+    <string name="text_montra_only_downloads_over_wi_fi">"A Montra está definida para só transferir por Wi-Fi, e estás em dados móveis. Podes transferir esta na mesma, ou mudar isso nas definições."</string>
+    <string name="text_not_enough_space_1_s_free_on_the_phone">"Não cabe no telemóvel: faltam %1$s. Liberta espaço e tenta outra vez."</string>
+    <string name="text_download_anyway">"Transferir na mesma"</string>
     <string name="text_download_cache">"Cache de transferências"</string>
     <string name="text_apks_waiting_to_be_installed_and_leftovers">"APKs à espera de instalação e restos de transferências interrompidas. É limpo sozinho quando o catálogo é verificado; podes mandá-lo embora agora."</string>
     <string name="text_1_s_on_disk">"%1$s em disco"</string>
@@ -263,6 +271,7 @@
     <string name="channel_updates">"Atualizações"</string>
     <string name="channel_updates_description">"Diz quando o catálogo tem versões mais recentes das apps que tens instaladas."</string>
     <string name="notification_updates_detail">"Toca para as ver e atualizar"</string>
+    <string name="notification_held">"Transferência em espera: %1$s"</string>
     <string name="notification_downloading">"A descarregar %1$s"</string>
     <string name="notification_verifying">"A verificar %1$s"</string>
     <string name="notification_verifying_detail">"sha256 e certificado de assinatura"</string>

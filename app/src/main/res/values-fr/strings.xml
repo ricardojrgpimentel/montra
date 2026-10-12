@@ -138,6 +138,14 @@
     <string name="text_automatic_checks">"Vérification automatique"</string>
     <string name="text_the_catalogue_is_a_repository_file_while">"Le catalogue est un fichier dans un dépôt. Lorsque l’app est ouverte, Montra vérifie les mises à jour avec ETag. Sans changement, la réponse ne pèse que quelques octets."</string>
     <string name="text_installation">"Installation"</string>
+    <string name="text_only_download_over_wi_fi">"Télécharger en Wi-Fi seulement"</string>
+    <string name="text_the_catalogue_has_apps_of_hundreds">"Le catalogue contient des apps de plusieurs centaines de mégaoctets. Avec ce réglage, un téléchargement en données mobiles demande d’abord ; tu l’autorises sur la fiche de l’app."</string>
+    <string name="text_wifi_only">"Wi-Fi seulement"</string>
+    <string name="text_no_space">"pas d’espace"</string>
+    <string name="text_mobile_data">"Données mobiles"</string>
+    <string name="text_montra_only_downloads_over_wi_fi">"Montra est réglée pour télécharger en Wi-Fi seulement, et tu es en données mobiles. Tu peux télécharger celle-ci quand même, ou changer ce réglage dans les paramètres."</string>
+    <string name="text_not_enough_space_1_s_free_on_the_phone">"Ça ne rentre pas sur le téléphone : il manque %1$s. Libère de l’espace et réessaie."</string>
+    <string name="text_download_anyway">"Télécharger quand même"</string>
     <string name="text_download_cache">"Cache de téléchargements"</string>
     <string name="text_apks_waiting_to_be_installed_and_leftovers">"Des APK en attente d’installation et des restes de téléchargements interrompus. Le nettoyage se fait seul à la vérification du catalogue ; tu peux le vider maintenant."</string>
     <string name="text_1_s_on_disk">"%1$s sur le disque"</string>
@@ -263,6 +271,7 @@
     <string name="channel_updates">"Mises à jour"</string>
     <string name="channel_updates_description">"Prévient quand le catalogue a des versions plus récentes des apps que tu as installées."</string>
     <string name="notification_updates_detail">"Appuie pour les voir et les mettre à jour"</string>
+    <string name="notification_held">"Téléchargement en attente : %1$s"</string>
     <string name="notification_downloading">"Téléchargement de %1$s"</string>
     <string name="notification_verifying">"Vérification de %1$s"</string>
     <string name="notification_verifying_detail">"SHA-256 et certificat de signature"</string>

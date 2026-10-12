@@ -184,6 +184,9 @@ class InstallService : Service() {
             // Ainda não começou: não há progresso nenhum para mostrar, e a
             // notificação pertence a quem está a ser instalado agora.
             InstallState.Queued -> return
+            // Segurada antes de começar: quem explica é a notificação de resultado, no
+            // fim do pipeline, e não um progresso que não existe.
+            InstallState.OnMeteredNetwork, is InstallState.NoSpace -> return
             InstallState.Idle -> return
         }
         post(notification)

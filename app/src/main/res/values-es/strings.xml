@@ -138,6 +138,14 @@
     <string name="text_automatic_checks">"Verificación automática"</string>
     <string name="text_the_catalogue_is_a_repository_file_while">"El catálogo es un archivo en un repositorio. Con la app abierta, Montra busca cambios usando ETag. Si nada cambia, la respuesta usa solo unos bytes."</string>
     <string name="text_installation">"Instalación"</string>
+    <string name="text_only_download_over_wi_fi">"Descargar solo por Wi-Fi"</string>
+    <string name="text_the_catalogue_has_apps_of_hundreds">"El catálogo tiene apps de cientos de megabytes. Con esto activado, una descarga en datos móviles pregunta primero; la autorizas en la ficha de la app."</string>
+    <string name="text_wifi_only">"solo Wi-Fi"</string>
+    <string name="text_no_space">"sin espacio"</string>
+    <string name="text_mobile_data">"Datos móviles"</string>
+    <string name="text_montra_only_downloads_over_wi_fi">"Montra está configurada para descargar solo por Wi-Fi, y estás en datos móviles. Puedes descargar esta igualmente, o cambiarlo en los ajustes."</string>
+    <string name="text_not_enough_space_1_s_free_on_the_phone">"No cabe en el teléfono: faltan %1$s. Libera espacio e inténtalo de nuevo."</string>
+    <string name="text_download_anyway">"Descargar igualmente"</string>
     <string name="text_download_cache">"Caché de descargas"</string>
     <string name="text_apks_waiting_to_be_installed_and_leftovers">"APKs en espera de instalación y restos de descargas interrumpidas. Se limpia solo al verificar el catálogo; puedes vaciarlo ahora."</string>
     <string name="text_1_s_on_disk">"%1$s en disco"</string>
@@ -263,6 +271,7 @@
     <string name="channel_updates">"Actualizaciones"</string>
     <string name="channel_updates_description">"Avisa cuando el catálogo tiene versiones más recientes de las apps que tienes instaladas."</string>
     <string name="notification_updates_detail">"Toca para verlas y actualizarlas"</string>
+    <string name="notification_held">"Descarga en espera: %1$s"</string>
     <string name="notification_downloading">"Descargando %1$s"</string>
     <string name="notification_verifying">"Verificando %1$s"</string>
     <string name="notification_verifying_detail">"SHA-256 y certificado de firma"</string>

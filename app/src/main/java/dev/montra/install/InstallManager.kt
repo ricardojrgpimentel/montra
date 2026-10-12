@@ -11,7 +11,12 @@ import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
-import android.provider.Settings
+import android.os.StatFs
+// O `Settings` do Android e o da Montra chamam-se os dois `Settings`. O do sistema é
+// usado uma vez; fica com o nome comprido.
+import android.provider.Settings as AndroidSettings
+import dev.montra.data.NetworkStatus
+import dev.montra.data.Settings
 import dev.montra.data.model.Asset
 import dev.montra.security.ApkVerifier
 import dev.montra.util.Log
@@ -36,6 +41,17 @@ sealed interface InstallState {
      * de ser descartado, e di-lo em vez de deixar o botão parecer morto.
      */
     data object Queued : InstallState
+
+    /**
+     * A rede é medida e a app está definida para só transferir por Wi-Fi.
+     *
+     * Não é uma falha: é uma pergunta. A resposta é do utilizador, e a ficha oferece-a
+     * — perguntar antes de gastar 300 MB é o ponto todo.
+     */
+    data object OnMeteredNetwork : InstallState
+
+    /** Não cabe no telefone. Diz-se quanto falta, que é o que torna o aviso accionável. */
+    data class NoSpace(val missingBytes: Long) : InstallState
     data class Downloading(val bytes: Long, val total: Long, val fraction: Float) : InstallState
 
     /** Download complete, now checking hash and signature before asking the system. */
@@ -67,7 +83,12 @@ sealed interface InstallState {
  * [InstallService] while the UI observes it: one state machine, two views of it
  * (the screen and the notification).
  */
-class InstallManager(private val context: Context, private val downloader: ApkDownloader) {
+class InstallManager(
+    private val context: Context,
+    private val downloader: ApkDownloader,
+    private val network: NetworkStatus,
+    private val settings: Settings,
+) {
 
     private val _states = MutableStateFlow<Map<String, InstallState>>(emptyMap())
     val states: StateFlow<Map<String, InstallState>> = _states.asStateFlow()
@@ -86,7 +107,7 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
     fun canRequestInstall(): Boolean = context.packageManager.canRequestPackageInstalls()
 
     fun unknownSourcesSettingsIntent(): Intent = Intent(
-        Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+        AndroidSettings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
         Uri.parse("package:${context.packageName}"),
     )
 
@@ -115,6 +136,17 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
      * meio, e APKs completos de entradas que já não existem.
      */
     fun pruneDownloads(assets: List<Asset>) = downloader.prune(assets)
+
+    /**
+     * O espaço livre no volume onde o APK é escrito — o mesmo da área de preparação
+     * da sessão do instalador, que é o que faz a conta ser o dobro.
+     *
+     * Se a medição falhar, assume-se que cabe: uma estatística avariada não pode ser
+     * motivo para recusar uma instalação.
+     */
+    private fun freeSpaceBytes(): Long = runCatching {
+        StatFs(context.cacheDir.absolutePath).availableBytes
+    }.getOrDefault(Long.MAX_VALUE)
 
     fun confirmInstall(appId: String) {
         val state = stateOf(appId) as? InstallState.AwaitingUser ?: return
@@ -150,7 +182,27 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
             return
         }
 
+        // As duas barreiras que perguntam antes de gastar, e não depois: um erro a
+        // vermelho ao fim de 200 MB é a versão má de ambas.
+        if (TransferPolicy.holdForMeteredNetwork(
+                wifiOnly = settings.currentWifiOnly(),
+                metered = network.isMetered(),
+                allowMetered = request.allowMetered,
+            )
+        ) {
+            Log.i("${request.appId}: em dados móveis, e a app só transfere por Wi-Fi")
+            setState(request.appId, InstallState.OnMeteredNetwork)
+            return
+        }
+
         val asset = request.asset
+        val missing = TransferPolicy.missingBytes(asset.size, freeSpaceBytes())
+        if (missing > 0) {
+            Log.i("${request.appId}: faltam $missing bytes para transferir e instalar ${asset.size}")
+            setState(request.appId, InstallState.NoSpace(missing))
+            return
+        }
+
         try {
             Log.i("instalar ${request.appId} (${asset.abi}, ${asset.size} bytes, sha256 ${asset.sha256.take(16)}…)")
             setState(request.appId, InstallState.Downloading(0, asset.size, 0f))

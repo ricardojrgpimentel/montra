@@ -138,6 +138,14 @@
     <string name="text_automatic_checks">"Automatic checks"</string>
     <string name="text_the_catalogue_is_a_repository_file_while">"The catalogue is a repository file. While the app is open, Montra checks for updates using ETag. When nothing changes, the response uses only a few bytes."</string>
     <string name="text_installation">"Installation"</string>
+    <string name="text_only_download_over_wi_fi">"Download over Wi-Fi only"</string>
+    <string name="text_the_catalogue_has_apps_of_hundreds">"The catalogue has apps of hundreds of megabytes. With this on, a download on mobile data asks first; you authorise it on the app\'s page."</string>
+    <string name="text_wifi_only">"Wi-Fi only"</string>
+    <string name="text_no_space">"no space"</string>
+    <string name="text_mobile_data">"Mobile data"</string>
+    <string name="text_montra_only_downloads_over_wi_fi">"Montra is set to download over Wi-Fi only, and you are on mobile data. You can download this one anyway, or change that in settings."</string>
+    <string name="text_not_enough_space_1_s_free_on_the_phone">"It does not fit on the phone: %1$s short. Free up space and try again."</string>
+    <string name="text_download_anyway">"Download anyway"</string>
     <string name="text_download_cache">"Download cache"</string>
     <string name="text_apks_waiting_to_be_installed_and_leftovers">"APKs waiting to be installed and leftovers from interrupted downloads. It is cleaned up on its own when the catalogue is verified; you can send it away now."</string>
     <string name="text_1_s_on_disk">"%1$s on disk"</string>
@@ -263,6 +271,7 @@
     <string name="channel_updates">"Updates"</string>
     <string name="channel_updates_description">"Tells you when the catalogue has newer versions of apps you have installed."</string>
     <string name="notification_updates_detail">"Tap to see and update them"</string>
+    <string name="notification_held">"Download waiting: %1$s"</string>
     <string name="notification_downloading">"Downloading %1$s"</string>
     <string name="notification_verifying">"Verifying %1$s"</string>
     <string name="notification_verifying_detail">"SHA-256 and signing certificate"</string>

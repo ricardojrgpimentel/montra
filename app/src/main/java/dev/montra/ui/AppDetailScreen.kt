@@ -30,6 +30,7 @@ import dev.montra.data.model.categoryLabel
 import dev.montra.data.model.statusLabel
 import dev.montra.install.InstallManager
 import dev.montra.install.InstallState
+import dev.montra.install.holdReason
 import dev.montra.ui.components.AlertBlock
 import dev.montra.ui.components.AppIcon
 import dev.montra.ui.components.Badge
@@ -58,6 +59,7 @@ fun AppDetailScreen(
     onInstall: (IndexApp) -> Unit,
     onClearError: (String) -> Unit,
     onCancel: (String) -> Unit,
+    onInstallAnyway: (IndexApp) -> Unit,
     onAuthorize: () -> Unit,
     onOpenSource: (String) -> Unit,
     onOpenApp: (String) -> Unit,
@@ -197,6 +199,7 @@ fun AppDetailScreen(
             onInstall = onInstall,
             onClearError = onClearError,
             onCancel = onCancel,
+            onInstallAnyway = onInstallAnyway,
             onAuthorize = onAuthorize,
         )
 
@@ -313,6 +316,7 @@ private fun InstallSection(
     onInstall: (IndexApp) -> Unit,
     onClearError: (String) -> Unit,
     onCancel: (String) -> Unit,
+    onInstallAnyway: (IndexApp) -> Unit,
     onAuthorize: () -> Unit,
 ) {
     val strings = LocalContext.current
@@ -344,6 +348,36 @@ private fun InstallSection(
                 Text(strings.getString(R.string.text_cancel))
             }
         }
+
+        // Segurada antes de começar. Diz porquê e oferece a saída quando ela existe:
+        // quem tocou em Instalar tem de poder continuar ou desistir, e não ficar a
+        // olhar para um botão que não faz nada.
+        InstallState.OnMeteredNetwork -> AlertBlock(
+            title = strings.getString(R.string.text_mobile_data),
+            text = state.holdReason()?.asString(strings).orEmpty(),
+            action = {
+                Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
+                    Button(onClick = { onInstallAnyway(row.app) }) {
+                        Text(strings.getString(R.string.text_download_anyway))
+                    }
+                    TextButton(onClick = { onClearError(row.app.id) }) {
+                        Text(strings.getString(R.string.text_cancel))
+                    }
+                }
+            },
+        )
+
+        // Repetir não resolve nada enquanto não houver espaço: o que a ficha pode
+        // fazer é dizer quanto falta, e deixar a pessoa voltar quando o tiver.
+        is InstallState.NoSpace -> AlertBlock(
+            title = strings.getString(R.string.text_no_space),
+            text = state.holdReason()?.asString(strings).orEmpty(),
+            action = {
+                TextButton(onClick = { onClearError(row.app.id) }) {
+                    Text(strings.getString(R.string.text_dismiss))
+                }
+            },
+        )
 
         is InstallState.AwaitingUser -> Column {
             Text(

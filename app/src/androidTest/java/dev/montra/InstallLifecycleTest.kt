@@ -74,7 +74,7 @@ class InstallLifecycleTest {
         assertNotNull(notification())
         deliver(first, PackageInstaller.STATUS_FAILURE_ABORTED)
         assertEquals(InstallState.Idle, manager.stateOf(request.appId))
-        assertNull(notification())
+        eventually("a notificação não saiu depois de a instalação ser abandonada") { notification() == null }
 
         val retry = session()
         val action = awaitConfirmation(retry)
@@ -87,7 +87,7 @@ class InstallLifecycleTest {
     @Test
     fun notificationRetainsTheSameConfirmationActionAsTheScreen() {
         InstallNotifications.showResult(context, request, InstallState.AwaitingUser())
-        assertNull(notification())
+        eventually("não devia haver notificação sem confirmação para mostrar") { notification() == null }
         val action = awaitConfirmation(session())
         assertEquals(action, notification()!!.notification.contentIntent)
         assertTrue(notification()!!.notification.actions.isNotEmpty())
@@ -99,7 +99,7 @@ class InstallLifecycleTest {
         awaitConfirmation(id)
         manager.cancelPendingInstall(request.appId)
         eventually("a sessão não foi abandonada") { installer.getSessionInfo(id) == null }
-        assertNull(notification())
+        eventually("a notificação não saiu depois de cancelar") { notification() == null }
         assertEquals(InstallState.Idle, manager.stateOf(request.appId))
         deliver(id, PackageInstaller.STATUS_FAILURE_ABORTED)
         assertEquals(InstallState.Idle, manager.stateOf(request.appId))
@@ -119,7 +119,13 @@ class InstallLifecycleTest {
     fun sessionIdentitySurvivesManagerRecreationAndSuccessReplacesPendingNotification() {
         val id = session()
         awaitConfirmation(id)
-        val recreated = InstallManager(context, ApkDownloader(context, OkHttpClient()))
+        val container = (context.applicationContext as MontraApp).container
+        val recreated = InstallManager(
+            context,
+            ApkDownloader(context, OkHttpClient()),
+            container.networkStatus,
+            container.settings,
+        )
         assertFalse(recreated.onResult(request.appId, id + 1, PackageInstaller.STATUS_SUCCESS, null))
         assertTrue(recreated.onResult(
             request.appId, id, PackageInstaller.STATUS_PENDING_USER_ACTION, null,

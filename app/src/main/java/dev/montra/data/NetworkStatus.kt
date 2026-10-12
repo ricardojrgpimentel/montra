@@ -83,6 +83,20 @@ class NetworkStatus(context: Context) {
         }
     }
 
+    /**
+     * A rede ativa é medida?
+     *
+     * Dados móveis são; Wi-Fi, por omissão, não. Sem rede nenhuma devolve `false`:
+     * não há nada para segurar, porque a transferência vai falhar sozinha e com uma
+     * mensagem que fala do telefone. Isto decide se se *pergunta* antes de gastar
+     * 300 MB de alguém — não substitui a tentativa.
+     */
+    fun isMetered(): Boolean {
+        val manager = this.manager ?: return false
+        val capabilities = manager.activeNetwork?.let { manager.getNetworkCapabilities(it) } ?: return false
+        return !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+    }
+
     private fun activeNetworkHasInternet(manager: ConnectivityManager): Boolean =
         manager.activeNetwork?.let { manager.getNetworkCapabilities(it)?.hasInternet() } ?: false
 

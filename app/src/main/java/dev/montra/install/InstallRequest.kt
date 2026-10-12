@@ -17,6 +17,12 @@ data class InstallRequest(
     val packageName: String,
     val pinnedCertSha256: String?,
     val asset: Asset,
+    /**
+     * A pessoa autorizou esta transferência em dados móveis, apesar de a app estar
+     * definida para só transferir por Wi-Fi. Viaja no pedido porque quem decide é o
+     * pipeline, e o serviço é outro componente.
+     */
+    val allowMetered: Boolean = false,
 ) {
     fun putInto(intent: Intent): Intent = intent.apply {
         putExtra(EXTRA_APP_ID, appId)
@@ -30,6 +36,7 @@ data class InstallRequest(
         putExtra(EXTRA_CERT, asset.signingCertSha256)
         putExtra(EXTRA_VERSION_CODE, asset.versionCode ?: -1)
         putExtra(EXTRA_VERSION_NAME, asset.versionName)
+        putExtra(EXTRA_ALLOW_METERED, allowMetered)
     }
 
     companion object {
@@ -44,6 +51,7 @@ data class InstallRequest(
         const val EXTRA_CERT = "dev.montra.extra.CERT"
         const val EXTRA_VERSION_CODE = "dev.montra.extra.VERSION_CODE"
         const val EXTRA_VERSION_NAME = "dev.montra.extra.VERSION_NAME"
+        const val EXTRA_ALLOW_METERED = "dev.montra.extra.ALLOW_METERED"
 
         fun from(intent: Intent): InstallRequest? {
             val appId = intent.getStringExtra(EXTRA_APP_ID) ?: return null
@@ -55,6 +63,7 @@ data class InstallRequest(
                 appName = intent.getStringExtra(EXTRA_APP_NAME) ?: packageName,
                 packageName = packageName,
                 pinnedCertSha256 = intent.getStringExtra(EXTRA_PIN),
+                allowMetered = intent.getBooleanExtra(EXTRA_ALLOW_METERED, false),
                 asset = Asset(
                     abi = intent.getStringExtra(EXTRA_ABI) ?: "universal",
                     url = url,

@@ -101,6 +101,8 @@ data class UiState(
     /** Quantas apps cada categoria tem, para a folha de filtros as poder numerar. */
     val categoryCounts: Map<String, Int> = emptyMap(),
     val hideRestricted: Boolean = false,
+    /** Só transferir por Wi-Fi. A ficha pergunta antes de gastar dados de alguém. */
+    val wifiOnly: Boolean = true,
     val restrictedCount: Int = 0,
     val categories: List<String> = emptyList(),
     val canInstallPackages: Boolean = true,
@@ -135,6 +137,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
     private val filter = MutableStateFlow<AppFilter?>(null)
     private val requirement = MutableStateFlow<RequirementFilter?>(null)
     private val hideRestricted = MutableStateFlow(false)
+    private val wifiOnly = MutableStateFlow(true)
     private val autoRefresh = MutableStateFlow(AutoRefresh.DEFAULT)
 
     /** Corre enquanto a app está à frente; pára quando ela sai. Ver [onPause]. */
@@ -159,6 +162,12 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             hideRestricted.value = container.settings.currentHideRestricted()
             rebuild()
+        }
+        viewModelScope.launch {
+            container.settings.wifiOnly.collect { value ->
+                wifiOnly.value = value
+                rebuild()
+            }
         }
         viewModelScope.launch {
             // A preferência vive em disco: o fluxo é a fonte de verdade, não um valor
@@ -246,6 +255,10 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch { container.settings.setHideRestricted(value) }
     }
 
+    fun setWifiOnly(value: Boolean) {
+        viewModelScope.launch { container.settings.setWifiOnly(value) }
+    }
+
     fun setAutoRefresh(value: AutoRefresh) {
         autoRefresh.value = value
         viewModelScope.launch {
@@ -319,7 +332,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
      * ViewModel: a 300 MB download must survive the user leaving the app, and the
      * service is also what makes the progress notification possible.
      */
-    fun install(app: IndexApp) {
+    fun install(app: IndexApp, allowMetered: Boolean = false) {
         val asset = app.bestAssetFor(deviceAbis) ?: run {
             container.installManager.setState(
                 app.id,
@@ -335,6 +348,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                 packageName = app.packageName,
                 pinnedCertSha256 = app.signingCertSha256,
                 asset = asset,
+                allowMetered = allowMetered,
             ),
         )
     }
@@ -468,6 +482,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                     AppFilter.RESTRICTED to visible.count { it.hasRestrictedLicense() },
                 ),
                 hideRestricted = hideRestricted.value,
+                wifiOnly = wifiOnly.value,
                 restrictedCount = index.apps.count { it.hasRestrictedLicense() },
                 categories = categoryCounts.entries.sortedByDescending { e -> e.value }.map { e -> e.key },
                 categoryCounts = categoryCounts,

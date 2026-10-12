@@ -38,7 +38,7 @@ class AppContainer(context: Context) {
     val indexRepository = IndexRepository(context, indexSource, settings, trustStore, networkStatus)
     val downloader = ApkDownloader(context, okHttp)
     val imageStore = ImageStore(context, okHttp)
-    val installManager = InstallManager(context, downloader)
+    val installManager = InstallManager(context, downloader, networkStatus, settings)
 }
 
 class MontraApp : Application() {

@@ -78,6 +78,7 @@ class Settings(private val context: Context) {
     private val themeModeKey = stringPreferencesKey("theme_mode")
     private val lastCheckedKey = longPreferencesKey("last_checked_at")
     private val notifiedUpdatesKey = stringPreferencesKey("notified_updates")
+    private val wifiOnlyKey = booleanPreferencesKey("wifi_only")
 
     val indexUrl: Flow<String> = context.dataStore.data.map { it[indexUrlKey] ?: BuildConfig.DEFAULT_INDEX_URL }
 
@@ -100,6 +101,22 @@ class Settings(private val context: Context) {
 
     suspend fun setHideRestricted(value: Boolean) {
         context.dataStore.edit { prefs -> prefs[hideRestrictedKey] = value }
+    }
+
+    /**
+     * Só transferir por Wi-Fi.
+     *
+     * Ligado por omissão: o catálogo tem APKs de centenas de megabytes, e gastar os
+     * dados de alguém sem lhe perguntar é um dano que não se desfaz. Quem quiser
+     * transferir em dados móveis desliga isto, ou autoriza transferência a
+     * transferência na própria ficha.
+     */
+    val wifiOnly: Flow<Boolean> = context.dataStore.data.map { it[wifiOnlyKey] ?: true }
+
+    suspend fun currentWifiOnly(): Boolean = wifiOnly.first()
+
+    suspend fun setWifiOnly(value: Boolean) {
+        context.dataStore.edit { prefs -> prefs[wifiOnlyKey] = value }
     }
 
     val autoRefresh: Flow<AutoRefresh> = context.dataStore.data.map { prefs ->

@@ -98,6 +98,16 @@ object InstallNotifications {
             is InstallState.Installed -> installed(context, request)
             is InstallState.Failed -> failed(context, request, state.reason.asString(ContextCompat.getContextForLanguage(context)))
             InstallState.NeedsPermission -> failed(context, request, ContextCompat.getContextForLanguage(context).getString(R.string.notification_needs_permission))
+            // Segurada antes de começar: não é uma falha, e a razão é a mesma frase
+            // que a ficha mostra.
+            InstallState.OnMeteredNetwork, is InstallState.NoSpace -> {
+                val reason = state.holdReason()
+                if (reason == null) {
+                    dismiss(context, request.appId)
+                    return
+                }
+                held(context, request, reason.asString(ContextCompat.getContextForLanguage(context)))
+            }
             else -> {
                 dismiss(context, request.appId)
                 return
@@ -120,6 +130,21 @@ object InstallNotifications {
     fun failed(context: Context, request: InstallRequest, reason: String): Notification =
         base(context, request)
             .setContentTitle(ContextCompat.getContextForLanguage(context).getString(R.string.notification_failed, request.appName))
+            .setContentText(reason.lineSequence().first())
+            .setStyle(NotificationCompat.BigTextStyle().bigText(reason))
+            .setProgress(0, 0, false)
+            .setOngoing(false)
+            .setAutoCancel(true)
+            .build()
+
+    /**
+     * A transferência não começou porque falta uma resposta, não porque falhou. A
+     * diferença importa: "não foi possível instalar" seria mentira, e a ação está na
+     * ficha, que é onde o toque leva.
+     */
+    fun held(context: Context, request: InstallRequest, reason: String): Notification =
+        base(context, request)
+            .setContentTitle(ContextCompat.getContextForLanguage(context).getString(R.string.notification_held, request.appName))
             .setContentText(reason.lineSequence().first())
             .setStyle(NotificationCompat.BigTextStyle().bigText(reason))
             .setProgress(0, 0, false)

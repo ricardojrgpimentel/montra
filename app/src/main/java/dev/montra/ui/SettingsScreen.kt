@@ -57,6 +57,7 @@ fun SettingsScreen(
     onSetIndexUrl: (String) -> Unit,
     onAuthorize: () -> Unit,
     onClearDownloads: () -> Unit,
+    onWifiOnly: (Boolean) -> Unit,
     onHideRestricted: (Boolean) -> Unit,
     onAutoRefresh: (AutoRefresh) -> Unit,
     onThemeMode: (ThemeMode) -> Unit,
@@ -228,6 +229,25 @@ fun SettingsScreen(
                 if (!state.canInstallPackages) {
                     Spacer(Modifier.height(Space.sm))
                     OutlinedButton(onClick = onAuthorize) { Text(strings.getString(R.string.text_open_permissions)) }
+                }
+                Spacer(Modifier.height(Space.md))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = strings.getString(R.string.text_only_download_over_wi_fi),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            text = strings.getString(R.string.text_the_catalogue_has_apps_of_hundreds),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = state.wifiOnly, onCheckedChange = onWifiOnly)
                 }
             }
 

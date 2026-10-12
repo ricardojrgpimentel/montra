@@ -366,6 +366,7 @@ fun MontraRoot(
                     onSetIndexUrl = viewModel::setIndexUrl,
                     onAuthorize = authorize,
                     onClearDownloads = viewModel::clearDownloads,
+                    onWifiOnly = viewModel::setWifiOnly,
                     onHideRestricted = viewModel::setHideRestricted,
                     onAutoRefresh = viewModel::setAutoRefresh,
                     onThemeMode = viewModel::setThemeMode,
@@ -399,6 +400,10 @@ fun MontraRoot(
                         onInstall = startInstall,
                         onClearError = viewModel::clearInstallError,
                         onCancel = viewModel::cancelInstall,
+                        // Autorizar uma transferência em dados móveis é uma decisão
+                        // desta app, não uma definição global: quem diz sim uma vez
+                        // não fica com a barreira desligada para sempre.
+                        onInstallAnyway = { app -> viewModel.install(app, allowMetered = true) },
                         onAuthorize = authorize,
                         onOpenSource = { url -> openUrl(context, url) },
                         onOpenApp = { otherId -> navController.navigate("detail/$otherId") },
