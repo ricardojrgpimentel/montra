@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  O que o FileProvider deixa partilhar: só o cache dos APKs, e nada mais desta app.
+  O APK verificado vive aqui, e quem o receber ganha permissão de leitura para este
+  ficheiro em concreto — não para a pasta, nem para o resto do cache.
+-->
+<paths>
+    <cache-path name="apk" path="apk/" />
+</paths>

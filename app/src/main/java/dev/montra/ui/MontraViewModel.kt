@@ -156,6 +156,9 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
     private val hideRestricted = MutableStateFlow(false)
     private val wifiOnly = MutableStateFlow(true)
     private val saved = MutableStateFlow<Set<String>>(emptySet())
+
+    /** O que estava a ser pedido quando a rede reteve a transferência, por app. */
+    private val pendingShareOnly = mutableSetOf<String>()
     private val autoRefresh = MutableStateFlow(AutoRefresh.DEFAULT)
 
     /** Corre enquanto a app está à frente; pára quando ela sai. Ver [onPause]. */
@@ -364,7 +367,32 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
      * ViewModel: a 300 MB download must survive the user leaving the app, and the
      * service is also what makes the progress notification possible.
      */
-    fun install(app: IndexApp, allowMetered: Boolean = false) {
+    fun install(app: IndexApp, allowMetered: Boolean = false) = transfer(app, allowMetered, shareOnly = false)
+
+    /**
+     * Descarregar e verificar sem instalar.
+     *
+     * O APK fica pronto a guardar ou a partilhar. Se a pessoa decidir instalar a seguir,
+     * não se volta a descarregar nada: o downloader reaproveita o ficheiro que já está
+     * em cache e que já passou no hash.
+     */
+    fun prepareToShare(app: IndexApp, allowMetered: Boolean = false) = transfer(app, allowMetered, shareOnly = true)
+
+    /**
+     * "Transferir na mesma", depois de a rede ter retido a transferência.
+     *
+     * Repete o que estava a ser pedido — instalar ou guardar — em vez de assumir que era
+     * uma instalação. Quem carregou em guardar não pediu para instalar.
+     */
+    fun transferAnyway(app: IndexApp) {
+        transfer(app, allowMetered = true, shareOnly = app.id in pendingShareOnly)
+    }
+
+    private fun transfer(app: IndexApp, allowMetered: Boolean, shareOnly: Boolean) {
+        // Guarda-se o que foi pedido, para o "transferir na mesma" repetir a *mesma*
+        // operação: quem carregou em "Guardar o APK" e foi retido pela rede não deve
+        // receber uma instalação por resposta.
+        if (shareOnly) pendingShareOnly.add(app.id) else pendingShareOnly.remove(app.id)
         val asset = app.bestAssetFor(deviceAbis) ?: run {
             container.installManager.setState(
                 app.id,
@@ -381,6 +409,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                 pinnedCertSha256 = app.signingCertSha256,
                 asset = asset,
                 allowMetered = allowMetered,
+                shareOnly = shareOnly,
             ),
         )
     }

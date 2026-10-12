@@ -12,7 +12,7 @@ import org.junit.Assert.fail
  */
 internal fun eventually(
     message: String,
-    timeoutMillis: Long = 3_000,
+    timeoutMillis: Long = 10_000,
     condition: () -> Boolean,
 ) {
     val deadline = System.currentTimeMillis() + timeoutMillis

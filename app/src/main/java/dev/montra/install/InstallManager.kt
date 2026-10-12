@@ -52,6 +52,16 @@ sealed interface InstallState {
 
     /** Não cabe no telefone. Diz-se quanto falta, que é o que torna o aviso accionável. */
     data class NoSpace(val missingBytes: Long) : InstallState
+
+    /**
+     * Descarregado e verificado, à espera de decisão: instalar, ou guardar e partilhar.
+     *
+     * Existe porque há duas coisas diferentes que se querem de um APK verificado, e
+     * instalar é só uma delas. Uma loja sem servidor é o único sítio onde alguém
+     * consegue um APK com a origem confirmada — e isso vale para arquivo e para levar
+     * para outro telemóvel, não só para instalar neste.
+     */
+    data object ReadyToShare : InstallState
     data class Downloading(val bytes: Long, val total: Long, val fraction: Float) : InstallState
 
     /** Download complete, now checking hash and signature before asking the system. */
@@ -93,6 +103,24 @@ class InstallManager(
     private val _states = MutableStateFlow<Map<String, InstallState>>(emptyMap())
     val states: StateFlow<Map<String, InstallState>> = _states.asStateFlow()
     private val sessions = context.getSharedPreferences("install_sessions", Context.MODE_PRIVATE)
+
+    /**
+     * Os APKs verificados que ainda não foram instalados, por app.
+     *
+     * O ficheiro vive no cache como qualquer outro, e a poda trata dele: enquanto
+     * corresponder a uma entrada do catálogo, fica. Não há aqui uma segunda política de
+     * armazenamento — é o mesmo sítio, com o mesmo botão para o mandar embora.
+     */
+    private val verifiedFiles = java.util.concurrent.ConcurrentHashMap<String, File>()
+
+    /** O APK verificado desta app, se ainda estiver cá. */
+    fun verifiedFile(appId: String): File? {
+        val file = verifiedFiles[appId] ?: return null
+        if (file.isFile) return file
+        // O ficheiro desapareceu (a poda, o utilizador): não se devolve um caminho morto.
+        verifiedFiles.remove(appId)
+        return null
+    }
 
     fun setState(appId: String, state: InstallState) {
         _states.update { it + (appId to state) }
@@ -235,6 +263,15 @@ class InstallManager(
                 )
             }
 
+            // Verificado, e nada mais. Quem decide se isto se instala, se se arquiva ou
+            // se se manda a alguém é a pessoa — a app não instala nada por si, e também
+            // não deita fora o que já verificou.
+            if (request.shareOnly) {
+                verifiedFiles[request.appId] = downloaded.file
+                setState(request.appId, InstallState.ReadyToShare)
+                return
+            }
+
             setState(request.appId, InstallState.AwaitingUser())
             commit(request, downloaded.file)
         } catch (cancelled: CancellationException) {
@@ -294,6 +331,7 @@ class InstallManager(
             )
         } finally {
             apk.delete()
+            verifiedFiles.remove(request.appId)
         }
     }
 

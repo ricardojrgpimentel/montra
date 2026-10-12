@@ -209,6 +209,8 @@ private fun InstallAction(
         // espaço para os explicar; na linha cabe o distintivo, e a linha abre a ficha.
         InstallState.OnMeteredNetwork -> Badge(strings.getString(R.string.text_wifi_only), MaterialTheme.colorScheme.secondary)
         is InstallState.NoSpace -> Badge(strings.getString(R.string.text_no_space), MaterialTheme.colorScheme.tertiary)
+        // Descarregado e verificado, à espera de decisão: a ficha é que a pede.
+        InstallState.ReadyToShare -> Badge(strings.getString(R.string.text_verified), MaterialTheme.colorScheme.secondary)
         InstallState.NeedsPermission -> TextButton(onClick = onAuthorize) { Text(strings.getString(R.string.text_allow)) }
         is InstallState.Installed -> Badge(strings.getString(R.string.installed_badge), MaterialTheme.colorScheme.primary)
         is InstallState.Failed -> TextButton(onClick = onInstall) { Text(strings.getString(R.string.text_retry)) }

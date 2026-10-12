@@ -84,6 +84,12 @@
     <string name="text_you_are_on_mobile_data_these">"Tu es en données mobiles : ces téléchargements passeront par là."</string>
     <string name="text_installed">"Installées"</string>
     <string name="text_uninstall">"Désinstaller"</string>
+    <string name="text_apk_ready">"APK prêt"</string>
+    <string name="text_the_apk_is_downloaded_and_verified_you">"L’APK est téléchargé et vérifié. Tu peux l’installer maintenant, ou le partager avec qui en a besoin."</string>
+    <string name="text_save_the_apk">"Enregistrer l’APK"</string>
+    <string name="text_share_the_apk">"Partager l’APK"</string>
+    <string name="notification_apk_verified">"APK vérifié : %1$s"</string>
+    <string name="text_open_the_app_to_share_or_install_it">"Ouvre l’app pour le partager ou l’installer"</string>
     <string name="text_saved">"Enregistrées"</string>
     <string name="text_save_for_later">"Enregistrer pour plus tard"</string>
     <string name="text_remove_from_saved">"Retirer des enregistrées"</string>

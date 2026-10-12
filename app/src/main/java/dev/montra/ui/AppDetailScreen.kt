@@ -68,6 +68,8 @@ fun AppDetailScreen(
     onClearError: (String) -> Unit,
     onCancel: (String) -> Unit,
     onInstallAnyway: (IndexApp) -> Unit,
+    onPrepareShare: (IndexApp) -> Unit,
+    onShareApk: (String) -> Unit,
     onToggleSaved: (String) -> Unit,
     onShare: (IndexApp) -> Unit,
     onAuthorize: () -> Unit,
@@ -233,6 +235,8 @@ fun AppDetailScreen(
             onClearError = onClearError,
             onCancel = onCancel,
             onInstallAnyway = onInstallAnyway,
+            onPrepareShare = onPrepareShare,
+            onShareApk = onShareApk,
             onAuthorize = onAuthorize,
         )
 
@@ -370,6 +374,8 @@ private fun InstallSection(
     onClearError: (String) -> Unit,
     onCancel: (String) -> Unit,
     onInstallAnyway: (IndexApp) -> Unit,
+    onPrepareShare: (IndexApp) -> Unit,
+    onShareApk: (String) -> Unit,
     onAuthorize: () -> Unit,
 ) {
     val strings = LocalContext.current
@@ -428,6 +434,29 @@ private fun InstallSection(
             action = {
                 TextButton(onClick = { onClearError(row.app.id) }) {
                     Text(strings.getString(R.string.text_dismiss))
+                }
+            },
+        )
+
+        // Verificado e à espera de decisão. Três saídas e nenhuma delas silenciosa:
+        // instalar, partilhar, ou sair daqui. Instalar não volta a descarregar nada —
+        // o ficheiro já está em cache e já passou no hash.
+        InstallState.ReadyToShare -> AlertBlock(
+            title = strings.getString(R.string.text_apk_ready),
+            text = strings.getString(R.string.text_the_apk_is_downloaded_and_verified_you),
+            action = {
+                Column {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
+                        Button(onClick = { onInstall(row.app) }) {
+                            Text(strings.getString(R.string.text_install))
+                        }
+                        TextButton(onClick = { onShareApk(row.app.id) }) {
+                            Text(strings.getString(R.string.text_share_the_apk))
+                        }
+                    }
+                    TextButton(onClick = { onClearError(row.app.id) }) {
+                        Text(strings.getString(R.string.text_dismiss))
+                    }
                 }
             },
         )
@@ -498,10 +527,18 @@ private fun InstallSection(
                 onClick = onAuthorize,
                 modifier = Modifier.fillMaxWidth(),
             ) { Text(strings.getString(R.string.text_allow_installation)) }
-            !row.isInstalled -> Button(
-                onClick = { onInstall(row.app) },
-                modifier = Modifier.fillMaxWidth(),
-            ) { Text(strings.getString(R.string.install_with_size, formatBytes(row.size))) }
+            !row.isInstalled -> Column {
+                Button(
+                    onClick = { onInstall(row.app) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(strings.getString(R.string.install_with_size, formatBytes(row.size))) }
+                // Uma loja sem servidor é o único sítio onde alguém consegue um APK com a
+                // origem confirmada: guardá-lo serve para arquivo e para outro telemóvel,
+                // e não só para instalar neste.
+                TextButton(onClick = { onPrepareShare(row.app) }) {
+                    Text(strings.getString(R.string.text_save_the_apk))
+                }
+            }
             row.updateAvailable -> Button(
                 onClick = { onInstall(row.app) },
                 modifier = Modifier.fillMaxWidth(),

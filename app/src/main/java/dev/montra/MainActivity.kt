@@ -71,6 +71,7 @@ import dev.montra.ui.AppsScreen
 import dev.montra.ui.GamesScreen
 import dev.montra.ui.MontraViewModel
 import dev.montra.ui.SearchScreen
+import androidx.core.content.FileProvider
 import dev.montra.ui.SettingsScreen
 import dev.montra.util.Log
 import dev.montra.work.UpdateNotifications
@@ -419,7 +420,9 @@ fun MontraRoot(
                         // Autorizar uma transferência em dados móveis é uma decisão
                         // desta app, não uma definição global: quem diz sim uma vez
                         // não fica com a barreira desligada para sempre.
-                        onInstallAnyway = { app -> viewModel.install(app, allowMetered = true) },
+                        onInstallAnyway = { app -> viewModel.transferAnyway(app) },
+                        onPrepareShare = { app -> viewModel.prepareToShare(app) },
+                        onShareApk = { appId -> shareVerifiedApk(context, appId, row.app.name) },
                         onToggleSaved = viewModel::toggleSaved,
                         onShare = { app -> shareApp(context, app) },
                         onAuthorize = authorize,
@@ -434,6 +437,27 @@ fun MontraRoot(
 
 fun openUrl(context: Context, url: String) {
     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+}
+
+/**
+ * Partilhar o APK que já foi verificado.
+ *
+ * O ficheiro vive no cache privado da app, portanto vai por `FileProvider` e com
+ * permissão de leitura só para quem receber o Intent: não é copiado para o
+ * armazenamento partilhado nem exposto a mais ninguém.
+ */
+fun shareVerifiedApk(context: Context, appId: String, appName: String) {
+    val file = InstallManager.of(context).verifiedFile(appId) ?: return
+    val uri = runCatching {
+        FileProvider.getUriForFile(context, "${context.packageName}.files", file)
+    }.getOrNull() ?: return
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "application/vnd.android.package-archive"
+        putExtra(Intent.EXTRA_STREAM, uri)
+        putExtra(Intent.EXTRA_SUBJECT, appName)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    runCatching { context.startActivity(Intent.createChooser(intent, appName)) }
 }
 
 /**

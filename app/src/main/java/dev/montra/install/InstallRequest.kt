@@ -23,6 +23,12 @@ data class InstallRequest(
      * pipeline, e o serviço é outro componente.
      */
     val allowMetered: Boolean = false,
+    /**
+     * Descarregar e verificar, mas não instalar: o APK fica pronto a guardar ou a
+     * partilhar. Uma loja sem servidor é o único sítio onde alguém consegue um APK com
+     * a origem confirmada, e isso serve para arquivo e para outro telemóvel.
+     */
+    val shareOnly: Boolean = false,
 ) {
     fun putInto(intent: Intent): Intent = intent.apply {
         putExtra(EXTRA_APP_ID, appId)
@@ -37,6 +43,7 @@ data class InstallRequest(
         putExtra(EXTRA_VERSION_CODE, asset.versionCode ?: -1)
         putExtra(EXTRA_VERSION_NAME, asset.versionName)
         putExtra(EXTRA_ALLOW_METERED, allowMetered)
+        putExtra(EXTRA_SHARE_ONLY, shareOnly)
     }
 
     companion object {
@@ -52,6 +59,7 @@ data class InstallRequest(
         const val EXTRA_VERSION_CODE = "dev.montra.extra.VERSION_CODE"
         const val EXTRA_VERSION_NAME = "dev.montra.extra.VERSION_NAME"
         const val EXTRA_ALLOW_METERED = "dev.montra.extra.ALLOW_METERED"
+        const val EXTRA_SHARE_ONLY = "dev.montra.extra.SHARE_ONLY"
 
         fun from(intent: Intent): InstallRequest? {
             val appId = intent.getStringExtra(EXTRA_APP_ID) ?: return null
@@ -64,6 +72,7 @@ data class InstallRequest(
                 packageName = packageName,
                 pinnedCertSha256 = intent.getStringExtra(EXTRA_PIN),
                 allowMetered = intent.getBooleanExtra(EXTRA_ALLOW_METERED, false),
+                shareOnly = intent.getBooleanExtra(EXTRA_SHARE_ONLY, false),
                 asset = Asset(
                     abi = intent.getStringExtra(EXTRA_ABI) ?: "universal",
                     url = url,

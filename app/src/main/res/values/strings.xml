@@ -84,6 +84,12 @@
     <string name="text_you_are_on_mobile_data_these">"You are on mobile data: these downloads will go through it."</string>
     <string name="text_installed">"Installed"</string>
     <string name="text_uninstall">"Uninstall"</string>
+    <string name="text_apk_ready">"APK ready"</string>
+    <string name="text_the_apk_is_downloaded_and_verified_you">"The APK is downloaded and verified. You can install it now, or share it with whoever needs it."</string>
+    <string name="text_save_the_apk">"Save the APK"</string>
+    <string name="text_share_the_apk">"Share the APK"</string>
+    <string name="notification_apk_verified">"APK verified: %1$s"</string>
+    <string name="text_open_the_app_to_share_or_install_it">"Open the app to share or install it"</string>
     <string name="text_saved">"Saved"</string>
     <string name="text_save_for_later">"Save for later"</string>
     <string name="text_remove_from_saved">"Remove from saved"</string>

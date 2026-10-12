@@ -207,6 +207,8 @@ class InstallService : Service() {
             // Segurada antes de começar: quem explica é a notificação de resultado, no
             // fim do pipeline, e não um progresso que não existe.
             InstallState.OnMeteredNetwork, is InstallState.NoSpace -> return
+            // Verificado e à espera de decisão: quem o diz é a notificação de resultado.
+            InstallState.ReadyToShare -> return
             InstallState.Idle -> return
         }
         post(notification)

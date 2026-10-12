@@ -120,6 +120,7 @@ object InstallNotifications {
                 }
                 held(context, request, reason.asString(ContextCompat.getContextForLanguage(context)))
             }
+            InstallState.ReadyToShare -> readyToShare(context, request)
             else -> {
                 dismiss(context, request.appId)
                 return
@@ -159,6 +160,19 @@ object InstallNotifications {
             .setContentTitle(ContextCompat.getContextForLanguage(context).getString(R.string.notification_held, request.appName))
             .setContentText(reason.lineSequence().first())
             .setStyle(NotificationCompat.BigTextStyle().bigText(reason))
+            .setProgress(0, 0, false)
+            .setOngoing(false)
+            .setAutoCancel(true)
+            .build()
+
+    /**
+     * Descarregado e verificado, sem instalar. Diz-se porque o trabalho acabou e a
+     * decisão é da pessoa: instalar, guardar, ou mandar a alguém.
+     */
+    fun readyToShare(context: Context, request: InstallRequest): Notification =
+        base(context, request)
+            .setContentTitle(ContextCompat.getContextForLanguage(context).getString(R.string.notification_apk_verified, request.appName))
+            .setContentText(ContextCompat.getContextForLanguage(context).getString(R.string.text_open_the_app_to_share_or_install_it))
             .setProgress(0, 0, false)
             .setOngoing(false)
             .setAutoCancel(true)
