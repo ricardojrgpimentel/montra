@@ -448,7 +448,13 @@ private fun InstallSection(
                 Column {
                     Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
                         Button(onClick = { onInstall(row.app) }) {
-                            Text(strings.getString(R.string.text_install))
+                            // Um APK pré-descarregado de uma atualização instala-se; o
+                            // botão diz o que vai acontecer, não de onde veio o ficheiro.
+                            Text(
+                                strings.getString(
+                                    if (row.updateAvailable) R.string.text_update else R.string.text_install,
+                                ),
+                            )
                         }
                         TextButton(onClick = { onShareApk(row.app.id) }) {
                             Text(strings.getString(R.string.text_share_the_apk))

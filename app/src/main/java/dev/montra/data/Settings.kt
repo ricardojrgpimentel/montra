@@ -81,6 +81,7 @@ class Settings(private val context: Context) {
     private val notifiedUpdatesKey = stringPreferencesKey("notified_updates")
     private val wifiOnlyKey = booleanPreferencesKey("wifi_only")
     private val savedKey = stringSetPreferencesKey("saved_apps")
+    private val preDownloadKey = booleanPreferencesKey("pre_download_updates")
 
     val indexUrl: Flow<String> = context.dataStore.data.map { it[indexUrlKey] ?: BuildConfig.DEFAULT_INDEX_URL }
 
@@ -139,6 +140,22 @@ class Settings(private val context: Context) {
             prefs[savedKey] = result
         }
         return result
+    }
+
+    /**
+     * Pré-descarregar as atualizações por Wi-Fi, para o toque do utilizador só ter de
+     * abrir o diálogo do sistema.
+     *
+     * **Desligado por omissão, e não ligado.** Isto gasta dados e espaço sem ninguém o ter
+     * pedido, e uma loja não decide isso por quem a instalou. Quem liga está a trocar
+     * espaço por tempo, e sabe que está.
+     */
+    val preDownloadUpdates: Flow<Boolean> = context.dataStore.data.map { it[preDownloadKey] ?: false }
+
+    suspend fun currentPreDownloadUpdates(): Boolean = preDownloadUpdates.first()
+
+    suspend fun setPreDownloadUpdates(value: Boolean) {
+        context.dataStore.edit { prefs -> prefs[preDownloadKey] = value }
     }
 
     val autoRefresh: Flow<AutoRefresh> = context.dataStore.data.map { prefs ->

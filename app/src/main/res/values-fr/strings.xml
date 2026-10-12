@@ -156,6 +156,8 @@
     <string name="text_automatic_checks">"Vérification automatique"</string>
     <string name="text_the_catalogue_is_a_repository_file_while">"Le catalogue est un fichier dans un dépôt. Lorsque l’app est ouverte, Montra vérifie les mises à jour avec ETag. Sans changement, la réponse ne pèse que quelques octets."</string>
     <string name="text_installation">"Installation"</string>
+    <string name="text_pre_download_updates">"Pré-télécharger les mises à jour en Wi-Fi"</string>
+    <string name="text_a_check_that_finds_updates_downloads">"Une vérification qui trouve des mises à jour les télécharge tout de suite, en Wi-Fi, jusqu’à 300 MB, pour que le prochain appui n’ouvre que le dialogue du système. Ce qui reste en cache peut être vidé dans les téléchargements."</string>
     <string name="text_only_download_over_wi_fi">"Télécharger en Wi-Fi seulement"</string>
     <string name="text_the_catalogue_has_apps_of_hundreds">"Le catalogue contient des apps de plusieurs centaines de mégaoctets. Avec ce réglage, un téléchargement en données mobiles demande d’abord ; tu l’autorises sur la fiche de l’app."</string>
     <string name="text_wifi_only">"Wi-Fi seulement"</string>

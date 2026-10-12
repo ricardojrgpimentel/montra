@@ -384,6 +384,7 @@ fun MontraRoot(
                     onAuthorize = authorize,
                     onClearDownloads = viewModel::clearDownloads,
                     onWifiOnly = viewModel::setWifiOnly,
+                    onPreDownload = viewModel::setPreDownloadUpdates,
                     onHideRestricted = viewModel::setHideRestricted,
                     onAutoRefresh = viewModel::setAutoRefresh,
                     onThemeMode = viewModel::setThemeMode,

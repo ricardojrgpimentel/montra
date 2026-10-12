@@ -156,6 +156,8 @@
     <string name="text_automatic_checks">"Automatic checks"</string>
     <string name="text_the_catalogue_is_a_repository_file_while">"The catalogue is a repository file. While the app is open, Montra checks for updates using ETag. When nothing changes, the response uses only a few bytes."</string>
     <string name="text_installation">"Installation"</string>
+    <string name="text_pre_download_updates">"Pre-download updates over Wi-Fi"</string>
+    <string name="text_a_check_that_finds_updates_downloads">"A check that finds updates downloads them right away, over Wi-Fi, up to 300 MB, so the next tap only opens the system dialog. What stays in cache can be cleared under downloads."</string>
     <string name="text_only_download_over_wi_fi">"Download over Wi-Fi only"</string>
     <string name="text_the_catalogue_has_apps_of_hundreds">"The catalogue has apps of hundreds of megabytes. With this on, a download on mobile data asks first; you authorise it on the app\'s page."</string>
     <string name="text_wifi_only">"Wi-Fi only"</string>

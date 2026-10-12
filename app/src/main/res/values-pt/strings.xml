@@ -156,6 +156,8 @@
     <string name="text_automatic_checks">"Verificação automática"</string>
     <string name="text_the_catalogue_is_a_repository_file_while">"O catálogo é um ficheiro num repositório: não há servidor para nos avisar quando sai uma versão nova. A app pergunta sozinha, com a lista aberta, e usa o ETag — quando nada mudou, custa uma resposta de uns bytes."</string>
     <string name="text_installation">"Instalação"</string>
+    <string name="text_pre_download_updates">"Pré-descarregar as atualizações por Wi-Fi"</string>
+    <string name="text_a_check_that_finds_updates_downloads">"Uma verificação que encontre atualizações descarrega-as já, por Wi-Fi, até 300 MB, para o toque seguinte só abrir o diálogo do sistema. O que ficar em cache pode ser apagado nas transferências."</string>
     <string name="text_only_download_over_wi_fi">"Só transferir por Wi-Fi"</string>
     <string name="text_the_catalogue_has_apps_of_hundreds">"O catálogo tem apps de centenas de megabytes. Com isto ligado, uma transferência em dados móveis pergunta primeiro; a autorização é dada na ficha da app."</string>
     <string name="text_wifi_only">"só Wi-Fi"</string>

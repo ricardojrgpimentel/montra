@@ -149,19 +149,27 @@ app/src/main/java/dev/montra/
 ├── MainActivity.kt            NavHost: lista, detalhe, definições
 ├── security/
 │   ├── IndexVerifier.kt       ECDSA P-256 sobre os bytes do índice; key id
-│   ├── TrustStore.kt          a chave pública incluída no APK
+│   ├── TrustedKeys.kt         as chaves fidedignas e a decisão de aceitar um índice
+│   ├── TrustStore.kt          as chaves incluídas no APK (uma, ou duas numa rotação)
 │   └── ApkVerifier.kt         sha256 (streaming) + certificado do APK
 ├── data/
 │   ├── model/Index.kt         modelo serializável + bestAssetFor(abis)
 │   ├── IndexSource.kt         rede com ETag, cache, assets, URLs relativas
-│   ├── NetworkStatus.kt       há internet? perguntado ao sistema, não deduzido do erro
+│   ├── NetworkStatus.kt       há internet? há rede medida? perguntado ao sistema
 │   ├── RefreshFailure.kt      traduzir a falha para o que a pessoa pode fazer
+│   ├── UpdateCheck.kt         "há atualização?" — a mesma resposta para o ecrã e para o fundo
 │   ├── IndexRepository.kt     verificar → publicar; política de falha
 │   └── Settings.kt            DataStore
 ├── install/
-│   ├── ApkDownloader.kt       download com sha256 em streaming
-│   └── InstallManager.kt      verifica antes da sessão; PackageInstaller
-└── ui/                        Compose: lista, detalhe, definições, imagens
+│   ├── ApkDownloader.kt       download com sha256 em streaming, retomável
+│   ├── TransferPolicy.kt      as regras de antes de transferir, testáveis sem aparelho
+│   ├── InstallManager.kt      verifica antes da sessão; PackageInstaller; fila
+│   └── InstallService.kt      primeiro plano, uma de cada vez, o resto em fila
+├── work/
+│   ├── BackgroundChecks.kt    o agendamento periódico (JobScheduler, sem dependências)
+│   ├── UpdateCheckJobService.kt  verifica o catálogo com a app fechada
+│   └── UpdateNotifications.kt "N atualizações", uma vez por conjunto
+└── ui/                        Compose: lista, detalhe, definições, imagens, permissões
 app/src/main/assets/
 ├── index.json                 snapshot do catálogo (funciona offline no 1.º arranque)
 ├── index.json.sig             assinatura do snapshot
@@ -274,8 +282,8 @@ O estado de cada app (`Idle`, `Downloading`, `Verifying`, `AwaitingUser`,
 ## Testes
 
 ```bash
-./gradlew :app:testDebugUnitTest                            # 53 testes, JVM, sem rede
-./gradlew :app:connectedDebugAndroidTest                    # 13 testes num dispositivo/emulador com rede
+./gradlew :app:testDebugUnitTest                            # 89 testes, JVM, sem rede
+./gradlew :app:connectedDebugAndroidTest                    # 24 testes num dispositivo/emulador com rede
 ```
 
 | Ficheiro | O que prova |
@@ -291,6 +299,17 @@ O estado de cada app (`Idle`, `Downloading`, `Verifying`, `AwaitingUser`,
 | `androidTest/CatalogueNetworkSmokeTest` | **no dispositivo, no processo da app**: descarrega o índice publicado por HTTPS, verifica a assinatura com a chave do APK, guarda em cache, e recusa um índice adulterado (com uma fonte hostil injetada); o `InstallRequest` sobrevive à passagem por Intent sem perder o sha256 nem o certificado; e cancelar a meio de um download deixa o estado em `Idle` e não deixa ficheiros parciais |
 | `androidTest/InstallLifecycleTest` | sessões e notificações reais, sem instalar apps: cancelar permite repetir, callbacks antigos são ignorados, a notificação conserva a confirmação, cancelar abandona a sessão, um Intent ausente dá uma falha recuperável e o sucesso substitui a notificação pendente |
 | `androidTest/LanguageTest` | a língua escolhida sobrevive à recriação da atividade e aplica-se fora dela |
+| `security/TrustedKeysTest` | **a rotação**: uma chave secundária fidedigna é aceite e diz que não é a principal; uma chave de fora é recusada; o índice declarar uma chave e a assinatura ser de outra é uma contradição, e recusa-se |
+| `install/TransferPolicyTest` | as duas barreiras antes de transferir: rede medida sem autorização segura, e o espaço exigido conta as duas cópias do APK mais a margem |
+| `data/UpdateCheckTest` | a regra de "há atualização?" — a mesma que o trabalho de fundo usa — incluindo o caso dos splits, em que o nome da versão manda sobre o `versionCode` |
+| `data/PermissionsModelTest` | as permissões descodificam do índice, e um índice anterior a este campo continua a descodificar |
+| `ui/CatalogueFiltersTest` | os filtros que não são propriedades da app (novidade, instalada, guardada) decidem-se na linha, e a app sozinha não os exclui |
+| `androidTest/BackgroundChecksTest` | o agendamento segue a cadência escolhida, desligá-la desagenda mesmo, e o trabalho pede rede e sobrevive ao reboot |
+| `androidTest/UpdatesNotificationTest` | a notificação das atualizações aparece com o número certo, no singular e no plural, e sai quando dispensada |
+| `androidTest/PermissionsTest` | **no aparelho**: a classificação vem do nível de proteção que o sistema atribui, não de uma lista nossa; uma permissão desconhecida não é acusada de nada |
+| `androidTest/TransferGuardsTest` | as duas barreiras de ponta a ponta: em rede medida a transferência fica à espera e, autorizada, passa; um ficheiro impossível é recusado antes de se tocar na rede |
+| `androidTest/DownloadResumeTest` | **a retoma contra o servidor real**: semeia o `.part` com os primeiros megabytes, e verifica que o primeiro progresso chega depois deles e que o hash final cobre o ficheiro todo |
+| `androidTest/VerifiedApkTest` | um APK pode ser descarregado e verificado sem ser instalado: fica em cache com o sha256 do índice, e nenhuma sessão de instalação é aberta |
 
 O `RealIndexTest` liga o assinador (Node, `tools/sign-index.mjs`) ao verificador
 (Kotlin): se qualquer dos lados mudar de formato, o build falha. O teste

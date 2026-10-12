@@ -98,8 +98,50 @@ class VerifiedApkTest {
         )
     }
 
-    private fun sha256Of(file: java.io.File): String {
-        val digest = MessageDigest.getInstance("SHA-256")
+    /**
+     * O pré-download de fundo faz o mesmo sem serviço em primeiro plano e **sem a
+     * autorização de instalar**: não instala nada, portanto não tem de a pedir. É o que
+     * permite ao trabalho periódico adiantar trabalho em vez de esperar pelo toque.
+     */
+    @Test
+    fun theBackgroundPreDownloadVerifiesAndKeepsWithoutInstalling() = runBlocking {
+        container.settings.setWifiOnly(false)
+        container.indexRepository.load()
+        val candidate = container.indexRepository.state.value.apps
+            .mapNotNull { app -> app.bestAssetFor(listOf("arm64-v8a", "armeabi-v7a"))?.let { app to it } }
+            .filter { (_, asset) -> asset.size > 100_000 }
+            .minByOrNull { (_, asset) -> asset.size }
+            ?: error("o catálogo devia ter um APK pequeno para este teste")
+        val (app, asset) = candidate
+
+        val sessionsBefore = context.packageManager.packageInstaller.mySessions.size
+        val ok = container.installManager.preDownload(
+            InstallRequest(
+                appId = app.id,
+                appName = app.name,
+                packageName = app.packageName,
+                pinnedCertSha256 = app.signingCertSha256,
+                asset = asset,
+                allowMetered = true,
+            ),
+        )
+
+        assertTrue("o pré-download devia ter verificado o APK", ok)
+        val file = requireNotNull(container.installManager.verifiedFile(app.id))
+        assertEquals("o ficheiro é o do índice", asset.size, file.length())
+        assertEquals(asset.sha256.lowercase(), sha256Of(file))
+        assertEquals(
+            "pré-descarregar não pode abrir uma sessão de instalação",
+            sessionsBefore,
+            context.packageManager.packageInstaller.mySessions.size,
+        )
+        assertTrue(
+            "o estado devia ser o de pronto a instalar, não o de instalado",
+            container.installManager.stateOf(app.id) is InstallState.ReadyToShare,
+        )
+    }
+
+    private fun sha256Of(file: java.io.File): String {        val digest = MessageDigest.getInstance("SHA-256")
         file.inputStream().use { input ->
             val buffer = ByteArray(64 * 1024)
             while (true) {

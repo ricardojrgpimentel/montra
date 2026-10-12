@@ -210,8 +210,58 @@ class InstallManager(
             return
         }
 
-        // As duas barreiras que perguntam antes de gastar, e não depois: um erro a
-        // vermelho ao fim de 200 MB é a versão má de ambas.
+        holdBeforeTransferring(request)?.let { held ->
+            setState(request.appId, held)
+            return
+        }
+
+        val file = downloadAndVerify(request) ?: return
+
+        // Verificado, e nada mais. Quem decide se isto se instala, se se arquiva ou se se
+        // manda a alguém é a pessoa — a app não instala nada por si, e também não deita
+        // fora o que já verificou.
+        if (request.shareOnly) {
+            verifiedFiles[request.appId] = file
+            setState(request.appId, InstallState.ReadyToShare)
+            return
+        }
+
+        setState(request.appId, InstallState.AwaitingUser())
+        commit(request, file)
+    }
+
+    /**
+     * Descarrega e verifica um APK sem instalar nada, para o pré-download de fundo.
+     *
+     * O sistema não deixa uma app em segundo plano arrancar um serviço em primeiro plano,
+     * e é isso que o [InstallService] é. Aqui o trabalho corre dentro do próprio trabalho
+     * periódico, que já tem a sua janela — e, se a janela fechar a meio, a retoma continua
+     * de onde ficou, porque o `.part` fica.
+     *
+     * @return `true` quando o APK ficou verificado e em cache.
+     */
+    suspend fun preDownload(request: InstallRequest): Boolean {
+        holdBeforeTransferring(request)?.let {
+            Log.i("${request.appId}: pré-download adiado, a transferência está retida")
+            return false
+        }
+        val file = downloadAndVerify(request) ?: run {
+            // Ninguém pediu isto: um erro aqui não é do utilizador, e mostrar-lho era
+            // dar-lhe um problema que ele não tem.
+            setState(request.appId, InstallState.Idle)
+            return false
+        }
+        verifiedFiles[request.appId] = file
+        setState(request.appId, InstallState.ReadyToShare)
+        Log.i("${request.appId}: pré-descarregado e verificado")
+        return true
+    }
+
+    /**
+     * As duas barreiras que perguntam antes de gastar, e o estado em que a transferência
+     * fica quando uma delas segura. `null` quando pode avançar.
+     */
+    private suspend fun holdBeforeTransferring(request: InstallRequest): InstallState? {
         if (TransferPolicy.holdForMeteredNetwork(
                 wifiOnly = settings.currentWifiOnly(),
                 metered = network.isMetered(),
@@ -219,20 +269,25 @@ class InstallManager(
             )
         ) {
             Log.i("${request.appId}: em dados móveis, e a app só transfere por Wi-Fi")
-            setState(request.appId, InstallState.OnMeteredNetwork)
-            return
+            return InstallState.OnMeteredNetwork
         }
-
-        val asset = request.asset
-        val missing = TransferPolicy.missingBytes(asset.size, freeSpaceBytes())
+        val missing = TransferPolicy.missingBytes(request.asset.size, freeSpaceBytes())
         if (missing > 0) {
-            Log.i("${request.appId}: faltam $missing bytes para transferir e instalar ${asset.size}")
-            setState(request.appId, InstallState.NoSpace(missing))
-            return
+            Log.i("${request.appId}: faltam $missing bytes para transferir ${request.asset.size}")
+            return InstallState.NoSpace(missing)
         }
+        return null
+    }
 
-        try {
-            Log.i("instalar ${request.appId} (${asset.abi}, ${asset.size} bytes, sha256 ${asset.sha256.take(16)}…)")
+    /**
+     * O que a instalação e o pré-download têm em comum, e onde a garantia toda vive:
+     * descarregar com o sha256 calculado em streaming e verificar o certificado antes de
+     * o ficheiro servir para seja o que for.
+     */
+    private suspend fun downloadAndVerify(request: InstallRequest): File? {
+        val asset = request.asset
+        return try {
+            Log.i("${request.appId}: a transferir (${asset.abi}, ${asset.size} bytes, sha256 ${asset.sha256.take(16)}…)")
             setState(request.appId, InstallState.Downloading(0, asset.size, 0f))
             val downloaded = downloader.download(asset) { progress ->
                 setState(
@@ -256,24 +311,13 @@ class InstallManager(
                     Log.e("${request.appId}: verificação falhou — ${result.reason.asString(context)}")
                     downloaded.file.delete()
                     setState(request.appId, InstallState.Failed(result.reason))
-                    return
+                    null
                 }
-                is ApkVerifier.Result.Verified -> Log.i(
-                    "${request.appId}: verificado (sha256 e certificado ${result.certSha256?.take(17)}…)",
-                )
+                is ApkVerifier.Result.Verified -> {
+                    Log.i("${request.appId}: verificado (sha256 e certificado ${result.certSha256?.take(17)}…)")
+                    downloaded.file
+                }
             }
-
-            // Verificado, e nada mais. Quem decide se isto se instala, se se arquiva ou
-            // se se manda a alguém é a pessoa — a app não instala nada por si, e também
-            // não deita fora o que já verificou.
-            if (request.shareOnly) {
-                verifiedFiles[request.appId] = downloaded.file
-                setState(request.appId, InstallState.ReadyToShare)
-                return
-            }
-
-            setState(request.appId, InstallState.AwaitingUser())
-            commit(request, downloaded.file)
         } catch (cancelled: CancellationException) {
             Log.i("${request.appId}: download cancelado")
             setState(request.appId, InstallState.Idle)
@@ -283,13 +327,11 @@ class InstallManager(
                 // Cancelled mid-flight: an error state here would contradict the
                 // cancel the user just asked for.
                 setState(request.appId, InstallState.Idle)
-                return
+                return null
             }
-            Log.e("${request.appId}: instalação falhou", error)
-            setState(
-                request.appId,
-                InstallState.Failed(UiText.Resource(R.string.install_unknown)),
-            )
+            Log.e("${request.appId}: a transferência falhou", error)
+            setState(request.appId, InstallState.Failed(UiText.Resource(R.string.install_unknown)))
+            null
         }
     }
 

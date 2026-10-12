@@ -58,6 +58,7 @@ fun SettingsScreen(
     onAuthorize: () -> Unit,
     onClearDownloads: () -> Unit,
     onWifiOnly: (Boolean) -> Unit,
+    onPreDownload: (Boolean) -> Unit,
     onHideRestricted: (Boolean) -> Unit,
     onAutoRefresh: (AutoRefresh) -> Unit,
     onThemeMode: (ThemeMode) -> Unit,
@@ -225,6 +226,25 @@ fun SettingsScreen(
                         label = { Text(strings.getString(option.labelRes)) },
                     )
                 }
+            }
+            Spacer(Modifier.height(Space.md))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = strings.getString(R.string.text_pre_download_updates),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = strings.getString(R.string.text_a_check_that_finds_updates_downloads),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(checked = state.preDownloadUpdates, onCheckedChange = onPreDownload)
             }
 
             SectionTitle(strings.getString(R.string.text_installation))

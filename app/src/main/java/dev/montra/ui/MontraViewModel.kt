@@ -119,6 +119,8 @@ data class UiState(
     val wifiOnly: Boolean = true,
     /** A rede ativa é medida. A confirmação de "atualizar tudo" di-lo antes de gastar. */
     val onMeteredNetwork: Boolean = false,
+    /** Pré-descarregar as atualizações por Wi-Fi. Desligado por omissão. */
+    val preDownloadUpdates: Boolean = false,
     val restrictedCount: Int = 0,
     val categories: List<String> = emptyList(),
     val canInstallPackages: Boolean = true,
@@ -157,6 +159,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
     private val hideRestricted = MutableStateFlow(false)
     private val wifiOnly = MutableStateFlow(true)
     private val saved = MutableStateFlow<Set<String>>(emptySet())
+    private val preDownload = MutableStateFlow(false)
 
     /** O que estava a ser pedido quando a rede reteve a transferência, por app. */
     private val pendingShareOnly = mutableSetOf<String>()
@@ -197,6 +200,12 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             container.settings.saved.collect { value ->
                 saved.value = value
+                rebuild()
+            }
+        }
+        viewModelScope.launch {
+            container.settings.preDownloadUpdates.collect { value ->
+                preDownload.value = value
                 rebuild()
             }
         }
@@ -293,6 +302,10 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
     /** Guardar para depois, ou tirar. O fluxo das preferências trata de reconstruir. */
     fun toggleSaved(appId: String) {
         viewModelScope.launch { container.settings.toggleSaved(appId) }
+    }
+
+    fun setPreDownloadUpdates(value: Boolean) {
+        viewModelScope.launch { container.settings.setPreDownloadUpdates(value) }
     }
 
     fun setAutoRefresh(value: AutoRefresh) {
@@ -573,6 +586,7 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                 hideRestricted = hideRestricted.value,
                 wifiOnly = wifiOnly.value,
                 onMeteredNetwork = container.networkStatus.isMetered(),
+                preDownloadUpdates = preDownload.value,
                 restrictedCount = index.apps.count { it.hasRestrictedLicense() },
                 categories = categoryCounts.entries.sortedByDescending { e -> e.value }.map { e -> e.key },
                 categoryCounts = categoryCounts,

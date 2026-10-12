@@ -156,6 +156,8 @@
     <string name="text_automatic_checks">"Verificación automática"</string>
     <string name="text_the_catalogue_is_a_repository_file_while">"El catálogo es un archivo en un repositorio. Con la app abierta, Montra busca cambios usando ETag. Si nada cambia, la respuesta usa solo unos bytes."</string>
     <string name="text_installation">"Instalación"</string>
+    <string name="text_pre_download_updates">"Predescargar las actualizaciones por Wi-Fi"</string>
+    <string name="text_a_check_that_finds_updates_downloads">"Una comprobación que encuentre actualizaciones las descarga ya, por Wi-Fi, hasta 300 MB, para que el siguiente toque solo abra el diálogo del sistema. Lo que quede en caché puede borrarse en las descargas."</string>
     <string name="text_only_download_over_wi_fi">"Descargar solo por Wi-Fi"</string>
     <string name="text_the_catalogue_has_apps_of_hundreds">"El catálogo tiene apps de cientos de megabytes. Con esto activado, una descarga en datos móviles pregunta primero; la autorizas en la ficha de la app."</string>
     <string name="text_wifi_only">"solo Wi-Fi"</string>
