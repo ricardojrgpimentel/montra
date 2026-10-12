@@ -68,6 +68,8 @@
     <string name="text_outside_play">"fora da Play"</string>
     <string name="text_allow">"Autorizar"</string>
     <string name="text_in_installer">"no instalador"</string>
+    <string name="text_queued">"na fila"</string>
+    <string name="text_waiting_for_the_install_running_now">"À espera da instalação que está a correr. Ainda não foi transferido nada."</string>
     <string name="text_retry">"Repetir"</string>
     <string name="text_install">"Instalar"</string>
     <string name="text_update">"Atualizar"</string>
@@ -136,6 +138,10 @@
     <string name="text_automatic_checks">"Verificação automática"</string>
     <string name="text_the_catalogue_is_a_repository_file_while">"O catálogo é um ficheiro num repositório: não há servidor para nos avisar quando sai uma versão nova. A app pergunta sozinha, com a lista aberta, e usa o ETag — quando nada mudou, custa uma resposta de uns bytes."</string>
     <string name="text_installation">"Instalação"</string>
+    <string name="text_download_cache">"Cache de transferências"</string>
+    <string name="text_apks_waiting_to_be_installed_and_leftovers">"APKs à espera de instalação e restos de transferências interrompidas. É limpo sozinho quando o catálogo é verificado; podes mandá-lo embora agora."</string>
+    <string name="text_1_s_on_disk">"%1$s em disco"</string>
+    <string name="text_what_is_being_downloaded_right_now_is">"Não se apaga o que está a ser transferido agora."</string>
     <string name="text_montra_is_allowed_to_install_apps_each">"A Montra está autorizada a instalar aplicações. Cada instalação continua a passar pelo diálogo do Android."</string>
     <string name="text_android_has_not_authorised_montra_to_install_4">"O Android ainda não autorizou a Montra a instalar aplicações desconhecidas. Sem isto, nenhum download começa."</string>
     <string name="text_open_permissions">"Abrir permissões"</string>

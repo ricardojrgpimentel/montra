@@ -104,6 +104,10 @@ data class UiState(
     val canInstallPackages: Boolean = true,
     val installedCount: Int = 0,
     val updateCount: Int = 0,
+    /** O que o cache de transferências ocupa. Um APK de 300 MB é coisa para se ver. */
+    val downloadsSize: Long = 0,
+    /** Há uma transferência a correr: o cache não se limpa por baixo dela. */
+    val transferring: Boolean = false,
     val autoRefresh: AutoRefresh = AutoRefresh.DEFAULT,
 )
 
@@ -176,6 +180,21 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                 .map { it.apps.size }
                 .distinctUntilChanged()
                 .collect { count -> if (count > 0) refreshInstalled() }
+        }
+
+        // Com o catálogo em mãos já se sabe o que pertence a alguma entrada e o que
+        // ficou para trás de uma transferência que morreu a meio — o sistema a matar
+        // o processo, ou a app arrastada para fora. Sem isto, um `.part` de 300 MB
+        // ficava no cache para sempre: o `catch` que o apagava nunca chegava a correr.
+        viewModelScope.launch {
+            container.indexRepository.state
+                .map { index -> index.apps.flatMap { it.release?.assets.orEmpty() } }
+                .distinctUntilChanged()
+                .collect { assets ->
+                    if (assets.isEmpty()) return@collect
+                    withContext(Dispatchers.IO) { container.installManager.pruneDownloads(assets) }
+                    refreshDownloadsSize()
+                }
         }
     }
 
@@ -254,6 +273,9 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
     fun onResume() {
         _ui.update { it.copy(canInstallPackages = container.installManager.canRequestInstall()) }
         refreshInstalled()
+        // Uma instalação que acabou apagou o APK do cache; o número nas Definições tem
+        // de acompanhar, senão fica a mentir até ao arranque seguinte.
+        refreshDownloadsSize()
         // Abrir a app já é motivo para perguntar se saiu alguma coisa: a cadência
         // mede o intervalo *mínimo* entre verificações, não uma espera obrigatória.
         maybeAutoRefresh()
@@ -334,6 +356,27 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                 }.toMap()
             }
             installed.value = result
+        }
+    }
+
+    /** O tamanho do cache de transferências, que as Definições mostram. */
+    fun refreshDownloadsSize() {
+        viewModelScope.launch {
+            val size = withContext(Dispatchers.IO) { container.installManager.downloadsSizeOnDisk() }
+            _ui.update { it.copy(downloadsSize = size) }
+        }
+    }
+
+    /**
+     * Mandar embora o cache de transferências.
+     *
+     * Não é o mesmo que cancelar: um download a meio tem o seu próprio cancelar na
+     * notificação, e isto só interessa quando há ficheiros parados para limpar.
+     */
+    fun clearDownloads() {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { container.installManager.clearDownloads() }
+            refreshDownloadsSize()
         }
     }
 
@@ -425,6 +468,11 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                 canInstallPackages = container.installManager.canRequestInstall(),
                 installedCount = installedNow.size,
                 updateCount = rows.count { row -> row.updateAvailable },
+                // Verificar e escrever a sessão também contam: o ficheiro está a ser
+                // lido nesse momento, e apagá-lo a meio dava uma falha incompreensível.
+                transferring = installStates.values.any {
+                    it is InstallState.Downloading || it is InstallState.Verifying
+                },
                 autoRefresh = autoRefresh.value,
             )
         }

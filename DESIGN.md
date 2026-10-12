@@ -269,7 +269,7 @@ já sabe o que é uma loja de apps.
   uma frase e vive no texto.
 - **O erro diz o que fazer.** "Índice recusado" é um diagnóstico; sem a saída ao
   lado, é só má notícia.
-- **Um número vale mais do que um adjetivo.** "48 apps", "desde 9 de abril de
+- **Um número vale mais do que um adjetivo.** "81 apps", "desde 9 de abril de
   2023", "2,5 MB". É o que torna uma frase verificável em vez de persuasiva.
 - **Nada de exclamações**, e nada de duas frases onde uma chega.
 - **A versão diz-se por inteiro.** Nome e `versionCode`, juntos, em "Sobre": é o

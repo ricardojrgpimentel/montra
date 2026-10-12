@@ -68,6 +68,8 @@
     <string name="text_outside_play">"fuera de Play"</string>
     <string name="text_allow">"Autorizar"</string>
     <string name="text_in_installer">"en el instalador"</string>
+    <string name="text_queued">"en cola"</string>
+    <string name="text_waiting_for_the_install_running_now">"Esperando a la instalación que ya está en curso. Todavía no se ha descargado nada."</string>
     <string name="text_retry">"Reintentar"</string>
     <string name="text_install">"Instalar"</string>
     <string name="text_update">"Actualizar"</string>
@@ -136,6 +138,10 @@
     <string name="text_automatic_checks">"Verificación automática"</string>
     <string name="text_the_catalogue_is_a_repository_file_while">"El catálogo es un archivo en un repositorio. Con la app abierta, Montra busca cambios usando ETag. Si nada cambia, la respuesta usa solo unos bytes."</string>
     <string name="text_installation">"Instalación"</string>
+    <string name="text_download_cache">"Caché de descargas"</string>
+    <string name="text_apks_waiting_to_be_installed_and_leftovers">"APKs en espera de instalación y restos de descargas interrumpidas. Se limpia solo al verificar el catálogo; puedes vaciarlo ahora."</string>
+    <string name="text_1_s_on_disk">"%1$s en disco"</string>
+    <string name="text_what_is_being_downloaded_right_now_is">"Lo que se está descargando ahora no se borra."</string>
     <string name="text_montra_is_allowed_to_install_apps_each">"Montra está autorizada a instalar apps. Cada instalación requiere el diálogo de confirmación de Android."</string>
     <string name="text_android_has_not_authorised_montra_to_install_4">"Android aún no ha autorizado a Montra a instalar apps desconocidas. Sin este permiso no pueden iniciarse las descargas."</string>
     <string name="text_open_permissions">"Abrir permisos"</string>

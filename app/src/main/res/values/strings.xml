@@ -68,6 +68,8 @@
     <string name="text_outside_play">"outside Play"</string>
     <string name="text_allow">"Allow"</string>
     <string name="text_in_installer">"in installer"</string>
+    <string name="text_queued">"queued"</string>
+    <string name="text_waiting_for_the_install_running_now">"Waiting for the install already running. Nothing has been downloaded yet."</string>
     <string name="text_retry">"Retry"</string>
     <string name="text_install">"Install"</string>
     <string name="text_update">"Update"</string>
@@ -136,6 +138,10 @@
     <string name="text_automatic_checks">"Automatic checks"</string>
     <string name="text_the_catalogue_is_a_repository_file_while">"The catalogue is a repository file. While the app is open, Montra checks for updates using ETag. When nothing changes, the response uses only a few bytes."</string>
     <string name="text_installation">"Installation"</string>
+    <string name="text_download_cache">"Download cache"</string>
+    <string name="text_apks_waiting_to_be_installed_and_leftovers">"APKs waiting to be installed and leftovers from interrupted downloads. It is cleaned up on its own when the catalogue is verified; you can send it away now."</string>
+    <string name="text_1_s_on_disk">"%1$s on disk"</string>
+    <string name="text_what_is_being_downloaded_right_now_is">"What is being downloaded right now is not deleted."</string>
     <string name="text_montra_is_allowed_to_install_apps_each">"Montra is allowed to install apps. Each installation still requires the Android confirmation dialog."</string>
     <string name="text_android_has_not_authorised_montra_to_install_4">"Android has not authorised Montra to install unknown apps yet. Downloads cannot start without this permission."</string>
     <string name="text_open_permissions">"Open permissions"</string>

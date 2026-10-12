@@ -57,6 +57,7 @@ fun AppDetailScreen(
     canInstallPackages: Boolean,
     onInstall: (IndexApp) -> Unit,
     onClearError: (String) -> Unit,
+    onCancel: (String) -> Unit,
     onAuthorize: () -> Unit,
     onOpenSource: (String) -> Unit,
     onOpenApp: (String) -> Unit,
@@ -195,6 +196,7 @@ fun AppDetailScreen(
             canInstallPackages = canInstallPackages,
             onInstall = onInstall,
             onClearError = onClearError,
+            onCancel = onCancel,
             onAuthorize = onAuthorize,
         )
 
@@ -310,6 +312,7 @@ private fun InstallSection(
     canInstallPackages: Boolean,
     onInstall: (IndexApp) -> Unit,
     onClearError: (String) -> Unit,
+    onCancel: (String) -> Unit,
     onAuthorize: () -> Unit,
 ) {
     val strings = LocalContext.current
@@ -328,6 +331,19 @@ private fun InstallSection(
             text = strings.getString(R.string.text_verifying_sha_256_and_certificate),
             style = MaterialTheme.typography.bodyMedium,
         )
+
+        // À espera da sua vez. Diz que está à espera e deixa sair: um estado sem
+        // saída é um beco, e quem tocou em Instalar tem de poder voltar atrás.
+        InstallState.Queued -> Column {
+            Text(
+                text = strings.getString(R.string.text_waiting_for_the_install_running_now),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Spacer(Modifier.height(Space.sm))
+            TextButton(onClick = { onCancel(row.app.id) }) {
+                Text(strings.getString(R.string.text_cancel))
+            }
+        }
 
         is InstallState.AwaitingUser -> Column {
             Text(

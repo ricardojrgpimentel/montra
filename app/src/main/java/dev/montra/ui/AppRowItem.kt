@@ -202,6 +202,9 @@ private fun InstallAction(
         }
         // O instalador do sistema está a pedir confirmação: a ação já não é nossa.
         is InstallState.AwaitingUser -> Badge(strings.getString(R.string.text_in_installer), MaterialTheme.colorScheme.tertiary)
+        // À espera da sua vez: o toque fez alguma coisa, e a linha di-lo em vez de
+        // continuar a oferecer "Instalar" como se nada tivesse acontecido.
+        InstallState.Queued -> Badge(strings.getString(R.string.text_queued), MaterialTheme.colorScheme.secondary)
         InstallState.NeedsPermission -> TextButton(onClick = onAuthorize) { Text(strings.getString(R.string.text_allow)) }
         is InstallState.Installed -> Badge(strings.getString(R.string.installed_badge), MaterialTheme.colorScheme.primary)
         is InstallState.Failed -> TextButton(onClick = onInstall) { Text(strings.getString(R.string.text_retry)) }

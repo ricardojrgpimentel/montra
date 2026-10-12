@@ -43,6 +43,7 @@ import dev.montra.ui.components.LinkRow
 import dev.montra.ui.components.MontraBrand
 import dev.montra.ui.components.SectionTitle
 import dev.montra.ui.theme.Space
+import dev.montra.util.formatBytes
 import dev.montra.util.verifiedLabel
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -55,6 +56,7 @@ fun SettingsScreen(
     onRefresh: () -> Unit,
     onSetIndexUrl: (String) -> Unit,
     onAuthorize: () -> Unit,
+    onClearDownloads: () -> Unit,
     onHideRestricted: (Boolean) -> Unit,
     onAutoRefresh: (AutoRefresh) -> Unit,
     onThemeMode: (ThemeMode) -> Unit,
@@ -226,6 +228,42 @@ fun SettingsScreen(
                 if (!state.canInstallPackages) {
                     Spacer(Modifier.height(Space.sm))
                     OutlinedButton(onClick = onAuthorize) { Text(strings.getString(R.string.text_open_permissions)) }
+                }
+            }
+
+            SectionTitle(strings.getString(R.string.text_download_cache))
+            Block {
+                Text(
+                    text = strings.getString(R.string.text_apks_waiting_to_be_installed_and_leftovers),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(Space.sm))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = strings.getString(R.string.text_1_s_on_disk, formatBytes(state.downloadsSize)),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    // Só aparece quando há mesmo o que limpar: um botão que não faz
+                    // nada é um botão que ensina a desconfiar dos outros.
+                    OutlinedButton(
+                        onClick = onClearDownloads,
+                        enabled = state.downloadsSize > 0 && !state.transferring,
+                    ) {
+                        Text(strings.getString(R.string.text_clear))
+                    }
+                }
+                if (state.transferring) {
+                    Spacer(Modifier.height(Space.xs))
+                    Text(
+                        text = strings.getString(R.string.text_what_is_being_downloaded_right_now_is),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
 

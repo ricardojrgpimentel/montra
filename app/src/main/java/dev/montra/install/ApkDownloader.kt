@@ -81,7 +81,7 @@ class ApkDownloader(private val context: Context, private val client: OkHttpClie
             if (!response.isSuccessful) throw IOException("HTTP ${response.code} ao descarregar o APK")
             val body = response.body ?: throw IOException("resposta vazia")
             val total = if (body.contentLength() > 0) body.contentLength() else asset.size
-            val part = File(dir, "${target.name}.part")
+            val part = File(dir, "${target.name}$PART_SUFFIX")
             activePart = part
             var received = 0L
             try {
@@ -124,7 +124,32 @@ class ApkDownloader(private val context: Context, private val client: OkHttpClie
     }
 
     fun clear() {
-        dir.listFiles()?.forEach { it.delete() }
+        dir.listFiles()?.forEach { if (it != activePart) it.delete() }
+    }
+
+    /** O que as transferências ocupam agora, para as Definições o poderem dizer. */
+    fun sizeOnDisk(): Long = dir.listFiles()?.sumOf { it.length() } ?: 0L
+
+    /**
+     * Apaga o que já não serve para nada.
+     *
+     * Um `.part` é sempre lixo: não há retoma, porque o pedido não usa `Range`,
+     * portanto um download a meio nunca é reaproveitado. E um APK completo que já não
+     * corresponde a nenhuma entrada do catálogo também não serve a ninguém.
+     *
+     * Isto existe porque morrer a meio nunca passava pelo `catch` que apagava o
+     * ficheiro: o sistema a matar o processo, ou o utilizador a arrastar a app para
+     * fora, deixavam lá o `.part` para sempre. O `clear()` já existia e não tinha um
+     * único chamador.
+     */
+    fun prune(assets: List<Asset>) {
+        val keep = assets.mapTo(HashSet()) { target(it) }
+        dir.listFiles()?.forEach { file ->
+            // Um download a meio não é lixo: apagá-lo era matá-lo. Isto acontece a
+            // sério, porque a poda corre sempre que o catálogo é verificado.
+            if (file == activePart) return@forEach
+            if (file.name.endsWith(PART_SUFFIX) || file.name !in keep) file.delete()
+        }
     }
 
     private fun target(asset: Asset): String {
@@ -143,5 +168,10 @@ class ApkDownloader(private val context: Context, private val client: OkHttpClie
             }
         }
         return digest.digest().toHex()
+    }
+
+    private companion object {
+        /** O sufixo de um download a meio. Nunca é reaproveitado: não há retoma. */
+        const val PART_SUFFIX = ".part"
     }
 }

@@ -29,6 +29,13 @@ import java.io.File
 
 sealed interface InstallState {
     data object Idle : InstallState
+
+    /**
+     * Pedida, à espera da sua vez. Só corre um download de cada vez — o
+     * [ApkDownloader] é partilhado — portanto um segundo pedido fica em fila em vez
+     * de ser descartado, e di-lo em vez de deixar o botão parecer morto.
+     */
+    data object Queued : InstallState
     data class Downloading(val bytes: Long, val total: Long, val fraction: Float) : InstallState
 
     /** Download complete, now checking hash and signature before asking the system. */
@@ -96,6 +103,18 @@ class InstallManager(private val context: Context, private val downloader: ApkDo
     fun cancelDownload() {
         downloader.cancel()
     }
+
+    /** O que as transferências ocupam em disco, para as Definições o poderem dizer. */
+    fun downloadsSizeOnDisk(): Long = downloader.sizeOnDisk()
+
+    /** Mandar embora o que está no cache de transferências. */
+    fun clearDownloads() = downloader.clear()
+
+    /**
+     * Descarta o que já não pertence ao catálogo: `.part` de downloads que morreram a
+     * meio, e APKs completos de entradas que já não existem.
+     */
+    fun pruneDownloads(assets: List<Asset>) = downloader.prune(assets)
 
     fun confirmInstall(appId: String) {
         val state = stateOf(appId) as? InstallState.AwaitingUser ?: return

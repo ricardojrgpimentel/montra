@@ -41,7 +41,7 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"  
 export ANDROID_HOME="$HOME/Library/Android/sdk"                                  # SDK 36 + build-tools 36.0.0
 
 ./scripts/sync-index-assets.sh    # índice + chave pública → app/src/main/assets
-./gradlew :app:testDebugUnitTest  # 15 testes, incluindo a assinatura real do índice
+./gradlew :app:testDebugUnitTest  # 53 testes, incluindo a assinatura real do índice
 ./gradlew :app:assembleDebug      # app/build/outputs/apk/debug/app-debug.apk
 ./gradlew :app:assembleRelease    # APK assinado e minificado com R8 (requer keystore)
 ./gradlew :app:bundleRelease      # AAB assinado (requer keystore)
@@ -273,18 +273,23 @@ O estado de cada app (`Idle`, `Downloading`, `Verifying`, `AwaitingUser`,
 ## Testes
 
 ```bash
-./gradlew :app:testDebugUnitTest                            # 37 testes, JVM, sem rede
-./gradlew :app:connectedDebugAndroidTest                    # 3 testes num dispositivo/emulador com rede
+./gradlew :app:testDebugUnitTest                            # 53 testes, JVM, sem rede
+./gradlew :app:connectedDebugAndroidTest                    # 13 testes num dispositivo/emulador com rede
 ```
 
 | Ficheiro | O que prova |
 | --- | --- |
-| `security/IndexVerifierTest` | assinatura válida aceite; um byte alterado, outra chave ou base64 malformado recusados; key id estável |
-| `data/RealIndexTest` | **os bytes reais do índice incluído na app verificam com o verificador real**; key id bate certo; bytes adulterados recusados; todas as apps têm release, sha256, certificado e ícone relativo |
-| `data/IndexModelTest` | campos desconhecidos ignorados; descrição original; escolha de ABI |
+| `security/IndexVerifierTest` | assinatura válida aceite; um byte alterado, outra chave ou base64 malformado recusados; key id estável; a comparação de fingerprints ignora maiúsculas e dois pontos |
+| `data/RealIndexTest` | **os bytes reais do índice incluído na app verificam com o verificador real**; key id bate certo; bytes adulterados recusados; todas as apps têm release, sha256, certificado e ícone relativo; as apps fora da Play Store são identificadas |
+| `data/IndexModelTest` | campos desconhecidos ignorados; os textos do catálogo seguem o idioma com inglês como alternativa; a escolha de asset prefere a ABI do dispositivo e depois `universal`; um `minSdk` acima do dispositivo marca a app como incompatível, um `minSdk` desconhecido não, e sem asset para a ABI não há sugestão |
 | `data/RefreshFailureTest` | **um erro técnico nunca chega ao ecrã**: sem rede a mensagem fala do telemóvel e não do host, sem cópia verificada não promete catálogo, um erro de certificado não se disfarça de offline, e um HTML de portal cativo fica no log |
-| `androidTest/CatalogueNetworkSmokeTest` | **no dispositivo, no processo da app**: descarrega o índice publicado por HTTPS, verifica a assinatura com a chave do APK, guarda em cache, e recusa um índice adulterado (com uma fonte hostil injetada); o `InstallRequest` sobrevive à passagem por Intent sem perder o sha256 nem o certificado; e cancelar a meio de um download para o pipeline, deixa o estado em `Idle` e não deixa ficheiros parciais |
+| `data/AccessRequirementsTest` | os requisitos de acesso descodificam com explicações localizadas; root e Shizuku não se implicam um ao outro; as alternativas respondem aos dois filtros; catálogos antigos sem metadados continuam a descodificar |
+| `data/ThemeModeTest` | claro e escuro ignoram o sistema, o sistema segue o telemóvel, e o que foi guardado é o que volta a ser lido |
+| `util/LocalizationTest` | as quatro línguas cobrem exatamente os mesmos recursos e preservam os argumentos de formato; o texto guardado em estado é resolvido outra vez quando a língua muda |
+| `util/TimeTest` | o tempo relativo e a data do lançamento, incluindo o limiar dos seis meses: sem data não se acusa ninguém de estar parado |
+| `androidTest/CatalogueNetworkSmokeTest` | **no dispositivo, no processo da app**: descarrega o índice publicado por HTTPS, verifica a assinatura com a chave do APK, guarda em cache, e recusa um índice adulterado (com uma fonte hostil injetada); o `InstallRequest` sobrevive à passagem por Intent sem perder o sha256 nem o certificado; e cancelar a meio de um download deixa o estado em `Idle` e não deixa ficheiros parciais |
 | `androidTest/InstallLifecycleTest` | sessões e notificações reais, sem instalar apps: cancelar permite repetir, callbacks antigos são ignorados, a notificação conserva a confirmação, cancelar abandona a sessão, um Intent ausente dá uma falha recuperável e o sucesso substitui a notificação pendente |
+| `androidTest/LanguageTest` | a língua escolhida sobrevive à recriação da atividade e aplica-se fora dela |
 
 O `RealIndexTest` liga o assinador (Node, `tools/sign-index.mjs`) ao verificador
 (Kotlin): se qualquer dos lados mudar de formato, o build falha. O teste
