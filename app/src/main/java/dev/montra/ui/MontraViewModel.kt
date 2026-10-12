@@ -22,6 +22,7 @@ import dev.montra.install.InstallService
 import dev.montra.install.InstallState
 import dev.montra.security.ApkVerifier
 import dev.montra.util.fingerprintsMatch
+import dev.montra.util.Log
 import dev.montra.util.isNewInCatalogue
 import dev.montra.util.isStaleRelease
 import dev.montra.work.BackgroundChecks
@@ -439,7 +440,12 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
             val apps = container.indexRepository.state.value.apps
             val context = getApplication<Application>()
             val result = withContext(Dispatchers.IO) {
-                apps.mapNotNull { app ->
+                // Pergunta-se ao sistema por cada app do catálogo: o catálogo é dinâmico,
+                // portanto não há uma lista `<queries>` que sirva. O tempo vai para o
+                // log porque é a única maneira de saber quando é que isto deixa de ser
+                // barato — o catálogo cresce, e o número cresce com ele.
+                val startedAt = System.currentTimeMillis()
+                val installedNow = apps.mapNotNull { app ->
                     val versionCode = InstallManager.installedVersionCode(context, app.packageName)
                         ?: return@mapNotNull null
                     app.packageName to InstalledInfo(
@@ -448,6 +454,11 @@ class MontraViewModel(application: Application) : AndroidViewModel(application) 
                         certSha256 = ApkVerifier.installedSigningCertificateSha256(context, app.packageName),
                     )
                 }.toMap()
+                Log.d(
+                    "estado de ${apps.size} apps do catálogo perguntado ao sistema em " +
+                        "${System.currentTimeMillis() - startedAt} ms",
+                )
+                installedNow
             }
             installed.value = result
         }

@@ -80,10 +80,24 @@ class RealIndexTest {
 
         val arm64 = listOf("arm64-v8a", "armeabi-v7a")
         for (app in index.apps) {
-            assertEquals("${app.id}: alternativa inglesa", app.summary, app.summaryFor("es"))
-            assertEquals("${app.id}: resumo português", app.summaryTranslations["pt"], app.summaryFor("pt-PT"))
-            assertTrue("${app.id}: sem resumo português", !app.summaryTranslations["pt"].isNullOrBlank())
-            assertEquals("${app.id}: descrição portuguesa", app.description["pt"], app.descriptionFor("pt-PT"))
+            // O catálogo exige inglês e deixa as outras línguas por conta de quem
+            // contribui — é o que o schema diz. O que o cliente tem de garantir é a
+            // *queda para inglês* quando a tradução não existe ou está vazia, e não que
+            // todas as entradas estejam traduzidas: exigir português a todas era uma
+            // política de conteúdo disfarçada de teste de cliente, e ficou desatualizada
+            // no dia em que as traduções passaram a ser opcionais.
+            assertTrue("${app.id}: sem resumo inglês", app.summary.isNotBlank())
+            assertTrue("${app.id}: resumo em falta para pt-PT", app.summaryFor("pt-PT").isNotBlank())
+            assertTrue("${app.id}: descrição em falta para pt-PT", app.descriptionFor("pt-PT").orEmpty().isNotBlank())
+            app.summaryTranslations["pt"]?.takeIf { it.isNotBlank() }?.let { portuguese ->
+                assertEquals("${app.id}: resumo português não usado em pt-PT", portuguese, app.summaryFor("pt-PT"))
+            }
+            app.description["pt"]?.takeIf { it.isNotBlank() }?.let { portuguese ->
+                assertEquals("${app.id}: descrição portuguesa não usada em pt-PT", portuguese, app.descriptionFor("pt-PT"))
+            }
+            // Uma língua que esta entrada não tem: a resposta tem de ser o inglês.
+            val untranslated = listOf("de", "it", "nl", "pl").first { it !in app.summaryTranslations }
+            assertEquals("${app.id}: sem tradução, cai no inglês", app.summary, app.summaryFor(untranslated))
             assertEquals("${app.id}: descrição inglesa como alternativa", app.description["en"], app.descriptionFor("fr"))
             assertNotNull("${app.id}: sem release", app.release)
             assertTrue("${app.id}: sem assets", app.release!!.assets.isNotEmpty())
